@@ -1,0 +1,9 @@
+---- TX_16N Matches (8 in 1 files) ----
+Lcd_driver.c:#define TX_16N(P,N) SendNU16((Uint16 *)P,N)  //发送N个16位整数
+Lcd_driver.c:void TX_16N(Uint16 *buf,Uint16 nDataLen)
+Lcd_driver.c:	TX_16N(dot,dot_cnt*2);
+Lcd_driver.c:	TX_16N(dot_y,dot_cnt);
+Lcd_driver.c:	TX_16N(dot_offset,dot_cnt);
+Lcd_driver.c:	TX_16N(dot_offset,dot_cnt);
+Lcd_driver.c:	TX_16N(dot,dot_cnt*2);
+Lcd_driver.c:	TX_16N(dot,dot_cnt*2);
