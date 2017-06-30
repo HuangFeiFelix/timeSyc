@@ -1,6 +1,7 @@
 #ifndef __LCD_CMD_PROCESS_H__
 #define __LCD_CMD_PROCESS_H__
 #include "common.h"
+#include "main.h"
 
 #define NOTIFY_TOUCH_PRESS      0X01   //触摸屏按下通知
 #define NOTIFY_TOUCH_RELEASE  0X03  //触摸屏松开通知
@@ -39,7 +40,7 @@ enum CtrlType
 #pragma pack(push)
 #pragma pack(1)	//按字节对齐
 
-typedef struct
+struct LcdCtlMsg
 {
 	Uint8    cmd_head;  //帧头
 
@@ -52,10 +53,10 @@ typedef struct
 	Uint8    param[256];//可变长度参数，最多256个字节
 
 	Uint8  cmd_tail[4];   //帧尾
-}CTRL_MSG,*PCTRL_MSG;
+};
 
 
-void ProcessMessage( PCTRL_MSG msg, Uint16 size );
+void ProcessMessage(struct root_data *pRootData,char *buf,Uint16 len);
 
 void NotifyScreen(Uint16 screen_id);
 

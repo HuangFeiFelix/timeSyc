@@ -4,17 +4,7 @@
 #include "common.h"
 
 #define CMD_MAX_SIZE 20        /*!<单条指令大小，根据需要调整，尽量设置大一些*/
-#define QUEUE_MAX_SIZE 80   /*!< 指令接收缓冲区大小，根据需要调整，尽量设置大一些*/
 
-
-
-/*! 
- *  \brief  检查数据是否符合CRC16校验
- *  \param buffer 待校验的数据，末尾存储CRC16
- *  \param n 数据长度，包含CRC16
- *  \return 校验通过返回1，否则返回0
- */
-Uint16 CheckCRC16(Uint8 *buffer,Uint16 n);
 
 /*! 
  *  \brief  延时

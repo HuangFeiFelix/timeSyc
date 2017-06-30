@@ -1,27 +1,26 @@
 #include "lcd_driver.h"
 #include "lcd_cmd_process.h"
 
-Uint8 rx_cmd_buffer[CMD_MAX_SIZE];//指令缓存
-
 static Uint16 current_screen_id = 0;//当前画面ID
-
 static Sint32 test_value = 0;//测试值
 static Uint8 update_en = 0;//更新标记
 
-void ProcessMessage( PCTRL_MSG msg, Uint16 size )
+void ProcessMessage(struct root_data *pRootData,char *buf,Uint16 len)
 {
-	Uint8 cmd_type = msg->cmd_type;//指令类型
-	Uint8 ctrl_msg = msg->ctrl_msg;   //消息的类型
-	Uint8 control_type = msg->control_type;//控件类型
+    struct LcdCtlMsg *msg = (struct LcdCtlMsg *)buf;
+    
+	Uint8 cmd_type = msg->cmd_type;             //指令类型
+	Uint8 ctrl_msg = msg->ctrl_msg;             //消息的类型
+	Uint8 control_type = msg->control_type;     //控件类型
 	Uint16 screen_id = PTR2U16(&msg->screen_id);//画面ID
 	Uint16 control_id = PTR2U16(&msg->control_id);//控件ID
-	Uint32 value = PTR2U32(msg->param);//数值
+	Uint32 value = PTR2U32(msg->param);             //数值
 
 	switch(cmd_type)
 	{		
 	case NOTIFY_TOUCH_PRESS://触摸屏按下
 	case NOTIFY_TOUCH_RELEASE://触摸屏松开
-		NotifyTouchXY(rx_cmd_buffer[1],PTR2U16(rx_cmd_buffer+2),PTR2U16(rx_cmd_buffer+4));
+		NotifyTouchXY(buf[1],PTR2U16(buf+2),PTR2U16(buf+4));
 		break;	
 	case NOTIFY_WRITE_FLASH_OK://写FLASH成功
 		NotifyWriteFlash(1);
@@ -30,13 +29,13 @@ void ProcessMessage( PCTRL_MSG msg, Uint16 size )
 		NotifyWriteFlash(0);
 		break;
 	case NOTIFY_READ_FLASH_OK://读取FLASH成功
-		NotifyReadFlash(1,rx_cmd_buffer+2,size-6);//去除帧头帧尾
+		NotifyReadFlash(1,buf+2,len-6);//去除帧头帧尾
 		break;
 	case NOTIFY_READ_FLASH_FAILD://读取FLASH失败
 		NotifyReadFlash(0,0,0);
 		break;
 	case NOTIFY_READ_RTC://读取RTC时间
-		NotifyReadRTC(rx_cmd_buffer[1],rx_cmd_buffer[2],rx_cmd_buffer[3],rx_cmd_buffer[4],rx_cmd_buffer[5],rx_cmd_buffer[6],rx_cmd_buffer[7]);
+		NotifyReadRTC(buf[1],buf[2],buf[3],buf[4],buf[5],buf[6],buf[7]);
 		break;
 	case NOTIFY_CONTROL:
 		{

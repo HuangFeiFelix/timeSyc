@@ -1,15 +1,12 @@
 #include "lcd_driver.h"
-#include "common.h"
-
+#include "main.h"
 
 struct LcdTxCtl
 {
     Uint8 rx_cmd_buffer[CMD_MAX_SIZE];//发送指令缓存
     int index;
     
-};
-
-struct LcdTxCtl m_lcd_tx;
+}m_lcd_tx;
 
 
 #if 0
@@ -29,7 +26,7 @@ void TX_8(Uint8 val)
 void TX_8N(Uint8 *buf,Uint16 len)
 {
 	Uint16 i;
-	for (i=0;i<len;++i)
+	for (i=0;i<len;i++)
 	{
 		TX_8(buf[i]);
 	}
@@ -69,6 +66,9 @@ void END_CMD()
     m_lcd_tx.rx_cmd_buffer[m_lcd_tx.index++] = 0xFC;
     m_lcd_tx.rx_cmd_buffer[m_lcd_tx.index++] = 0xFF;
     m_lcd_tx.rx_cmd_buffer[m_lcd_tx.index++] = 0xFF;
+
+    AddData_ToSendList(g_RootData,ENUM_LCD,m_lcd_tx.rx_cmd_buffer,m_lcd_tx.index);    /*调用发送函数*/
+    m_lcd_tx.index = 0;
 
 }
 
