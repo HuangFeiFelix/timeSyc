@@ -38,7 +38,7 @@ int open_port(int com_port)
 {
 	int fd;
 
-	char *dev[] = {"/dev/ttyPS1", "/dev/ttyUL1", "/dev/ttyUL2", "/dev/ttyUL3", "/dev/ttyPS5"};
+	char *dev[] = {"/dev/ttyPS1", "/dev/ttyS0", "/dev/ttyUL2", "/dev/ttyUL3", "/dev/ttyPS5"};
 	if ((com_port < 0) || (com_port > MAX_COM_NUM))
 	{
 		return -1;
@@ -218,9 +218,9 @@ int set_com_config(int fd,int baud_rate, int data_bits, char parity, int stop_bi
 	return 0;
 }
 
-void add_uart_lcd(struct uart_buf *pUart, char data)
+void add_uart_lcd(struct uart_buf *pUart, unsigned char data)
 {
-    static char last_data = 0;
+    static unsigned char last_data = 0;
 
 	if ((data == 0xEE) && (pUart->flags == 0x00))
 	{
@@ -622,7 +622,6 @@ int recv_lcd_com_data(struct device *p_dev, struct dev_head *dev_head)
 	if (FD_ISSET(fd,&dev_head->tmp_set) > 0)
 	{
 		if ((len = read(fd, &buf, UART_LEN)) > 0)
-
 			add_uart_lcd(&p_dev->com_attr.uart_buf, buf);
 	}
 	if (p_dev->com_attr.uart_buf.flags == 0x10)

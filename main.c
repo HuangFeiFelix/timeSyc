@@ -92,8 +92,8 @@ void InitDev(struct root_data *pRootData)
     /**初始化UI 设备 ,UI设备通过串口通信id =0*/
 #if 1
     pRootData->dev[ENUM_LCD].com_attr.com_port = ENUM_LCD;  //串口1
-    pRootData->dev[ENUM_LCD].com_attr.baud_rate = 115200;
-    init_add_dev(&pRootData->dev[ENUM_BUS],&pRootData->dev_head,COMM_DEVICE,ENUM_LCD);
+    pRootData->dev[ENUM_LCD].com_attr.baud_rate = 9600;
+    init_add_dev(&pRootData->dev[ENUM_LCD],&pRootData->dev_head,COMM_DEVICE,ENUM_LCD);
 #endif
 #if 0
     pRoot->dev[ENUM_UI].net_attr.sin_port= 9977;  //串口1
@@ -181,7 +181,8 @@ void *DataHandle_Thread(void *arg)
 #endif
     					break;
                     case ENUM_LCD:
-                        
+                         //printf("dev_id=  %d,com1\n",p_dev->dev_id);
+                         ProcessLcdMessage(pRootData,p_data_list->recv_lev.data,p_data_list->recv_lev.len);
                         break;
     				case ENUM_GPS:
                         //printf("dev_id=  %d,com1:receive:%s",p_dev->dev_id,p_data_list->recv_lev.data);

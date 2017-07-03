@@ -5,82 +5,8 @@ static Uint16 current_screen_id = 0;//当前画面ID
 static Sint32 test_value = 0;//测试值
 static Uint8 update_en = 0;//更新标记
 
-void ProcessMessage(struct root_data *pRootData,char *buf,Uint16 len)
-{
-    struct LcdCtlMsg *msg = (struct LcdCtlMsg *)buf;
-    
-	Uint8 cmd_type = msg->cmd_type;             //指令类型
-	Uint8 ctrl_msg = msg->ctrl_msg;             //消息的类型
-	Uint8 control_type = msg->control_type;     //控件类型
-	Uint16 screen_id = PTR2U16(&msg->screen_id);//画面ID
-	Uint16 control_id = PTR2U16(&msg->control_id);//控件ID
-	Uint32 value = PTR2U32(msg->param);             //数值
 
-	switch(cmd_type)
-	{		
-	case NOTIFY_TOUCH_PRESS://触摸屏按下
-	case NOTIFY_TOUCH_RELEASE://触摸屏松开
-		NotifyTouchXY(buf[1],PTR2U16(buf+2),PTR2U16(buf+4));
-		break;	
-	case NOTIFY_WRITE_FLASH_OK://写FLASH成功
-		NotifyWriteFlash(1);
-		break;
-	case NOTIFY_WRITE_FLASH_FAILD://写FLASH失败
-		NotifyWriteFlash(0);
-		break;
-	case NOTIFY_READ_FLASH_OK://读取FLASH成功
-		NotifyReadFlash(1,buf+2,len-6);//去除帧头帧尾
-		break;
-	case NOTIFY_READ_FLASH_FAILD://读取FLASH失败
-		NotifyReadFlash(0,0,0);
-		break;
-	case NOTIFY_READ_RTC://读取RTC时间
-		NotifyReadRTC(buf[1],buf[2],buf[3],buf[4],buf[5],buf[6],buf[7]);
-		break;
-	case NOTIFY_CONTROL:
-		{
-			if(ctrl_msg==MSG_GET_CURRENT_SCREEN)//画面ID变化通知
-			{
-				NotifyScreen(screen_id);
-			}
-			else
-			{
-				switch(control_type)
-				{
-				case kCtrlButton: //按钮控件
-					NotifyButton(screen_id,control_id,msg->param[1]);
-					break;
-				case kCtrlText://文本控件
-					NotifyText(screen_id,control_id,msg->param);
-					break;
-				case kCtrlProgress: //进度条控件
-					NotifyProgress(screen_id,control_id,value);
-					break;
-				case kCtrlSlider: //滑动条控件
-					NotifySlider(screen_id,control_id,value);
-					break;
-				case kCtrlMeter: //仪表控件
-					NotifyMeter(screen_id,control_id,value);
-					break;
-				case kCtrlMenu://菜单控件
-					NotifyMenu(screen_id,control_id,msg->param[0],msg->param[1]);
-					break;
-				case kCtrlSelector://选择控件
-					NotifySelector(screen_id,control_id,msg->param[0]);
-					break;
-				case kCtrlRTC://倒计时控件
-					NotifyTimer(screen_id,control_id);
-					break;
-				default:
-					break;
-				}
-			}			
-		}
-		break;
-	default:
-		break;
-	}
-}
+
 
 /*! 
  *  \brief  画面切换通知
@@ -351,3 +277,187 @@ void NotifyWriteFlash(Uint8 status)
 void NotifyReadRTC(Uint8 year,Uint8 month,Uint8 week,Uint8 day,Uint8 hour,Uint8 minute,Uint8 second)
 {
 }
+
+
+void HandleWarnningState(struct root_data *pRootData,Uint16 screen_id, Uint16 control_id,unsigned char *data);
+void HandleSettingState(struct root_data *pRootData,Uint16 screen_id, Uint16 control_id,unsigned char *data);
+void HandleMainSreenState(struct root_data *pRootData,Uint16 screen_id, Uint16 control_id,unsigned char *data);
+void HandleClockStatusState(struct root_data *pRootData,Uint16 screen_id, Uint16 control_id,unsigned char *data);
+
+typedef void (*HandleWigetState)(struct root_data *,Uint16, Uint16,unsigned char *);
+HandleWigetState HandleLcdEvent = HandleMainSreenState;
+
+void HandleWarnningState(struct root_data *pRootData,Uint16 screen_id, Uint16 control_id,unsigned char *data)
+{
+    printf("HandleWarnningState\n");
+    
+
+    switch(control_id)
+    {
+        case 21:
+            pRootData->lcd_sreen_id = MAIN_SCREEN_ID;
+            
+            HandleLcdEvent = HandleMainSreenState;
+            break;
+
+        default:
+            HandleLcdEvent = HandleWarnningState;
+            break;
+    }
+
+}
+
+void HandleSettingState(struct root_data *pRootData,Uint16 screen_id, Uint16 control_id,unsigned char *data)
+{
+    printf("HandleSettingState\n");
+
+
+    switch(control_id)
+    {
+        case 21:
+            pRootData->lcd_sreen_id = MAIN_SCREEN_ID;
+            
+            HandleLcdEvent = HandleMainSreenState;
+            break;
+
+        default:
+            HandleLcdEvent = HandleSettingState;
+            break;
+    }
+
+
+}
+
+void HandleClockStatusState(struct root_data *pRootData,Uint16 screen_id, Uint16 control_id,unsigned char *data)
+{
+    printf("HandleClockStatusState\n");
+
+    switch(control_id)
+    {
+        case 21:
+            pRootData->lcd_sreen_id = MAIN_SCREEN_ID;
+            
+            HandleLcdEvent = HandleMainSreenState;
+            break;
+
+        default:
+            HandleLcdEvent = HandleClockStatusState;
+            break;
+    }
+
+
+}
+
+void HandleMainSreenState(struct root_data *pRootData,Uint16 screen_id, Uint16 control_id,unsigned char *data)
+{
+
+        printf("HandleMainSreenState\n");
+        SetTextValue(MAIN_SCREEN_ID,4,"12345");
+        switch(control_id)
+        {
+            case 12:
+                pRootData->lcd_sreen_id = CLOCK_STATUS_SCREEN_ID;
+                
+                HandleLcdEvent = HandleClockStatusState;
+                break;
+            case 13:
+                pRootData->lcd_sreen_id = PARAM_SETING_SCREEN_ID;
+                HandleLcdEvent = HandleSettingState;
+                break;
+            case 14:
+                pRootData->lcd_sreen_id = WARN_SCREEN_ID;
+                
+                HandleLcdEvent = HandleWarnningState;
+                break;
+            default:
+                pRootData->lcd_sreen_id = MAIN_SCREEN_ID;
+                HandleLcdEvent = HandleMainSreenState;
+                break;
+        }
+}
+
+
+
+void ProcessLcdMessage(struct root_data *pRootData,char *buf,Uint16 len)
+{
+    struct LcdCtlMsg *msg = (struct LcdCtlMsg *)buf;
+    
+	Uint8 cmd_type = msg->cmd_type;             //指令类型
+	Uint8 ctrl_msg = msg->ctrl_msg;             //消息的类型
+	Uint8 control_type = msg->control_type;     //控件类型
+	Uint16 screen_id = PTR2U16(&msg->screen_id);//画面ID
+	Uint16 control_id = PTR2U16(&msg->control_id);//控件ID
+	Uint32 value = PTR2U32(msg->param);             //数值
+
+    printf("%x %x %x %x %x\n",cmd_type,ctrl_msg,control_type,screen_id,value);
+	switch(cmd_type)
+	{		
+	case NOTIFY_TOUCH_PRESS://触摸屏按下
+	case NOTIFY_TOUCH_RELEASE://触摸屏松开
+		NotifyTouchXY(buf[1],PTR2U16(buf+2),PTR2U16(buf+4));
+		break;	
+	case NOTIFY_WRITE_FLASH_OK://写FLASH成功
+		NotifyWriteFlash(1);
+		break;
+	case NOTIFY_WRITE_FLASH_FAILD://写FLASH失败
+		NotifyWriteFlash(0);
+		break;
+	case NOTIFY_READ_FLASH_OK://读取FLASH成功
+		NotifyReadFlash(1,buf+2,len-6);//去除帧头帧尾
+		break;
+	case NOTIFY_READ_FLASH_FAILD://读取FLASH失败
+		NotifyReadFlash(0,0,0);
+		break;
+	case NOTIFY_READ_RTC://读取RTC时间
+		NotifyReadRTC(buf[1],buf[2],buf[3],buf[4],buf[5],buf[6],buf[7]);
+		break;
+	case NOTIFY_CONTROL:
+		{
+			if(ctrl_msg==MSG_GET_CURRENT_SCREEN)//画面ID变化通知
+			{
+				NotifyScreen(screen_id);
+			}
+            else if(ctrl_msg == MSG_GET_DATA)
+            {
+                
+                (*HandleLcdEvent)(pRootData,screen_id,control_id,msg->param);
+            }
+			else
+			{
+				switch(control_type)
+				{
+				case kCtrlButton: //按钮控件
+					NotifyButton(screen_id,control_id,msg->param[1]);
+					break;
+				case kCtrlText://文本控件
+					NotifyText(screen_id,control_id,msg->param);
+					break;
+				case kCtrlProgress: //进度条控件
+					NotifyProgress(screen_id,control_id,value);
+					break;
+				case kCtrlSlider: //滑动条控件
+					NotifySlider(screen_id,control_id,value);
+					break;
+				case kCtrlMeter: //仪表控件
+					NotifyMeter(screen_id,control_id,value);
+					break;
+				case kCtrlMenu://菜单控件
+					NotifyMenu(screen_id,control_id,msg->param[0],msg->param[1]);
+					break;
+				case kCtrlSelector://选择控件
+					NotifySelector(screen_id,control_id,msg->param[0]);
+					break;
+				case kCtrlRTC://倒计时控件
+					NotifyTimer(screen_id,control_id);
+					break;
+				default:
+					break;
+				}
+			}			
+		}
+		break;
+	default:
+		break;
+	}
+}
+

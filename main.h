@@ -11,6 +11,19 @@
 #define SLOT_TYPE_PTP  'B'
 #define SLOT_TYPE_NTP  'C'
 
+#define MAIN_SCREEN_ID          0x00
+#define CLOCK_STATUS_SCREEN_ID  0x01
+#define PARAM_SETING_SCREEN_ID  0x02
+#define WARN_SCREEN_ID          0x03
+#define ETH_CTL_SCREEN_ID       0x04
+#define ETH_PTP_SCREEN_ID       0x05
+#define ETH_NTP_SCREEN_ID       0x06
+
+#define CLOCK_STATUS_WIDGET_ID      12
+#define CLOCK_SETTING_WIDGET_ID     13
+#define CLOCK_WARNNING_WIDGET_ID    14
+
+
 enum
 {
     ENUM_SLOT_COR_ADDR = 0x00,
@@ -117,6 +130,8 @@ struct root_data{
         int dev_fd;
         
         struct SlotList slot_list[6];
+
+        int lcd_sreen_id;
         
         char Version[4];
 
