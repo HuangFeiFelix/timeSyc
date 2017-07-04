@@ -1,0 +1,3 @@
+refclock_hopfser.o: refclock_hopfser.c ../config.h
+
+../config.h:

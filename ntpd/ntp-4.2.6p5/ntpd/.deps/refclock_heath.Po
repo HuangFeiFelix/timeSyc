@@ -1,0 +1,3 @@
+refclock_heath.o: refclock_heath.c ../config.h
+
+../config.h:

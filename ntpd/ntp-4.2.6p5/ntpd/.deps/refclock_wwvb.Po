@@ -1,0 +1,3 @@
+refclock_wwvb.o: refclock_wwvb.c ../config.h
+
+../config.h:

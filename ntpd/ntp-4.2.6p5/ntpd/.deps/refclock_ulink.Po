@@ -1,0 +1,3 @@
+refclock_ulink.o: refclock_ulink.c ../config.h
+
+../config.h:

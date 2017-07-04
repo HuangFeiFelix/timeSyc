@@ -1,0 +1,3 @@
+refclock_neoclock4x.o: refclock_neoclock4x.c ../config.h
+
+../config.h:

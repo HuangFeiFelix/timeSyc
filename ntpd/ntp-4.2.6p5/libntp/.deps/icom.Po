@@ -1,0 +1,172 @@
+icom.o: icom.c ../config.h ../include/icom.h ../include/ntp_types.h \
+ /home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/sys/types.h \
+ /home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/features.h \
+ /home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/bits/predefs.h \
+ /home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/sys/cdefs.h \
+ /home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/bits/wordsize.h \
+ /home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/gnu/stubs.h \
+ /home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/bits/types.h \
+ /home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/bits/typesizes.h \
+ /home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/time.h \
+ /home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../lib/gcc/arm-xilinx-linux-gnueabi/4.6.1/include/stddef.h \
+ /home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/endian.h \
+ /home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/bits/endian.h \
+ /home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/bits/byteswap.h \
+ /home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/sys/select.h \
+ /home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/bits/select.h \
+ /home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/bits/sigset.h \
+ /home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/bits/time.h \
+ /home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/sys/sysmacros.h \
+ /home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/bits/pthreadtypes.h \
+ ../include/ntp_machine.h \
+ /home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/sys/time.h \
+ /home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/xlocale.h \
+ ../include/ntp_proto.h \
+ /home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/unistd.h \
+ /home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/bits/posix_opt.h \
+ /home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/bits/environments.h \
+ /home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/bits/confname.h \
+ /home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/getopt.h \
+ /home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/stdio.h \
+ /home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/libio.h \
+ /home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/_G_config.h \
+ /home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/wchar.h \
+ /home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../lib/gcc/arm-xilinx-linux-gnueabi/4.6.1/include/stdarg.h \
+ /home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/bits/stdio_lim.h \
+ /home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/bits/sys_errlist.h \
+ /home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/bits/stdio.h \
+ /home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/fcntl.h \
+ /home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/bits/fcntl.h \
+ /home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/bits/uio.h \
+ /home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/bits/stat.h \
+ /home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/errno.h \
+ /home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/bits/errno.h \
+ /home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/linux/errno.h \
+ /home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/asm/errno.h \
+ /home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/asm-generic/errno.h \
+ /home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/asm-generic/errno-base.h \
+ ../include/ntp_tty.h \
+ /home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/termios.h \
+ /home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/bits/termios.h \
+ /home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/sys/ttydefaults.h \
+ ../include/l_stdlib.h \
+ /home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/stdlib.h \
+ /home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/bits/waitflags.h \
+ /home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/bits/waitstatus.h \
+ /home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/alloca.h
+
+../config.h:
+
+../include/icom.h:
+
+../include/ntp_types.h:
+
+/home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/sys/types.h:
+
+/home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/features.h:
+
+/home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/bits/predefs.h:
+
+/home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/sys/cdefs.h:
+
+/home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/bits/wordsize.h:
+
+/home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/gnu/stubs.h:
+
+/home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/bits/types.h:
+
+/home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/bits/typesizes.h:
+
+/home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/time.h:
+
+/home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../lib/gcc/arm-xilinx-linux-gnueabi/4.6.1/include/stddef.h:
+
+/home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/endian.h:
+
+/home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/bits/endian.h:
+
+/home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/bits/byteswap.h:
+
+/home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/sys/select.h:
+
+/home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/bits/select.h:
+
+/home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/bits/sigset.h:
+
+/home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/bits/time.h:
+
+/home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/sys/sysmacros.h:
+
+/home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/bits/pthreadtypes.h:
+
+../include/ntp_machine.h:
+
+/home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/sys/time.h:
+
+/home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/xlocale.h:
+
+../include/ntp_proto.h:
+
+/home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/unistd.h:
+
+/home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/bits/posix_opt.h:
+
+/home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/bits/environments.h:
+
+/home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/bits/confname.h:
+
+/home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/getopt.h:
+
+/home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/stdio.h:
+
+/home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/libio.h:
+
+/home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/_G_config.h:
+
+/home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/wchar.h:
+
+/home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../lib/gcc/arm-xilinx-linux-gnueabi/4.6.1/include/stdarg.h:
+
+/home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/bits/stdio_lim.h:
+
+/home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/bits/sys_errlist.h:
+
+/home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/bits/stdio.h:
+
+/home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/fcntl.h:
+
+/home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/bits/fcntl.h:
+
+/home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/bits/uio.h:
+
+/home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/bits/stat.h:
+
+/home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/errno.h:
+
+/home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/bits/errno.h:
+
+/home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/linux/errno.h:
+
+/home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/asm/errno.h:
+
+/home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/asm-generic/errno.h:
+
+/home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/asm-generic/errno-base.h:
+
+../include/ntp_tty.h:
+
+/home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/termios.h:
+
+/home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/bits/termios.h:
+
+/home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/sys/ttydefaults.h:
+
+../include/l_stdlib.h:
+
+/home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/stdlib.h:
+
+/home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/bits/waitflags.h:
+
+/home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/bits/waitstatus.h:
+
+/home/arm-xilinx-gcc/CodeSourcery/Arm_Xilinx_GNU_Linux/bin/../arm-xilinx-linux-gnueabi/libc/usr/include/alloca.h:

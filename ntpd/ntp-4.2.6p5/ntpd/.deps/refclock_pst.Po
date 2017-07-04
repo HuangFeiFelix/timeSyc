@@ -1,0 +1,3 @@
+refclock_pst.o: refclock_pst.c ../config.h
+
+../config.h:

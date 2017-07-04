@@ -1,0 +1,3 @@
+refclock_chronolog.o: refclock_chronolog.c ../config.h
+
+../config.h:

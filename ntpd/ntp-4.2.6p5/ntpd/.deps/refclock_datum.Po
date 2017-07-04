@@ -1,0 +1,3 @@
+refclock_datum.o: refclock_datum.c ../config.h
+
+../config.h:

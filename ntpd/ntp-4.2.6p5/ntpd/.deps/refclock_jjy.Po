@@ -1,0 +1,3 @@
+refclock_jjy.o: refclock_jjy.c ../config.h
+
+../config.h:

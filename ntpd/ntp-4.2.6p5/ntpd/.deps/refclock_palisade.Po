@@ -1,0 +1,3 @@
+refclock_palisade.o: refclock_palisade.c ../config.h
+
+../config.h:

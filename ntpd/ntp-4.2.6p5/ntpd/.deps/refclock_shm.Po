@@ -1,0 +1,3 @@
+refclock_shm.o: refclock_shm.c ../config.h
+
+../config.h:

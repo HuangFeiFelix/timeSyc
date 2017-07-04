@@ -1,0 +1,3 @@
+refclock_pcf.o: refclock_pcf.c ../config.h
+
+../config.h:

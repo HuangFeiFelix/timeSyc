@@ -1,0 +1,3 @@
+refclock_true.o: refclock_true.c ../config.h
+
+../config.h:

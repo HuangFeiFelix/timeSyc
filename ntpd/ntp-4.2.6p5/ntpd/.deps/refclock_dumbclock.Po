@@ -1,0 +1,3 @@
+refclock_dumbclock.o: refclock_dumbclock.c ../config.h
+
+../config.h:

@@ -1,0 +1,3 @@
+refclock_arbiter.o: refclock_arbiter.c ../config.h
+
+../config.h:

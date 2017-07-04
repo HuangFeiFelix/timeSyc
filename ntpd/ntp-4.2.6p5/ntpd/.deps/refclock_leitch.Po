@@ -1,0 +1,3 @@
+refclock_leitch.o: refclock_leitch.c ../config.h
+
+../config.h:

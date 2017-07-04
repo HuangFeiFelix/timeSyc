@@ -1,0 +1,3 @@
+refclock_hpgps.o: refclock_hpgps.c ../config.h
+
+../config.h:

@@ -1,0 +1,3 @@
+refclock_nmea.o: refclock_nmea.c ../config.h
+
+../config.h:

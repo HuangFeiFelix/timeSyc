@@ -1,0 +1,3 @@
+refclock_irig.o: refclock_irig.c ../config.h
+
+../config.h:
