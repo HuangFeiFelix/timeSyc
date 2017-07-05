@@ -1,2 +1,15 @@
----- SM Matches (1 in 1 files) ----
-Data_type.h:    //TimeInternal SM;
+---- portEnable Matches (15 in 3 files) ----
+Data_type.h:    Uint8 portEnable;              /** 1:enable,  0: disable */
+Data_type.h:    Uint8 portEnable;              /** 1:enable,  0: disable */
+Data_type.h:    Uint8 portEnable;              /** 1:enable,  0: disable */
+Data_type.h:    Uint8 portEnable[8];              /** 1:enable,  0: disable */
+Data_type.h:    Uint8 portEnable;              /** 1:enable,  0: disable */
+Data_type.h:    Uint8 portEnable;              /** 1:enable,  0: disable */
+Ptp.c:        if(!pPtpClock->portEnable)
+Ptp.c:        if(!pPtpClock->portEnable)
+Ptp.c:        if(!pPtpClock->portEnable)
+Ptp_io.c:        if(memcmp("ptpengine:portEnable",tile,strlen("ptpengine:portEnable")) == 0)
+Ptp_io.c:                pPtpClock->portEnable = value;
+Ptp_io.c:    str = pPtpClock->portEnable;
+Ptp_io.c:    sprintf(line_str,"%s:%s=%d\n","ptpengine","portEnable",str);
+Ptp_io.c:    pPtpClock->portEnable = TRUE;

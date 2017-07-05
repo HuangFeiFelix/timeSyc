@@ -112,6 +112,7 @@ Uint8 *mmapping()
 		close(fd); 
 		return NULL; 
 	}
+    close(fd);
 #endif
 	 pMapped_add = (char *)malloc(1024 * 2);
     return pMapped_add;

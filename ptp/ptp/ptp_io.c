@@ -517,19 +517,7 @@ void AnalysePtpConfigFile(Uint8* pBuf,PtpClock *pPtpClock)
         
         pIndex++;
         
-        if(memcmp("ptpengine:interface",tile,strlen("ptpengine:interface")) == 0)
-        {
-            memcpy(pPtpClock->netEnviroment.ifaceName,pIndex,4);
-        }
 
-        
-        if(memcmp("ptpengine:portEnable",tile,strlen("ptpengine:portEnable")) == 0)
-        {
-            value = atoi(pIndex);
-            if(value == 0 || value == 1)
-                pPtpClock->portEnable = value;
-           
-        }
         if(memcmp("ptpengine:clockType",tile,strlen("ptpengine:clockType")) == 0)
         {
             value = atoi(pIndex);
@@ -578,30 +566,7 @@ void AnalysePtpConfigFile(Uint8* pBuf,PtpClock *pPtpClock)
             if(value == 0 || value == 1)
                 pPtpClock->UniNegotiationEnable = value;
         }
-        if(memcmp("ptpengine:vlanEnable",tile,strlen("ptpengine:vlanEnable")) == 0)
-        {
-            value = atoi(pIndex);
-            if(value == 0 || value == 1)
-                pPtpClock->vlanEnable = value;
-        }
-        if(memcmp("ptpengine:vlanPriority",tile,strlen("ptpengine:vlanPriority")) == 0)
-        {
-            value = atoi(pIndex);
-            if(value >= 0 && value == 7)
-                pPtpClock->vlanPriority = value;
-        }
-        if(memcmp("ptpengine:vlanId",tile,strlen("ptpengine:vlanId")) == 0)
-        {
-            value = atoi(pIndex);
-            if(value >= 0 && value <= 255)
-                pPtpClock->vlanId = value;
-        }
-        if(memcmp("ptpengine:vlanCfi",tile,strlen("ptpengine:vlanCfi")) == 0)
-        {
-            value = atoi(pIndex);
-            if(value == 0 || value == 1)
-                pPtpClock->vlanCfi = value;
-        }
+        
         if(memcmp("ptpengine:validServerNum",tile,strlen("ptpengine:validServerNum")) == 0)
         {
             value = atoi(pIndex);
@@ -667,15 +632,7 @@ void AnalysePtpConfigFile(Uint8* pBuf,PtpClock *pPtpClock)
             }
 
         }
-        if(memcmp("ptpengine:timeSource",tile,strlen("ptpengine:timeSource")) == 0)
-        {
-            value = atoi(pIndex);
-            if(value >= 0 && value <= 255)
-            {
-                pPtpClock->timePropertiesDS.timeSource = value;
-            }
 
-        }
         if(memcmp("ptpengine:grandmasterPriority1",tile,strlen("ptpengine:grandmasterPriority1")) == 0)
         {
             value = atoi(pIndex);
@@ -884,8 +841,8 @@ int Load_PtpParam_FromFile(PtpClock *pPtpClock)
     FILE  *ptp_fd = fopen(pPtpClock->ptpFileName,"a+");
     if(ptp_fd == NULL)
     {
-        printf("can not find ptp.conf file !\n");
-        return -1;
+        printf("Can not Find ptp.conf file !\n");
+        exit(-1);;
     }
 
     /**读取文件所有数据  */
@@ -901,11 +858,10 @@ int Load_PtpParam_FromFile(PtpClock *pPtpClock)
     
     if(i<2)
     {
-        printf("file empty!!\n");
-        
-        //Save_PtpParam_ToFile(pPtpClock,pPtpClock->ptpFileName);
+        printf("Config file Empty!!\n");
         return -1;
     }
+        
 
     /**分析文件  */
     AnalysePtpConfigFile(ConfigFileBuf,pPtpClock);
@@ -929,14 +885,6 @@ int Save_PtpParam_ToFile(PtpClock *pPtpClock,char *fileName)
         return -1;
     }
 
-    memset(line_str,0,sizeof(line_str));
-    sprintf(line_str,"%s:%s=%s\n","ptpengine","interface",pPtpClock->netEnviroment.ifaceName);
-    fputs(line_str,ptp_fd);
-    
-    memset(line_str,0,sizeof(line_str));
-    str = pPtpClock->portEnable;
-    sprintf(line_str,"%s:%s=%d\n","ptpengine","portEnable",str);
-    fputs(line_str,ptp_fd);
     
     memset(line_str,0,sizeof(line_str));
     str = pPtpClock->clockType;
@@ -977,28 +925,7 @@ int Save_PtpParam_ToFile(PtpClock *pPtpClock,char *fileName)
     str = pPtpClock->UniNegotiationEnable;
     sprintf(line_str,"%s:%s=%d\n","ptpengine","UniNegotiationEnable",str);
     fputs(line_str,ptp_fd);
-    
-    
-    memset(line_str,0,sizeof(line_str));
-    str = pPtpClock->vlanEnable;
-    sprintf(line_str,"%s:%s=%d\n","ptpengine","vlanEnable",str);
-    fputs(line_str,ptp_fd);
-    
-    memset(line_str,0,sizeof(line_str));
-    str = pPtpClock->vlanPriority;
-    sprintf(line_str,"%s:%s=%d\n","ptpengine","vlanPriority",str);
-    fputs(line_str,ptp_fd);
-    
-    memset(line_str,0,sizeof(line_str));
-    str = pPtpClock->vlanId;
-    sprintf(line_str,"%s:%s=%d\n","ptpengine","vlanId",str);
-    fputs(line_str,ptp_fd);
-    
-    memset(line_str,0,sizeof(line_str));
-    str = pPtpClock->vlanCfi;
-    sprintf(line_str,"%s:%s=%d\n","ptpengine","vlanCfi",str);
-    fputs(line_str,ptp_fd);
-    
+        
     memset(line_str,0,sizeof(line_str));
     str = pPtpClock->logSyncInterval;
     sprintf(line_str,"%s:%s=%d\n","ptpengine","synFreq",str);
@@ -1020,6 +947,17 @@ int Save_PtpParam_ToFile(PtpClock *pPtpClock,char *fileName)
     fputs(line_str,ptp_fd);
 
     memset(line_str,0,sizeof(line_str));
+    str = pPtpClock->grandmasterPriority1;
+    sprintf(line_str,"%s:%s=%d\n","ptpengine","grandmasterPriority1",str);
+    fputs(line_str,ptp_fd);
+
+    memset(line_str,0,sizeof(line_str));
+    str = pPtpClock->grandmasterPriority2;
+    sprintf(line_str,"%s:%s=%d\n","ptpengine","grandmasterPriority2",str);
+    fputs(line_str,ptp_fd);
+
+
+    memset(line_str,0,sizeof(line_str));
     str = pPtpClock->unicastMultiServer.validServerNum;
     sprintf(line_str,"%s:%s=%d\n","ptpengine","validServerNum",str);
     fputs(line_str,ptp_fd); 
@@ -1034,20 +972,6 @@ int Save_PtpParam_ToFile(PtpClock *pPtpClock,char *fileName)
     sprintf(line_str,"%s:%s=%d\n","ptpengine","currentUtcOffset",str);
     fputs(line_str,ptp_fd); 
 
-    memset(line_str,0,sizeof(line_str));
-    str = pPtpClock->timePropertiesDS.timeSource;
-    sprintf(line_str,"%s:%s=%d\n","ptpengine","timeSource",str);
-    fputs(line_str,ptp_fd); 
-
-    memset(line_str,0,sizeof(line_str));
-    str = pPtpClock->grandmasterPriority1;
-    sprintf(line_str,"%s:%s=%d\n","ptpengine","grandmasterPriority1",str);
-    fputs(line_str,ptp_fd); 
-
-    memset(line_str,0,sizeof(line_str));
-    str = pPtpClock->grandmasterPriority2;
-    sprintf(line_str,"%s:%s=%d\n","ptpengine","grandmasterPriority2",str);
-    fputs(line_str,ptp_fd); 
 
     for(i=0;i<pPtpClock->unicastMultiServer.validServerNum;i++)
     {
@@ -1068,18 +992,10 @@ int Save_PtpParam_ToFile(PtpClock *pPtpClock,char *fileName)
         fputs(line_str,ptp_fd); 
 
     }
-
-
-
-    memset(line_str,0,sizeof(line_str));
-    str = pPtpClock->debugLevel;             
-    sprintf(line_str,"%s:%s=%d\n","ptpengine","DebugLevel",str);
-    fputs(line_str,ptp_fd); 
     
     fflush(ptp_fd);
     fclose(ptp_fd);
 
-    
     return TRUE;
 }
 
@@ -3402,11 +3318,11 @@ Uint8 Init_ptpClock(PtpClock *pPtpClock,int index)
     Init_PtpMainParam(pPtpClock
                         ,PTP_VERRION_2
                         ,netInterface
-                        ,PTP_MASTER
+                        ,PTP_SLAVE
                         ,0
                         ,PROTO_UDP_IP
                         ,IPMODE_MULTICAST
-                        ,ONE_STEP
+                        ,TWO_STEP
                         ,DELAY_MECANISM_E2E);
 
     /**初始化发送周期  */

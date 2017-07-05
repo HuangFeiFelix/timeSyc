@@ -146,10 +146,6 @@ void ThreadSend(union sigval v)
         if(pPtpClock->outBlockFlag)
             continue;
 
-
-        /** 端口使能*/
-        if(!pPtpClock->portEnable)
-            continue;
         
         switch (pPtpClock->clockType)
         {
@@ -205,12 +201,6 @@ void *ThreadRecev0(void *p)
         }
 
 
-        /** 端口使能*/
-        if(!pPtpClock->portEnable)
-        {
-            usleep(10);
-            continue;
-        }
         
         switch (pPtpClock->clockType)
         {
@@ -243,14 +233,6 @@ void *ThreadRecev1(void *p)
 
         /** 封锁输出，则不收任何数据 */
         if(pPtpClock->outBlockFlag)
-        {
-            usleep(10);
-            continue;
-        }
-
-
-        /** 端口使能*/
-        if(!pPtpClock->portEnable)
         {
             usleep(10);
             continue;
