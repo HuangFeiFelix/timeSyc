@@ -210,7 +210,7 @@ Uint8  VerifyMacAddress(Uint8 * src,Uint8  *tmac)
 
 		if((k<=1)||(k>3))
 		{
-			PLOG("i=%d,k=%d\n",i,k);
+			//printf("i=%d,k=%d\n",i,k);
 			return 0;
 		}
 		
@@ -232,7 +232,7 @@ Uint8  VerifyMacAddress(Uint8 * src,Uint8  *tmac)
 			}
 			else
 			{
-				PLOG("k2=%c,i=%d,k=%d\n",tsrc[0],i,k);
+				//PLOG("k2=%c,i=%d,k=%d\n",tsrc[0],i,k);
 				return 0;
 			}
 
@@ -254,7 +254,7 @@ Uint8  VerifyMacAddress(Uint8 * src,Uint8  *tmac)
 			}
 			else
 			{
-				PLOG("k1=%c,i=%d,k=%d\n",tsrc[0],i,k);
+				//PLOG("k1=%c,i=%d,k=%d\n",tsrc[0],i,k);
 				return 0;
 			}
 			if((tsrc[1]>=0x30)&&(tsrc[1]<=0x39))   /* "0"~"9"*/
@@ -271,14 +271,14 @@ Uint8  VerifyMacAddress(Uint8 * src,Uint8  *tmac)
 			}
 			else
 			{
-				PLOG("k2=%c,i=%d,k=%d\n",tsrc[1],i,k);
+				//PLOG("k2=%c,i=%d,k=%d\n",tsrc[1],i,k);
 				return 0;
 			}
 		}
 		tnum=k1*0x10+k2;
 		if(tnum < 0 || tnum > 255)
 		{
-			PLOG("i=%d,tnum=%d\n",i,tnum);
+			//PLOG("i=%d,tnum=%d\n",i,tnum);
 			return 0;
 		}
 		tmac[i]=tnum&0xff;
@@ -558,7 +558,7 @@ void AnalysePtpConfigFile(Uint8* pBuf,struct PtpSetCfg *pPtpSetcfg)
         }
         if(memcmp("ptpengine:ServerMac_7",tile,strlen("ptpengine:ServerMac_7")) == 0)
         {
-            VerifyMacAddress(pIndex,pPtpSetcfg->-serverList[7].serverMac);
+            VerifyMacAddress(pIndex,pPtpSetcfg->serverList[7].serverMac);
 
         }
 
@@ -567,7 +567,7 @@ void AnalysePtpConfigFile(Uint8* pBuf,struct PtpSetCfg *pPtpSetcfg)
         {
             if(VerifyIpAddress(pIndex))
             {
-                pPtpSetcfg->-serverList[8].serverIp = inet_addr(pIndex);
+                pPtpSetcfg->serverList[8].serverIp = inet_addr(pIndex);
 
             }
         }
@@ -588,7 +588,7 @@ void AnalysePtpConfigFile(Uint8* pBuf,struct PtpSetCfg *pPtpSetcfg)
         }
         if(memcmp("ptpengine:ServerMac_9",tile,strlen("ptpengine:ServerMac_9")) == 0)
         {
-            if(VerifyMacAddress(pIndex,pPtpSetcfg->serverList[9].serverMac))
+            VerifyMacAddress(pIndex,pPtpSetcfg->serverList[9].serverMac);
 
         }
 
@@ -712,7 +712,7 @@ int Save_PtpParam_ToFile(struct PtpSetCfg *pPtpSetcfg,char *fileName)
     fputs(line_str,ptp_fd);
 
     memset(line_str,0,sizeof(line_str));
-    str = pPtpSetcfg->grandmasterPriority1.;
+    str = pPtpSetcfg->grandmasterPriority1;
     sprintf(line_str,"%s:%s=%d\n","ptpengine","grandmasterPriority1",str);
     fputs(line_str,ptp_fd);
 
