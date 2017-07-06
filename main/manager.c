@@ -37,6 +37,54 @@
 #define LINE_COUNT       400
 #define STRING_LENGTH    100
 
+#define MD5_ENABLE (0x01)
+#define MD5_DISABLE (0x00)
+
+#define TOTAL_KEY_NO  8
+#define ENTER_CHAR 0x0a
+
+#define	LEAP_NOWARNING	0x0	/* normal, no leap second warning */
+#define	LEAP_ADDSECOND	0x1	/* last minute of day has 61 seconds */
+#define	LEAP_DELSECOND	0x2	/* last minute of day has 59 seconds */
+#define	LEAP_NOTINSYNC	0x3	/* overload, clock is free running */
+
+#define STRATUM_0_PRESION -20
+#define STRATUM_1_PRESION -20
+#define STRATUM_2_PRESION -18
+#define STRATUM_3_PRESION -15
+
+
+/* 限制所有ip访问 */
+#define RESTRICT_ALL "restrict default nomodify notrap noquery ignore"
+#define RESTRICT_IP6 "restrict -6 default nomodify notrap nopeer noquery ignore"
+
+/* 默认打开所有ip访问 */
+#define DEFAULT_ALL "restrict default nomodify notrap"
+#define DEFAULT_IP6 "restrict -6 default nomodify notrap nopeer"
+
+/* 本地时钟源 16s轮询 */
+#define SERVER_ADDR "server 127.127.1.0 maxpoll 4 minpoll 4"
+#define fUDE_ADDR "fudge 127.127.1.0 stratum"
+
+/* ID:GPS */
+#define REFID_GPS "refid GNSS"
+#define REFID_REF "refid REF"
+#define REFID_LOC "refid LOC"
+
+
+/* ID:LOCL */
+#define REFID_LOCL "refid LOCL"
+
+/* 黑名单控制 */
+#define BLACK_LIST_TAIL "notrap nomodify noquery ignore"
+
+/* 白名单控制 */
+#define WHITLE_LIST_TAIL "notrap nomodify"
+
+/* 随机密钥 */
+#define AUTO_KEY "autokey"
+
+
 struct Head_Frame
 {
     char h1;
@@ -113,6 +161,27 @@ int msgPackFrame(char *buf,struct Head_Frame *iHead,void *sendMsg,int msglen)
     return iOffset;
 }
 
+Uint32 CaculateSecond(Uint32 input)
+{
+    Uint16 i;
+    Uint32 second =1;
+
+    for(i = 0;i<input;i++)
+        second = second * 2;
+
+    return second;
+}
+
+Uint32 Caculatefrequency(Uint32 input)
+{
+    Uint32 i = 0;
+    while(input)
+    {
+        input = input / 2;
+        i++;
+    }
+    return i -1;
+}
 
 Uint8  VerifyIpAddress(Uint8 * src)
 {
@@ -288,6 +357,7 @@ Uint8  VerifyMacAddress(Uint8 * src,Uint8  *tmac)
 	
 	return 1;		
 }
+
 
 void AnalysePtpConfigFile(Uint8* pBuf,struct PtpSetCfg *pPtpSetcfg)
 {
@@ -597,6 +667,416 @@ void AnalysePtpConfigFile(Uint8* pBuf,struct PtpSetCfg *pPtpSetcfg)
 
 }
 
+
+void Load_BlackList(struct NtpSetCfg *pNtpSetcfg,Uint8 pData[200][200],int index)
+{
+    Uint16 iLine;
+    Uint16 i = 0;
+
+    Uint8  title[50];
+    Uint8  ip[50];
+    Uint8  mask_str[10];
+    Uint8  mask[50];
+    Uint8  other[50];
+    Uint8  flag;
+    
+    iLine = index+1;
+    if(strcmp(pData[iLine],"#open") == 0)
+    {
+        printf("Blacklist open\n");
+        pNtpSetcfg->blacklist = TRUE;
+    }
+    else if(strcmp(pData[iLine],"#close") == 0)
+    {
+        printf("Blacklist close\n");
+        pNtpSetcfg->blacklist = FALSE;
+    }
+    
+    iLine = iLine+1;
+    if(strcmp(pData[iLine],"#end") == 0)
+    {
+        printf("load blacklist NULL\n");
+        return;
+    }
+    
+    while(strcmp(pData[iLine+i],"#end") != 0)
+    {
+        memset(title,0,sizeof(title));
+        memset(ip,0,sizeof(ip));
+        memset(mask_str,0,sizeof(mask_str));
+        memset(mask,0,sizeof(mask));
+        memset(other,0,sizeof(other));
+        if(pNtpSetcfg->blacklist == TRUE)
+        {
+            
+            sscanf(pData[iLine+i],"%s %s %s %s %s",title,ip,mask_str,mask,other);
+        }
+
+        else
+        {
+            sscanf(pData[iLine+i],"%c %s %s %s %s %s",&flag,title,ip,mask_str,mask,other);
+        }
+        
+        pNtpSetcfg->blacklist_ip[i] = inet_addr(ip);
+        pNtpSetcfg->blacklist_mask[i] = inet_addr(mask);
+        pNtpSetcfg->blacklist_flag[i] = TRUE;
+        
+        i++;
+    }
+    
+}
+
+void Load_WhiltList(struct NtpSetCfg *pNtpSetcfg,Uint8 pData[200][200],int index)
+{
+    Uint16 iLine;
+    Uint16 i = 0;
+
+    Uint8  title[50];
+    Uint8  ip[50];
+    Uint8  mask_str[10];
+    Uint8  mask[50];
+    Uint8  other[50];
+    Uint8  flag;
+    
+    iLine = index+1;
+    if(strcmp(pData[iLine],"#open") == 0)
+    {
+        printf("Whitlelist open\n");
+        pNtpSetcfg->whitelist = TRUE;
+    }
+    else if(strcmp(pData[iLine],"#close") == 0)
+    {
+        printf("Whitlelist close\n");
+        pNtpSetcfg->whitelist = FALSE;
+    }
+
+    iLine = iLine+1;
+    if(strcmp(pData[iLine],"#end") == 0)
+    {
+        printf("load whithlist NULL\n");
+        return;
+    }
+    
+    while(strcmp(pData[iLine+i],"#end") != 0)
+    {
+        
+        memset(title,0,sizeof(title));
+        memset(ip,0,sizeof(ip));
+        memset(mask_str,0,sizeof(mask_str));
+        memset(mask,0,sizeof(mask));
+        memset(other,0,sizeof(other));
+        
+        if(pNtpSetcfg->whitelist == TRUE)
+        {
+            sscanf(pData[iLine+i],"%s %s %s %s %s",title,ip,mask_str,mask,other);
+        }
+        else
+        {
+            sscanf(pData[iLine+i],"%c %s %s %s %s %s",&flag,title,ip,mask_str,mask,other);
+        }
+        
+        pNtpSetcfg->whitelist_ip[i] = inet_addr(ip);
+        pNtpSetcfg->whitelist_mask[i] = inet_addr(mask);
+        pNtpSetcfg->whitelist_flag[i] = TRUE;
+        
+        i++;
+    }
+
+}
+
+void Load_BroadCast(struct NtpSetCfg *pNtpSetcfg,Uint8 pData[200][200],int index)
+{
+    Uint16 iLine;
+    Uint16 i = 0;
+
+    Uint8  title[50];
+    Uint8  ip[50];
+    Uint8  key[10];
+    Uint8  poll[10];
+
+    Uint32 poll_num;
+    int key_num;
+    
+    iLine = index+1;
+    if(strcmp(pData[iLine],"#end") == 0)
+    {
+        printf("Broadcast close\n");
+        pNtpSetcfg->broadcast = FALSE;
+        return;
+    }
+
+    pNtpSetcfg->broadcast = TRUE;
+    
+    memset(title,0,sizeof(title));
+    memset(ip,0,sizeof(ip));
+    memset(key,0,sizeof(key));
+    memset(poll,0,sizeof(poll));
+    
+    if(strstr(pData[iLine],"autokey") != NULL)
+    {
+        sscanf(pData[iLine],"%s %s %s %s %d",title,ip,key,poll,&poll_num);
+        key_num = 0;
+    }
+    else
+    {
+        sscanf(pData[iLine],"%s %s %s %d %s %d",title,ip,key,&key_num,poll,&poll_num);
+    }
+    
+    pNtpSetcfg->broadcast_key_num = key_num;
+    pNtpSetcfg->freq_b = CaculateSecond(poll_num);
+    
+    printf("%s %s %s %d %s %d\n",title,ip,key,key_num,poll,poll_num);
+    iLine++;
+    
+}
+
+void Load_MultiCast(struct NtpSetCfg *pNtpSetcfg,Uint8 pData[200][200],int index)
+{
+    Uint16 iLine;
+    Uint16 i = 0;
+    
+    Uint8  title[50];
+    Uint8  ip[50];
+    Uint8  key[10];
+    Uint8  poll[10];
+
+    Uint32 poll_num;
+    int    key_num;
+    
+    iLine = index+1;
+    if(strcmp(pData[iLine],"#end") == 0)
+    {
+        printf("Multicast close\n");
+        pNtpSetcfg->multicast = FALSE;
+        return;
+    }
+    
+    pNtpSetcfg->multicast = TRUE;
+    
+    memset(title,0,sizeof(title));
+    memset(ip,0,sizeof(ip));
+    memset(key,0,sizeof(key));
+    memset(poll,0,sizeof(poll));
+
+    if(strstr(pData[iLine],"autokey") != NULL)
+    {
+        sscanf(pData[iLine],"%s %s %s %s %d",title,ip,key,poll,&poll_num);
+        key_num = 0;
+    }
+    else
+    {
+        sscanf(pData[iLine],"%s %s %s %d %s %d",title,ip,key,&key_num,poll,&poll_num);
+    }
+    
+    pNtpSetcfg->multicast_key_num = key_num;
+    pNtpSetcfg->freq_m = CaculateSecond(poll_num);
+        
+    printf("%s %s %s %d %s %d\n",title,ip,key,key_num,poll,poll_num);
+    
+    iLine++;
+
+}
+
+static void Load_ServerAddr(struct NtpSetCfg *pNtpSetcfg,Uint8 pData[200][200],int index)
+{
+    Uint16 iLine;
+    Uint16 i = 0;
+
+    Uint8  title[50];
+    Uint8  stratum;
+    Uint8  refid[50];
+
+
+    iLine = index+1;
+    if(strcmp(pData[iLine],"#end") == 0)
+    {
+        printf("Server close\n");
+        return;
+    }
+    //g_Ntp_Parameter.sympassive = TRUE;
+
+}
+
+void Load_Keys(struct NtpSetCfg *pNtpSetcfg,Uint8 pData[200][200],int index)
+{
+    Uint16 iLine;
+    Uint16 i = 0;
+    
+    Uint8  title[50];
+    Uint8  ip[50];
+    Uint8  key[10];
+    int    key_num;
+
+    Uint8 TrustKey[20];
+    Uint8 *pChoice;
+    
+    iLine = index+1;
+    
+    if(strcmp(pData[iLine],"#end") == 0)
+    {
+        printf("key do not open\n");
+        pNtpSetcfg->md5_flag = pNtpSetcfg->md5_flag & MD5_DISABLE;
+        return;
+    }
+    pNtpSetcfg->md5_flag = pNtpSetcfg->md5_flag | MD5_ENABLE;
+    
+    for(i = 0;i < 5; i++)
+    {
+        memset(TrustKey,0,sizeof(TrustKey));
+        memcpy(TrustKey,pData[i+iLine],10);
+
+        if(strcmp("trustedkey",TrustKey) == 0)
+        {
+            strtok(pData[i+iLine]," ");
+            while(pChoice = strtok(NULL," "))
+           {
+                printf("find trust key %d\n",*pChoice);
+                pNtpSetcfg->current_key[*pChoice-0x30].key_valid = TRUE;
+           }
+        }
+    }
+    
+}
+
+
+
+void AnalyseNtpdConfigFile(struct NtpSetCfg *pNtpSetcfg,Uint8* pBuf)
+{
+    Uint8 *pLine;
+    Uint8  Data[200][200];
+    int i = 0;
+
+    memset(Data,0,sizeof(Data));
+    
+    strtok(pBuf,"\r\n");
+    while(pLine = strtok(NULL,"\r\n"))
+    {   
+        memcpy(Data[i],pLine,strlen(pLine));
+        i++;
+    }
+    
+    for(i = 0;i < 200;i++)
+    {
+
+        if(strcmp(Data[i],"#blacklist") == 0)
+        {
+            
+            Load_BlackList(pNtpSetcfg,Data,i);
+        }
+    }
+
+    for(i = 0;i < 200;i++)
+    {
+        if(strcmp(Data[i],"#whiltlist") == 0)
+        {
+            Load_WhiltList(pNtpSetcfg,Data,i);
+        }
+    }
+
+    for(i = 0;i < 200;i++)
+    {
+        if(strcmp(Data[i],"#broadcast") == 0)
+        {
+            Load_BroadCast(pNtpSetcfg,Data,i);
+        }
+    }
+
+    
+    for(i = 0;i < 200;i++)
+    {
+        if(strcmp(Data[i],"#multicast") == 0)
+        {
+            Load_MultiCast(pNtpSetcfg,Data,i);
+        }
+    }
+
+    for(i = 0;i < 200;i++)
+    {
+        if(strcmp(Data[i],"#server") == 0)
+        {
+            Load_ServerAddr(pNtpSetcfg,Data,i);
+        }
+    }
+
+    for(i = 0;i < 200;i++)
+    {
+        if(strcmp(Data[i],"#keys") == 0)
+        {
+            Load_Keys(pNtpSetcfg,Data,i);
+        }
+    }
+
+}
+
+
+Uint8 Read_Md5FromKeyFile(struct NtpSetCfg *pNtpSetcfg,char *fileName)
+{
+    Uint16 i;
+    Uint8 Data[50];
+    Uint8 num;
+    Uint8 type;
+    Uint8 key_str[20];
+    FILE *md5_file_fd = fopen(fileName,"r");
+    if(md5_file_fd == NULL)
+    {
+        printf("can not find md5 file\n");
+        return -1;
+    }
+    
+    i = 1;
+    memset(Data,0,sizeof(Data));
+    
+    while(fgets(Data,sizeof(Data),md5_file_fd))
+    {
+        memset(key_str,0,sizeof(key_str));
+
+        sscanf(Data,"%c %c %s",&num,&type,key_str);
+        memcpy(pNtpSetcfg->current_key[i].key,key_str,20);
+        pNtpSetcfg->current_key[i].key_length = strlen(key_str);
+        pNtpSetcfg->current_key[i].key_valid = TRUE;
+        
+        memset(Data,0,sizeof(Data));
+        i++;
+    }
+    
+     
+    fclose(md5_file_fd);
+}
+
+
+void Load_NtpdParam_FromFile(struct NtpSetCfg *pNtpSetcfg,char *ntpCfgFile,char *md5CfgFile)
+{
+
+    Uint16 i;
+    Uint8 Data[50];
+    Uint8 Keys[50];
+
+    Uint8 ConfigFileBuf[CONFIG_FILE_SIZE];
+    int charactor;
+    
+    FILE *ntp_cfg_fp = fopen(ntpCfgFile,"r");
+    if(ntp_cfg_fp == NULL)
+    {
+        printf("can not find config file\n");
+        return;
+    }
+    
+    i = 0;
+    memset(ConfigFileBuf,0,CONFIG_FILE_SIZE);
+    while( (charactor = fgetc(ntp_cfg_fp))!= EOF)
+    {
+        ConfigFileBuf[i] = charactor;
+        i++;
+    }
+
+    Read_Md5FromKeyFile(pNtpSetcfg,md5CfgFile);
+    
+    AnalyseNtpdConfigFile(pNtpSetcfg,ConfigFileBuf);
+
+    fclose(ntp_cfg_fp);
+}
+
+
 int Load_PtpParam_FromFile(struct PtpSetCfg *pPtpSetcfg,char *fileName)
 {
     Uint8 ConfigFileBuf[CONFIG_FILE_SIZE];
@@ -635,6 +1115,676 @@ int Load_PtpParam_FromFile(struct PtpSetCfg *pPtpSetcfg,char *fileName)
     
 }
 
+Uint8 Save_Md5_ToKeyFile(struct NtpSetCfg *pNtpSetcfg,char *fileName)
+{
+    Uint16 i;
+    Uint8 Data[50];
+    
+    FILE *md5_file_fd = fopen(fileName,"w+");
+    if(md5_file_fd == NULL)
+    {
+        printf("can not find md5 file\n");
+        return -1;
+    }
+
+    for(i = 1;i <= TOTAL_KEY_NO; i++)
+    {
+        memset(Data,0,sizeof(Data));
+        if(pNtpSetcfg->current_key[i].key_length == 0)
+        {
+            continue;
+        }
+
+        sprintf(Data,"%d %c %s\n",i,'M',pNtpSetcfg->current_key[i].key);
+
+        fputs(Data,md5_file_fd);
+    }
+    fflush(md5_file_fd);
+    fclose(md5_file_fd);
+    return TRUE;
+}
+
+static void Save_BlackList_Open(struct NtpSetCfg *pNtpSetcfg,Uint8 *Buf,Uint16 *offset)
+{
+    int i = 0;
+    Uint16 iOffset  = *offset;
+    
+    struct sockaddr_in temsock;
+    
+    Uint8 line_str[200];
+    Uint8 ip[20];
+    Uint8 mask[20];
+
+    memcpy(Buf + iOffset,"#blacklist",strlen("#blacklist"));
+    iOffset += strlen("#blacklist");
+    Buf[iOffset++] = ENTER_CHAR;
+    
+    memcpy(Buf + iOffset,"#open",strlen("#open"));
+    iOffset += strlen("#open");
+    Buf[iOffset++] = ENTER_CHAR;
+
+
+    for(i = 0;i < 16;i++)
+    {
+        if(pNtpSetcfg->blacklist_flag[i] == TRUE)
+        {
+            memset(line_str,0,sizeof(line_str));
+            memset(ip,0,sizeof(ip));
+            memset(mask,0,sizeof(mask));
+            
+            temsock.sin_addr.s_addr = pNtpSetcfg->blacklist_ip[i];
+            memcpy(ip,inet_ntoa(temsock.sin_addr),strlen(inet_ntoa(temsock.sin_addr)));
+
+            temsock.sin_addr.s_addr = pNtpSetcfg->blacklist_mask[i];
+            memcpy(mask,inet_ntoa(temsock.sin_addr),strlen(inet_ntoa(temsock.sin_addr)));
+ 
+            sprintf(line_str,"%s %s %s %s %s","restrict",ip
+                ,"mask",mask,BLACK_LIST_TAIL);
+            
+            memcpy(Buf + iOffset ,line_str,strlen(line_str));
+            iOffset += strlen(line_str);
+
+            Buf[iOffset++] = ENTER_CHAR;
+
+        }
+    }
+    memcpy(Buf + iOffset,"#end",strlen("#end"));
+    iOffset += strlen("#end");
+    Buf[iOffset++] = ENTER_CHAR;
+    Buf[iOffset++] = ENTER_CHAR;
+    *offset = iOffset;
+}
+
+static void Save_BlackList_Close(struct NtpSetCfg *pNtpSetcfg,Uint8 *Buf,Uint16 *offset)
+{
+    int i = 0;
+    Uint16 iOffset  = *offset;
+    
+    struct sockaddr_in temsock;
+    
+    Uint8 line_str[200];
+    Uint8 ip[20];
+    Uint8 mask[20];
+
+    memcpy(Buf + iOffset,"#blacklist",strlen("#blacklist"));
+    iOffset += strlen("#blacklist");
+    Buf[iOffset++] = ENTER_CHAR;
+    
+    memcpy(Buf + iOffset,"#close",strlen("#close"));
+    iOffset += strlen("#close");
+    Buf[iOffset++] = ENTER_CHAR;
+
+
+    for(i = 0;i < 16;i++)
+    {
+        if(pNtpSetcfg->blacklist_flag[i] == TRUE)
+        {
+            memset(line_str,0,sizeof(line_str));
+            memset(ip,0,sizeof(ip));
+            memset(mask,0,sizeof(mask));
+            
+            temsock.sin_addr.s_addr = pNtpSetcfg->blacklist_ip[i];
+            memcpy(ip,inet_ntoa(temsock.sin_addr),strlen(inet_ntoa(temsock.sin_addr)));
+
+            temsock.sin_addr.s_addr = pNtpSetcfg->blacklist_mask[i];
+            memcpy(mask,inet_ntoa(temsock.sin_addr),strlen(inet_ntoa(temsock.sin_addr)));
+ 
+            sprintf(line_str,"# %s %s %s %s %s","restrict",ip
+                ,"mask",mask,BLACK_LIST_TAIL);
+            
+            memcpy(Buf + iOffset ,line_str,strlen(line_str));
+            iOffset += strlen(line_str);
+
+            Buf[iOffset++] = ENTER_CHAR;
+
+        }
+    }
+    
+    memcpy(Buf + iOffset,"#end",strlen("#end"));
+    iOffset += strlen("#end");
+    Buf[iOffset++] = ENTER_CHAR;
+    Buf[iOffset++] = ENTER_CHAR;
+    *offset = iOffset;
+}
+
+static void Save_BlackList(struct NtpSetCfg *pNtpSetcfg,Uint8 *Buf,Uint16 *offset)
+{
+    int i = 0;
+    Uint16 iOffset  = *offset;
+    
+    struct sockaddr_in temsock;
+    
+    Uint8 line_str[200];
+    Uint8 ip[20];
+    Uint8 mask[20];
+
+
+    for(i = 0;i < 16;i++)
+    {
+        if(pNtpSetcfg->blacklist_flag[i] == TRUE)
+        {
+            memset(line_str,0,sizeof(line_str));
+            memset(ip,0,sizeof(ip));
+            memset(mask,0,sizeof(mask));
+            
+            temsock.sin_addr.s_addr = pNtpSetcfg->blacklist_ip[i];
+            memcpy(ip,inet_ntoa(temsock.sin_addr),strlen(inet_ntoa(temsock.sin_addr)));
+
+            temsock.sin_addr.s_addr = pNtpSetcfg->blacklist_mask[i];
+            memcpy(mask,inet_ntoa(temsock.sin_addr),strlen(inet_ntoa(temsock.sin_addr)));
+ 
+            sprintf(line_str,"%s %s %s %s %s","restrict",ip
+                ,"mask",mask,BLACK_LIST_TAIL);
+            
+            memcpy(Buf + iOffset ,line_str,strlen(line_str));
+            iOffset += strlen(line_str);
+
+            Buf[iOffset++] = ENTER_CHAR;
+
+        }
+    }
+    memcpy(Buf + iOffset,"#end",strlen("#end"));
+    iOffset += strlen("#end");
+    Buf[iOffset++] = ENTER_CHAR;
+    Buf[iOffset++] = ENTER_CHAR;
+    *offset = iOffset;
+}
+
+static void Save_WhiltList_Open(struct NtpSetCfg *pNtpSetcfg,Uint8 *Buf,Uint16 *offset)
+{
+    int i = 0;
+    Uint16 iOffset  = *offset;
+    
+    struct sockaddr_in temsock;
+    
+    Uint8 line_str[200];
+    Uint8 ip[20];
+    Uint8 mask[20];
+
+    memcpy(Buf + iOffset,"#whiltlist",strlen("#whiltlist"));
+    iOffset += strlen("#whiltlist");
+    Buf[iOffset++] = ENTER_CHAR;
+    
+    memcpy(Buf + iOffset,"#open",strlen("#open"));
+    iOffset += strlen("#open");
+    Buf[iOffset++] = ENTER_CHAR;
+
+    for(i = 0;i < 16;i++)
+    {
+        if(pNtpSetcfg->whitelist_flag[i] == TRUE)
+        {
+            memset(line_str,0,sizeof(line_str));
+            memset(ip,0,sizeof(ip));
+            memset(mask,0,sizeof(mask));
+            
+            temsock.sin_addr.s_addr = pNtpSetcfg->whitelist_ip[i];
+            memcpy(ip,inet_ntoa(temsock.sin_addr),strlen(inet_ntoa(temsock.sin_addr)));
+
+            temsock.sin_addr.s_addr = pNtpSetcfg->whitelist_mask[i];
+            memcpy(mask,inet_ntoa(temsock.sin_addr),strlen(inet_ntoa(temsock.sin_addr)));
+ 
+            sprintf(line_str,"%s %s %s %s %s","restrict",ip
+                ,"mask",mask,WHITLE_LIST_TAIL);
+
+            memcpy(Buf + iOffset ,line_str,strlen(line_str));
+            iOffset += strlen(line_str);
+
+            Buf[iOffset++] = ENTER_CHAR;
+
+        }
+    }
+
+    memcpy(Buf + iOffset,"#end",strlen("#end"));
+    iOffset += strlen("#end");
+    Buf[iOffset++] = ENTER_CHAR;
+    Buf[iOffset++] = ENTER_CHAR;
+    *offset = iOffset;
+
+}
+
+static void Save_WhiltList_Close(struct NtpSetCfg *pNtpSetcfg,Uint8 *Buf,Uint16 *offset)
+{
+    int i = 0;
+    Uint16 iOffset  = *offset;
+    
+    struct sockaddr_in temsock;
+    
+    Uint8 line_str[200];
+    Uint8 ip[20];
+    Uint8 mask[20];
+
+    memcpy(Buf + iOffset,"#whiltlist",strlen("#whiltlist"));
+    iOffset += strlen("#whiltlist");
+    Buf[iOffset++] = ENTER_CHAR;
+    
+    memcpy(Buf + iOffset,"#close",strlen("#close"));
+    iOffset += strlen("#close");
+    Buf[iOffset++] = ENTER_CHAR;
+
+    
+    for(i = 0;i < 16;i++)
+    {
+        if(pNtpSetcfg->whitelist_flag[i] == TRUE)
+        {
+            memset(line_str,0,sizeof(line_str));
+            memset(ip,0,sizeof(ip));
+            memset(mask,0,sizeof(mask));
+            
+            temsock.sin_addr.s_addr = pNtpSetcfg->whitelist_ip[i];
+            memcpy(ip,inet_ntoa(temsock.sin_addr),strlen(inet_ntoa(temsock.sin_addr)));
+
+            temsock.sin_addr.s_addr = pNtpSetcfg->whitelist_mask[i];
+            memcpy(mask,inet_ntoa(temsock.sin_addr),strlen(inet_ntoa(temsock.sin_addr)));
+ 
+            sprintf(line_str,"# %s %s %s %s %s","restrict",ip
+                ,"mask",mask,WHITLE_LIST_TAIL);
+
+            memcpy(Buf + iOffset ,line_str,strlen(line_str));
+            iOffset += strlen(line_str);
+
+            Buf[iOffset++] = ENTER_CHAR;
+
+        }
+    }
+
+    memcpy(Buf + iOffset,"#end",strlen("#end"));
+    iOffset += strlen("#end");
+    Buf[iOffset++] = ENTER_CHAR;
+    Buf[iOffset++] = ENTER_CHAR;
+    *offset = iOffset;
+
+}
+
+static void Save_WhiltList(struct NtpSetCfg *pNtpSetcfg,Uint8 *Buf,Uint16 *offset)
+{
+    int i = 0;
+    Uint16 iOffset  = *offset;
+    
+    struct sockaddr_in temsock;
+    
+    Uint8 line_str[200];
+    Uint8 ip[20];
+    Uint8 mask[20];
+    
+    for(i = 0;i < 16;i++)
+    {
+        if(pNtpSetcfg->whitelist_flag[i] == TRUE)
+        {
+            memset(line_str,0,sizeof(line_str));
+            memset(ip,0,sizeof(ip));
+            memset(mask,0,sizeof(mask));
+            
+            temsock.sin_addr.s_addr = pNtpSetcfg->whitelist_ip[i];
+            memcpy(ip,inet_ntoa(temsock.sin_addr),strlen(inet_ntoa(temsock.sin_addr)));
+
+            temsock.sin_addr.s_addr = pNtpSetcfg->whitelist_mask[i];
+            memcpy(mask,inet_ntoa(temsock.sin_addr),strlen(inet_ntoa(temsock.sin_addr)));
+ 
+            sprintf(line_str,"%s %s %s %s %s","restrict",ip
+                ,"mask",mask,WHITLE_LIST_TAIL);
+
+            memcpy(Buf + iOffset ,line_str,strlen(line_str));
+            iOffset += strlen(line_str);
+
+            Buf[iOffset++] = ENTER_CHAR;
+
+        }
+    }
+
+    memcpy(Buf + iOffset,"#end",strlen("#end"));
+    iOffset += strlen("#end");
+    Buf[iOffset++] = ENTER_CHAR;
+    Buf[iOffset++] = ENTER_CHAR;
+    *offset = iOffset;
+
+}
+
+static void Save_BroadCast(struct NtpSetCfg *pNtpSetcfg,Uint8 *Buf,Uint16 *offset)
+{
+    int i = 0;
+    Uint16 iOffset  = *offset;
+    Uint8 line_str[200];
+    struct sockaddr_in temsock;
+    Uint32 iMask;
+    Uint32 broadcast_ip;
+    Uint32 freq = Caculatefrequency(pNtpSetcfg->freq_b);
+        
+    memset(line_str,0,sizeof(line_str));
+
+    /*计算广播地址*/
+    iMask = ~pNtpSetcfg->runconf.mask;
+    broadcast_ip = pNtpSetcfg->runconf.ip | iMask;
+    temsock.sin_addr.s_addr = broadcast_ip;
+
+    if(pNtpSetcfg->broadcast_key_num == 0)
+    {
+        sprintf(line_str,"%s %s %s %s %d","broadcast",inet_ntoa(temsock.sin_addr),"autokey","minpoll",freq);
+    }
+    else
+    {
+        sprintf(line_str,"%s %s %s %d %s %d","broadcast",inet_ntoa(temsock.sin_addr),"key",pNtpSetcfg->broadcast_key_num,"minpoll",freq);
+    }
+    
+
+    memcpy(Buf + iOffset ,line_str,strlen(line_str));
+    iOffset += strlen(line_str);
+    Buf[iOffset++] = ENTER_CHAR;
+     
+    memcpy(Buf + iOffset,"broadcastclient",strlen("broadcastclient"));
+    iOffset += strlen("broadcastclient");
+    Buf[iOffset++] = ENTER_CHAR;
+    
+    memcpy(Buf + iOffset,"#end",strlen("#end"));
+    iOffset += strlen("#end");
+    Buf[iOffset++] = ENTER_CHAR;
+    Buf[iOffset++] = ENTER_CHAR;
+    *offset = iOffset;
+}
+
+
+/**********************************************************************
+ * Function:      Save_MultiCast
+ * Description:   保存多播配置
+ * Input:         Buf：写入缓存地址,offset：写入缓存偏移量
+ * Return:        void
+ * Others:        
+**********************************************************************/
+static void Save_MultiCast(struct NtpSetCfg *pNtpSetcfg,Uint8 *Buf,Uint16 *offset)
+{
+    int i = 0;
+    Uint16 iOffset  = *offset;
+    Uint8 line_str[200];
+    struct sockaddr_in temsock;
+    Uint32 freq = Caculatefrequency(pNtpSetcfg->freq_m);
+    
+    memset(line_str,0,sizeof(line_str));
+
+    if(pNtpSetcfg->multicast_key_num == 0)
+    {
+        sprintf(line_str,"%s %s %s %s %d","broadcast","224.0.1.1","autokey","minpoll",freq);
+    }
+    else
+    {
+        sprintf(line_str,"%s %s %s %d %s %d","broadcast","224.0.1.1","key",pNtpSetcfg->multicast_key_num,"minpoll",freq);
+    }
+    
+    memcpy(Buf + iOffset ,line_str,strlen(line_str));
+    iOffset += strlen(line_str);
+    Buf[iOffset++] = ENTER_CHAR;
+
+    memcpy(Buf + iOffset,"multicastclient 224.0.1.1",strlen("multicastclient 224.0.1.1"));
+    iOffset += strlen("multicastclient 224.0.1.1");
+    Buf[iOffset++] = ENTER_CHAR;
+
+    memcpy(Buf + iOffset,"#end",strlen("#end"));
+    iOffset += strlen("#end");
+    Buf[iOffset++] = ENTER_CHAR;
+    Buf[iOffset++] = ENTER_CHAR;
+    *offset = iOffset;
+
+}
+
+
+
+/**********************************************************************
+ * Function:      Save_ServerAddr
+ * Description:   保存服务源配置
+ * Input:         Buf：写入缓存地址,offset：写入缓存偏移量
+ * Return:        void
+ * Others:        
+**********************************************************************/
+static void Save_ServerAddr(struct NtpSetCfg *pNtpSetcfg,Uint8 *Buf,Uint16 *offset)
+{
+    int i = 0;
+    Uint16 iOffset  = *offset;
+    Uint8 line_str[200];
+    struct sockaddr_in temsock;
+
+    memset(line_str,0,sizeof(line_str));
+
+    sprintf(line_str,"%s %d %s",fUDE_ADDR,0,REFID_LOC);
+    
+    memcpy(Buf + iOffset ,line_str,strlen(line_str));
+    iOffset += strlen(line_str);
+    Buf[iOffset++] = ENTER_CHAR;
+    
+    memcpy(Buf + iOffset,SERVER_ADDR,strlen(SERVER_ADDR));
+    iOffset += strlen(SERVER_ADDR);
+    Buf[iOffset++] = ENTER_CHAR;
+
+    memcpy(Buf + iOffset,"#end",strlen("#end"));
+    iOffset += strlen("#end");
+    Buf[iOffset++] = ENTER_CHAR;
+    Buf[iOffset++] = ENTER_CHAR;
+    
+    *offset = iOffset;
+
+}
+
+
+/**********************************************************************
+ * Function:      Save_keys
+ * Description:   保存密钥配置
+ * Input:         Buf：写入缓存地址,offset：写入缓存偏移量
+ * Return:        void
+ * Others:        
+**********************************************************************/
+static void Save_keys(struct NtpSetCfg *pNtpSetcfg,Uint8 *Buf,Uint16 *offset)
+{
+    int i = 0;
+    Uint16 iOffset  = *offset;
+    Uint8 line_str[50];
+    struct sockaddr_in temsock;
+    
+    memcpy(Buf + iOffset,"enable auth",strlen("enable auth"));
+    iOffset += strlen("enable auth");
+    Buf[iOffset++] = ENTER_CHAR;
+
+    memcpy(Buf + iOffset,"keys    /etc/ntp/keys",strlen("keys    /etc/ntp/keys"));
+    iOffset += strlen("keys    /etc/ntp/keys");
+    Buf[iOffset++] = ENTER_CHAR;
+
+    memcpy(Buf + iOffset,"trustedkey",strlen("trustedkey"));
+    iOffset += strlen("trustedkey");
+
+    
+    for(i = 1;i <= TOTAL_KEY_NO;i++)
+    {
+        if(pNtpSetcfg->current_key[i].key_valid)
+        {
+            Buf[iOffset++] = ' ';
+            Buf[iOffset++] = i + '0';
+            
+        }
+        
+    }
+    Buf[iOffset++] = ENTER_CHAR;
+    
+    memcpy(Buf + iOffset,"#end",strlen("#end"));
+    iOffset += strlen("#end");
+    Buf[iOffset++] = ENTER_CHAR;
+    *offset = iOffset;
+
+}
+
+void Save_NtpParm_ToFile(struct NtpSetCfg *pNtpSetcfg,char *fileName)
+{
+    Uint16 i;
+    Uint16 iOffset;
+    Uint8 Data[50];
+    Uint8 Keys[50];
+    Uint8 ConfigFileBuf[CONFIG_FILE_SIZE];
+
+    FILE *ntp_cfg_fp = fopen(fileName,"w+");
+    if(ntp_cfg_fp == NULL)
+    {
+        printf("can not find config file\n");
+        return;
+    }
+
+    memset(ConfigFileBuf,0,CONFIG_FILE_SIZE);
+    
+    iOffset = 0;
+
+    /*写入限制*/
+    if((pNtpSetcfg->whitelist == TRUE))
+    {
+        memcpy(ConfigFileBuf + iOffset,"#restrict",strlen("#restrict"));
+        iOffset += strlen("#restrict");
+        ConfigFileBuf[iOffset++] = ENTER_CHAR;
+        /*写禁止所有ip*/
+        memcpy(ConfigFileBuf + iOffset,RESTRICT_ALL,strlen(RESTRICT_ALL));
+        iOffset += strlen(RESTRICT_ALL);
+        ConfigFileBuf[iOffset++] = ENTER_CHAR;
+        
+        /*写禁止ip 6*/
+        memcpy(ConfigFileBuf + iOffset,RESTRICT_IP6,strlen(RESTRICT_IP6));
+        iOffset += strlen(RESTRICT_IP6);
+        ConfigFileBuf[iOffset++] = ENTER_CHAR;
+        
+        memcpy(ConfigFileBuf + iOffset,"#end",strlen("#end"));
+        iOffset += strlen("#end");
+        ConfigFileBuf[iOffset++] = ENTER_CHAR;
+        ConfigFileBuf[iOffset++] = ENTER_CHAR;
+
+    }
+    else
+    {
+        memcpy(ConfigFileBuf + iOffset,"#restrict",strlen("#restrict"));
+        iOffset += strlen("#restrict");
+        ConfigFileBuf[iOffset++] = ENTER_CHAR;
+       
+       memcpy(ConfigFileBuf + iOffset,"#end",strlen("#end"));
+       iOffset += strlen("#end");
+       ConfigFileBuf[iOffset++] = ENTER_CHAR;
+       ConfigFileBuf[iOffset++] = ENTER_CHAR;
+
+    }
+
+    /*写入黑名单*/
+    if(pNtpSetcfg->blacklist == TRUE)
+    {
+        Save_BlackList_Open(pNtpSetcfg,ConfigFileBuf,&iOffset);
+    }
+    else
+    {
+        Save_BlackList_Close(pNtpSetcfg,ConfigFileBuf,&iOffset);
+    }
+    
+    
+    /*写入白名单*/  
+    if(pNtpSetcfg->whitelist == TRUE)
+    {
+        Save_WhiltList_Open(pNtpSetcfg,ConfigFileBuf,&iOffset);
+    }
+    else
+    {
+        Save_WhiltList_Close(pNtpSetcfg,ConfigFileBuf,&iOffset);
+    }
+
+    /*写入广播*/
+    memcpy(ConfigFileBuf + iOffset,"#broadcast",strlen("#broadcast"));
+    iOffset += strlen("#broadcast");
+    ConfigFileBuf[iOffset++] = ENTER_CHAR;
+    
+    if(pNtpSetcfg->broadcast == TRUE)
+    {
+        Save_BroadCast(pNtpSetcfg,ConfigFileBuf,&iOffset);
+    }
+    else
+    {
+        memcpy(ConfigFileBuf + iOffset,"#end",strlen("#end"));
+        iOffset += strlen("#end");
+        ConfigFileBuf[iOffset++] = ENTER_CHAR;
+        ConfigFileBuf[iOffset++] = ENTER_CHAR;
+    }
+    
+    /*写入多播*/
+    memcpy(ConfigFileBuf + iOffset,"#multicast",strlen("#multicast"));
+    iOffset += strlen("#multicast");
+    ConfigFileBuf[iOffset++] = ENTER_CHAR;
+    
+    if(pNtpSetcfg->multicast == TRUE)
+    {
+        Save_MultiCast(pNtpSetcfg,ConfigFileBuf,&iOffset);
+    }
+    else
+    {
+        memcpy(ConfigFileBuf + iOffset,"#end",strlen("#end"));
+        iOffset += strlen("#end");
+        ConfigFileBuf[iOffset++] = ENTER_CHAR;
+        ConfigFileBuf[iOffset++] = ENTER_CHAR;
+    }
+
+    /*写入服务器地址*/
+    memcpy(ConfigFileBuf + iOffset,"#server",strlen("#server"));
+    iOffset += strlen("#server");
+    ConfigFileBuf[iOffset++] = ENTER_CHAR;
+    Save_ServerAddr(pNtpSetcfg,ConfigFileBuf,&iOffset);
+    
+    #if 0
+    if(g_Ntp_Parameter.out_block == 0)
+    {
+        Save_ServerAddr(ConfigFileBuf,&iOffset);
+    }
+    else
+    {
+        memcpy(ConfigFileBuf + iOffset,"#end",strlen("#end"));
+        iOffset += strlen("#end");
+        ConfigFileBuf[iOffset++] = ENTER_CHAR;
+        ConfigFileBuf[iOffset++] = ENTER_CHAR;
+    } 
+    #endif
+    
+    /*写入md 5 */
+    memcpy(ConfigFileBuf + iOffset,"#keys",strlen("#keys"));
+    iOffset += strlen("#keys");
+    ConfigFileBuf[iOffset++] = ENTER_CHAR;
+    
+    if((pNtpSetcfg->md5_flag & MD5_ENABLE) == MD5_ENABLE)
+    {
+        Save_keys(pNtpSetcfg,ConfigFileBuf,&iOffset);
+    }
+    else
+    {
+        memcpy(ConfigFileBuf + iOffset,"#end",strlen("#end"));
+        iOffset += strlen("#end");
+        ConfigFileBuf[iOffset++] = ENTER_CHAR;
+    }
+
+
+#if 0
+    /**存入ethx  */
+    memcpy(ConfigFileBuf + iOffset,"#ethxEnable",strlen("#ethxEnable"));
+    iOffset += strlen("#ethxEnable");
+    ConfigFileBuf[iOffset++] = ENTER_CHAR;
+    
+    for(i= 0;i<8;i++)
+    {
+        memcpy(ConfigFileBuf + iOffset,"#ethx",strlen("#ethx"));
+        iOffset += strlen("#ethx");
+        ConfigFileBuf[iOffset++] = ' ';
+        ConfigFileBuf[iOffset++] = i + '0';
+        ConfigFileBuf[iOffset++] = ' ';
+        ConfigFileBuf[iOffset++] = g_ntp_enable[i] + '0';
+        
+        ConfigFileBuf[iOffset++] = ENTER_CHAR;
+    }
+    
+#endif
+    memcpy(ConfigFileBuf + iOffset,"#end",strlen("#end"));
+    iOffset += strlen("#end");
+    ConfigFileBuf[iOffset++] = ENTER_CHAR;
+    
+    for(i = 0;i< iOffset;i++)
+    {
+        fputc(ConfigFileBuf[i],ntp_cfg_fp);
+    }
+
+    fflush(ntp_cfg_fp);
+    fclose(ntp_cfg_fp);
+
+}
 
 int Save_PtpParam_ToFile(struct PtpSetCfg *pPtpSetcfg,char *fileName)
 {
@@ -763,6 +1913,7 @@ int Save_PtpParam_ToFile(struct PtpSetCfg *pPtpSetcfg,char *fileName)
 
     return TRUE;
 }
+
 
 
 void handle_discovery_message(struct root_data *pRootData,char *buf,int len)

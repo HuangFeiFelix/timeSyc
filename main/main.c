@@ -57,6 +57,16 @@ void Init_Thread_Attr(pthread_attr_t *pThreadAttr)
 
 }
 
+void InitSlotLocal(struct SlotList *pSlotLocal)
+{
+    int ret;
+    char *ptpConfig = "/mnt/ptp.cfg";
+    char *ntpConfig = "/mnt/ntp.cfg";
+    
+    Load_PtpParam_FromFile(pSlotLocal->pPtpSetcfg,ptpConfig);
+    
+}
+
 void InitSlotList(struct root_data *pRootData)
 {
     int i;
@@ -71,6 +81,8 @@ void InitSlotList(struct root_data *pRootData)
     
     pSlotList->pPtpStatusCfg = (struct PtpStatusCfg*)malloc(sizeof(struct PtpStatusCfg));
     memset(pSlotList->pPtpStatusCfg,0,sizeof(struct PtpStatusCfg));
+
+    InitSlotLocal(pSlotList);
     
     for(i = 1;i < SLOT_COUNT;i++)
     {
@@ -81,6 +93,9 @@ void InitSlotList(struct root_data *pRootData)
     }
 
 }
+
+
+
 void InitDev(struct root_data *pRootData)
 {
     int ip;
@@ -598,7 +613,7 @@ int main(int argc,char *argv[])
     Init_PpsDev("/dev/pps");
     InitDev(g_RootData);
     InitSlotList(g_RootData);
-
+    
 
     /** 创建日常处理线程 */
 	err = pthread_create(&g_RootData->p_usual,&g_RootData->pattr,(void *)ThreadUsuallyProcess,(void *)g_RootData);	
