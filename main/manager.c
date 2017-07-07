@@ -1448,9 +1448,11 @@ static void Save_BroadCast(struct NtpSetCfg *pNtpSetcfg,Uint8 *Buf,Uint16 *offse
     Uint32 iMask;
     Uint32 broadcast_ip;
     Uint32 freq = Caculatefrequency(pNtpSetcfg->freq_b);
-        
+   
+    
     memset(line_str,0,sizeof(line_str));
 
+    
     /*¼ÆËã¹ã²¥µØÖ·*/
     iMask = ~pNtpSetcfg->runconf.mask;
     broadcast_ip = pNtpSetcfg->runconf.ip | iMask;

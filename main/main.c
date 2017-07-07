@@ -62,6 +62,7 @@ void InitSlotLocal(struct SlotList *pSlotLocal)
     int ret;
     char *ptpConfig = "/mnt/ptp.cfg";
     char *ntpConfig = "/mnt/ntp.cfg";
+    char *md5Config = "/mnt/key";
     
     Load_PtpParam_FromFile(pSlotLocal->pPtpSetcfg,ptpConfig);
     
@@ -101,7 +102,7 @@ void InitDev(struct root_data *pRootData)
     int ip;
     
     init_dev_head(&pRootData->dev_head);
-    GetIpAddress(pRootData->comm_iface,&ip);
+    GetIpAddress(pRootData->ctlEth.ifaceName,&ip);
 
     
     /**初始化UI 设备 ,UI设备通过串口通信id =0*/
@@ -560,6 +561,13 @@ int daemonize(void)
     }
 }
 
+void InitEthEvn(struct root_data *pRootData)
+{
+    strcpy(pRootData->ctlEth.ifaceName,"eth0");
+    strcpy(pRootData->ptpEth.ifaceName,"eth1");
+    strcpy(pRootData->ntpEth.ifaceName,"eth2");
+}
+
 int main(int argc,char *argv[])
 {
     int ret,err;
@@ -574,7 +582,7 @@ int main(int argc,char *argv[])
 
 	bzero(g_RootData,sizeof(struct root_data));
     g_RootData->comm_port = 20170;
-    strcpy(g_RootData->comm_iface,"eth0");
+
     
     while((c = getopt(argc, argv, "dVhi:p:l:f:")) != -1)
     {
@@ -600,7 +608,7 @@ int main(int argc,char *argv[])
                     print_usage();
                     exit(0);
                 }
-                strcpy(g_RootData->comm_iface,optarg);
+                strcpy(g_RootData->ctlEth.ifaceName,optarg);
                 break;
             case 'h':
             default:
