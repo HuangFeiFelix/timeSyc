@@ -1,6 +1,5 @@
 /******************************************************************************
-*	Copyright (c) 2014, by The Fifth Research Institute of Telecommunications Technology
-*				All rights reserved
+*	Copyright (c) 2014, *				All rights reserved
 *******************************************************************************
 *	File name:	 
 *	Purpose:	     

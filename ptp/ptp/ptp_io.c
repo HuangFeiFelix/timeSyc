@@ -1,5 +1,5 @@
 /********************************************************************************************
-*                           版权所有(C) 2015, 电信科学技术第五研究所
+*                           版权所有(C) 2015, 
 *                                 版权所有
 *********************************************************************************************
 *    文 件 名:       ptp_io.c
@@ -3318,11 +3318,11 @@ Uint8 Init_ptpClock(PtpClock *pPtpClock,int index)
     Init_PtpMainParam(pPtpClock
                         ,PTP_VERRION_2
                         ,netInterface
-                        ,PTP_SLAVE
+                        ,PTP_MASTER
                         ,0
                         ,PROTO_UDP_IP
                         ,IPMODE_MULTICAST
-                        ,TWO_STEP
+                        ,ONE_STEP
                         ,DELAY_MECANISM_E2E);
 
     /**初始化发送周期  */

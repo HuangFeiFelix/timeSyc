@@ -14,6 +14,7 @@ OBJS	+= net.o
 OBJS	+= manager.o
 OBJS	+= lcd_cmd_process.o
 OBJS	+= lcd_driver.o
+OBJS	+= fpga_time.o
 
 CROSS_COMPILE := gcc
 ARM_CROSS_COMPILE := arm-xilinx-linux-gnueabi-gcc
@@ -23,7 +24,7 @@ ARM_CROSS_COMPILE := arm-xilinx-linux-gnueabi-gcc
 ARM_CROSS_COMPILE_AR := arm-linux-ar
 
 AR	:= $(ARM_CROSS_COMPILE_AR)
-CC	:= $(CROSS_COMPILE)
+CC	:= $(ARM_CROSS_COMPILE)
 
 INCLUDE	:= $(PWD)
 CFLAGS  += -I$(INCLUDE)

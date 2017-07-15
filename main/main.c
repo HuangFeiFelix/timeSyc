@@ -2,6 +2,7 @@
 #include "log.h"
 #include "net.h"
 #include "manager.h"
+#include "fpga_time.h"
 
 struct root_data *g_RootData;
 #define COMM_GET_SEC            0x83
@@ -62,7 +63,6 @@ void InitSlotLocal(struct SlotList *pSlotLocal)
     int ret;
     char *ptpConfig = "/mnt/ptp.cfg";
     char *ntpConfig = "/mnt/ntp.cfg";
-    char *md5Config = "/mnt/key";
     
     Load_PtpParam_FromFile(pSlotLocal->pPtpSetcfg,ptpConfig);
     
@@ -102,11 +102,11 @@ void InitDev(struct root_data *pRootData)
     int ip;
     
     init_dev_head(&pRootData->dev_head);
-    GetIpAddress(pRootData->ctlEth.ifaceName,&ip);
+    GetIpAddress(pRootData->comm_iface,&ip);
 
     
     /**初始化UI 设备 ,UI设备通过串口通信id =0*/
-#if 1
+#if 0
     pRootData->dev[ENUM_LCD].com_attr.com_port = ENUM_LCD;  //串口1
     pRootData->dev[ENUM_LCD].com_attr.baud_rate = 9600;
     init_add_dev(&pRootData->dev[ENUM_LCD],&pRootData->dev_head,COMM_DEVICE,ENUM_LCD);
@@ -118,6 +118,7 @@ void InitDev(struct root_data *pRootData)
 #endif
 
 
+#if 0
     /**接收机串口设备 通信id=2  */
     pRootData->dev[ENUM_GPS].com_attr.com_port = ENUM_GPS;  //串口1
     pRootData->dev[ENUM_GPS].com_attr.baud_rate = 9600;
@@ -127,10 +128,13 @@ void InitDev(struct root_data *pRootData)
     pRootData->dev[ENUM_RB].com_attr.com_port = ENUM_RB;   
     pRootData->dev[ENUM_RB].com_attr.baud_rate = 9600;
     init_add_dev(&pRootData->dev[ENUM_RB],&pRootData->dev_head,COMM_DEVICE,ENUM_RB);
+#endif
 
+#if 0
    pRootData->dev[ENUM_PC_DISCOVER].net_attr.sin_port = pRootData->comm_port;  //
    pRootData->dev[ENUM_PC_DISCOVER].net_attr.ip = ip;
    init_add_dev(&pRootData->dev[ENUM_PC_DISCOVER],&pRootData->dev_head,UDP_DEVICE,ENUM_PC_DISCOVER);
+#endif
    
    pRootData->dev[ENUM_PC_CTL].net_attr.sin_port = pRootData->comm_port;  //
    pRootData->dev[ENUM_PC_CTL].net_attr.ip = ip;
@@ -477,7 +481,7 @@ void *ThreadUsuallyProcess(void *arg)
             
             printf("========================1PPS Start ============================\n");
 
-            //GetSystemPpsTime(&timeTmp); 
+            GetFpgaPpsTime(&timeTmp); 
             printf("fgpa system time:sec=%d,nao=%d \n",timeTmp.seconds,timeTmp.nanoseconds);
 
             current_time = timeTmp.seconds;
@@ -489,13 +493,14 @@ void *ThreadUsuallyProcess(void *arg)
             Display_SatelliteData(&pRootData->satellite_data);
 
             
-            ClockStateProcess(pClockInfo);
+            //ClockStateProcess(pClockInfo);
             
             /**核心时间维护  */
-            MaintainCoreTime(pRootData,&timeTmp);
+            //MaintainCoreTime(pRootData,&timeTmp);
                        
              
             /**LED  处理*/
+            Control_LedRun(nTimeCnt%2);
             nTimeCnt++;
             printf("========================1PPS End ============================\n\n\n");
             pRootData->flag_usuallyRoutine = FALSE;
@@ -503,7 +508,7 @@ void *ThreadUsuallyProcess(void *arg)
 
         /**测试上报  */
        
-        ClockHandleProcess(pClockInfo);
+        //ClockHandleProcess(pClockInfo);
 
         usleep(10);
     }
@@ -561,13 +566,6 @@ int daemonize(void)
     }
 }
 
-void InitEthEvn(struct root_data *pRootData)
-{
-    strcpy(pRootData->ctlEth.ifaceName,"eth0");
-    strcpy(pRootData->ptpEth.ifaceName,"eth1");
-    strcpy(pRootData->ntpEth.ifaceName,"eth2");
-}
-
 int main(int argc,char *argv[])
 {
     int ret,err;
@@ -582,7 +580,7 @@ int main(int argc,char *argv[])
 
 	bzero(g_RootData,sizeof(struct root_data));
     g_RootData->comm_port = 20170;
-
+    strcpy(g_RootData->comm_iface,"eth0");
     
     while((c = getopt(argc, argv, "dVhi:p:l:f:")) != -1)
     {
@@ -608,7 +606,7 @@ int main(int argc,char *argv[])
                     print_usage();
                     exit(0);
                 }
-                strcpy(g_RootData->ctlEth.ifaceName,optarg);
+                strcpy(g_RootData->comm_iface,optarg);
                 break;
             case 'h':
             default:
@@ -617,8 +615,9 @@ int main(int argc,char *argv[])
         }
     }
 
+    Init_FpgaCore();
     Init_Thread_Attr(&g_RootData->pattr);
-    Init_PpsDev("/dev/pps");
+    Init_PpsDev("/dev/ptp_dev");
     InitDev(g_RootData);
     InitSlotList(g_RootData);
     

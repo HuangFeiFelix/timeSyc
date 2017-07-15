@@ -86,13 +86,6 @@ struct Md5key
 	
 };
 
-struct NeInfor
-{
-	Uint32 ip;          //IP address;ip ,gwip and mask is network sequence
-	Uint32 gwip;		//gateway address
-	Uint32 mask;		//network address mask
-	Uint8  mac[6];		//MAC address
-};
 
 struct NtpSetCfg
 {
@@ -103,7 +96,6 @@ struct NtpSetCfg
     unsigned char leap;      //闰秒
     signed char precision;   //精度
     unsigned char refid[5];  //ID
-    struct NeInfor   runconf;         	//the network parameter structure
 	Uint32    freq_b;                   // broadcast send period   ntpd do not have
 	Uint32    freq_m;                   // multicast send period   ntpd do not have
     Uint8     broadcast;                    // flag: 0 stop 1 run
@@ -134,7 +126,7 @@ struct SlotList
 struct root_data{
 
 		struct dev_head dev_head;	//设备信息头
-        struct device dev[6];		//使用设备信息
+        struct device dev[10];		//使用设备信息
         int dev_fd;
         
         struct SlotList slot_list[6];
@@ -149,14 +141,13 @@ struct root_data{
         /*卫星数据*/
         struct Satellite_Data satellite_data;  
 
-        Uint8 flag_usuallyRoutine;
+        FILE *file_fd;
 
-        struct NetParam ctlEth;
-        struct NetParam ptpEth;
-        struct NetParam ntpEth;
-        
+        Uint8 flag_usuallyRoutine;
+        char comm_iface[10];                 //接口名字
         int  comm_port;
 
+        
 		pthread_attr_t pattr;	//线程属性
 		pthread_t p_usual;		//日常事务处理
 		pthread_t p_recv;		//数据接收线程

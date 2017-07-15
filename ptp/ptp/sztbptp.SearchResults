@@ -1,15 +1,73 @@
----- portEnable Matches (15 in 3 files) ----
-Data_type.h:    Uint8 portEnable;              /** 1:enable,  0: disable */
-Data_type.h:    Uint8 portEnable;              /** 1:enable,  0: disable */
-Data_type.h:    Uint8 portEnable;              /** 1:enable,  0: disable */
-Data_type.h:    Uint8 portEnable[8];              /** 1:enable,  0: disable */
-Data_type.h:    Uint8 portEnable;              /** 1:enable,  0: disable */
-Data_type.h:    Uint8 portEnable;              /** 1:enable,  0: disable */
-Ptp.c:        if(!pPtpClock->portEnable)
-Ptp.c:        if(!pPtpClock->portEnable)
-Ptp.c:        if(!pPtpClock->portEnable)
-Ptp_io.c:        if(memcmp("ptpengine:portEnable",tile,strlen("ptpengine:portEnable")) == 0)
-Ptp_io.c:                pPtpClock->portEnable = value;
-Ptp_io.c:    str = pPtpClock->portEnable;
-Ptp_io.c:    sprintf(line_str,"%s:%s=%d\n","ptpengine","portEnable",str);
-Ptp_io.c:    pPtpClock->portEnable = TRUE;
+---- ifaceName Matches (87 in 6 files) ----
+Data_type.h:    char ifaceName[5];  /** 所在网口号 */
+Msg.c:    memcpy(ifr.ifr_name, pPtpClock->netEnviroment.ifaceName, sizeof(ifr.ifr_name)-1);
+Msg.c:                LOG(pPtpClock->debugLevel,"%s ==>send  Signal AckCancel Msg Success!!\n",pPtpClock->netEnviroment.ifaceName);
+Msg.c:                LOG(pPtpClock->debugLevel,"%s ==>send  Signal AckCancel Msg Success!!\n",pPtpClock->netEnviroment.ifaceName);
+Msg.c:                LOG(pPtpClock->debugLevel,"%s ==>send  Signal Cancel Msg Type :%d To %x Success!!\n",pPtpClock->netEnviroment.ifaceName,signalType,pNetComm->UnicastMac[0]);
+Msg.c:                LOG(pPtpClock->debugLevel,"%s ==>send  Signal Cancel Msg Type :%d  To %d Success!!\n",pPtpClock->netEnviroment.ifaceName,signalType,pNetComm->unicastAddr>>24);
+Msg.c:                LOG(pPtpClock->debugLevel,"%s ==>send  Signal Grant Msg Type :%d To %x Success!!\n",pPtpClock->netEnviroment.ifaceName,signalType,pNetComm->UnicastMac[0]);
+Msg.c:                LOG(pPtpClock->debugLevel,"%s ==>send  Signal Grant Msg Type :%d  To %d Success!!\n",pPtpClock->netEnviroment.ifaceName,signalType,pNetComm->unicastAddr>>24);
+Msg.c:                LOG(pPtpClock->debugLevel,"%s ==>send  Signal Request Msg Type :%d To %x Success!!\n",pPtpClock->netEnviroment.ifaceName,signalType,pNetComm->UnicastMac[0]);
+Msg.c:                LOG(pPtpClock->debugLevel,"%s ==>send  Signal Request Msg Type :%d  To %d Success!!\n",pPtpClock->netEnviroment.ifaceName,signalType,pNetComm->unicastAddr>>24);
+Msg.c:            LOG(pPtpClock->debugLevel,"%s ==> Issue Sync (%d)\n",pPtpClock->netEnviroment.ifaceName, pPtpClock->sentSyncSequenceId);
+Msg.c:            LOG(pPtpClock->debugLevel,"%s ==> Issue Sync (%d)\n",pPtpClock->netEnviroment.ifaceName, pPtpClock->sentSyncSequenceId);
+Msg.c:            LOG(pPtpClock->debugLevel,"%s ==> Issue Sync (%d)\n",pPtpClock->netEnviroment.ifaceName, pPtpClock->sentSyncSequenceId);
+Msg.c:            LOG(pPtpClock->debugLevel,"%s ==> Issue Sync (%d)\n",pPtpClock->netEnviroment.ifaceName, pPtpClock->sentSyncSequenceId);
+Msg.c:            LOG(pPtpClock->debugLevel,"%s ==> Issue Followup (%d)\n",pPtpClock->netEnviroment.ifaceName, pPtpClock->sentSyncSequenceId);
+Msg.c:            LOG(pPtpClock->debugLevel,"%s ==> Issue Followup (%d)\n",pPtpClock->netEnviroment.ifaceName, pPtpClock->sentSyncSequenceId);
+Msg.c:            LOG(pPtpClock->debugLevel,"%s==> Issue Followup (%d)\n",pPtpClock->netEnviroment.ifaceName, pPtpClock->sentSyncSequenceId);
+Msg.c:            LOG(pPtpClock->debugLevel,"%s ==> Issue Followup (%d)\n",pPtpClock->netEnviroment.ifaceName, pPtpClock->sentSyncSequenceId);
+Msg.c:            LOG(pPtpClock->debugLevel,"%s ==> Issue Announce (%d)\n",pPtpClock->netEnviroment.ifaceName, pPtpClock->sentAnnounceSequenceId);
+Msg.c:            LOG(pPtpClock->debugLevel,"%s ==> Issue Announce (%d)\n",pPtpClock->netEnviroment.ifaceName, pPtpClock->sentAnnounceSequenceId);
+Msg.c:            LOG(pPtpClock->debugLevel,"%s ==> Issue Announce (%d)\n",pPtpClock->netEnviroment.ifaceName, pPtpClock->sentAnnounceSequenceId);
+Msg.c:            LOG(pPtpClock->debugLevel,"%s ==> Issue Announce (%d)\n",pPtpClock->netEnviroment.ifaceName, pPtpClock->sentAnnounceSequenceId);
+Msg.c:            LOG(pPtpClock->debugLevel,"%s ==> Issue DelayReq (%d)\n",pPtpClock->netEnviroment.ifaceName, pPtpClock->sentDelayReqSequenceId);
+Msg.c:            LOG(pPtpClock->debugLevel,"%s ==> Issue DelayReq (%d)\n",pPtpClock->netEnviroment.ifaceName, pPtpClock->sentDelayReqSequenceId);
+Msg.c:            LOG(pPtpClock->debugLevel,"%s ==> Issue DelayReq (%d)\n",pPtpClock->netEnviroment.ifaceName, pPtpClock->sentDelayReqSequenceId);
+Msg.c:            LOG(pPtpClock->debugLevel,"%s ==> Issue DelayReq (%d)\n",pPtpClock->netEnviroment.ifaceName, pPtpClock->sentDelayReqSequenceId);
+Msg.c:                LOG(pPtpClock->debugLevel,"%s ==> Issue PDelayReq (%d)\n",pPtpClock->netEnviroment.ifaceName, pPtpClock->sentPDelayReqSequenceId);
+Msg.c:                LOG(pPtpClock->debugLevel,"%s ==> Issue PDelayReq (%d)\n",pPtpClock->netEnviroment.ifaceName, pPtpClock->sentPDelayReqSequenceId);
+Msg.c:                LOG(pPtpClock->debugLevel,"%s ==> Issue PDelayReq (%d)\n",pPtpClock->netEnviroment.ifaceName, pPtpClock->sentPDelayReqSequenceId);
+Msg.c:    LOG(pPtpClock->debugLevel,"%s ==> Issue DelayResp (%d)\n",pPtpClock->netEnviroment.ifaceName, header->sequenceId);
+Msg.c:    LOG(pPtpClock->debugLevel,"%s ==> Issue PDelayResp (%d)\n",pPtpClock->netEnviroment.ifaceName, header->sequenceId);
+Net.c: * Input:         ifaceName ：网络接口名字 如：eth0，hwAddr：得到的mac地址
+Net.c:unsigned char GetMacAddress (char* ifaceName, unsigned char* hwAddr)
+Net.c:    if((ifaceName == NULL)||(ifaceName[0]!='e')||(ifaceName[1]!='t')||(ifaceName[2]!='h'))
+Net.c:    strncpy(ifr.ifr_name, ifaceName, IFACE_NAME_LENGTH);
+Net.c:        printf("failed to request hardware address for %s", ifaceName);
+Net.c: * Input:         ifaceName ：网络接口名字 如：eth0，IpAddress：得到的ip地址
+Net.c:unsigned char GetIpAddress(char* ifaceName,unsigned int *IpAddress)
+Net.c:    if((ifaceName == NULL)||(ifaceName[0]!='e')||(ifaceName[1]!='t')||(ifaceName[2]!='h'))
+Net.c:    	if(!strcmp(ifaceName, ifa->ifa_name) && (ifa->ifa_addr->sa_family == AF_INET))
+Net.c:unsigned char GetMaskAddress(char* ifaceName,unsigned int *MaskAddress)
+Net.c:    if((ifaceName == NULL)||(ifaceName[0]!='e')||(ifaceName[1]!='t')||(ifaceName[2]!='h'))
+Net.c:    	if(!strcmp(ifaceName, ifa->ifa_name) && (ifa->ifa_addr->sa_family == AF_INET))
+Net.c: * Input:         ifaceName ：网络接口名字 如：eth0，addr：地址
+Net.c:unsigned char GetAddress(char* ifaceName,struct sockaddr* addr)
+Net.c:    if((ifaceName == NULL)||(ifaceName[0]!='e')||(ifaceName[1]!='t')||(ifaceName[2]!='h'))
+Net.c:    	if(!strcmp(ifaceName, ifa->ifa_name) && (ifa->ifa_addr->sa_family == AF_INET))
+Net.c: * Input:         ifaceName ：网络接口名字 如：eth0
+Net.c:void DisplayInterfaceStatus(char* ifaceName)
+Net.c:    if((ifaceName == NULL)||(ifaceName[0]!='e')||(ifaceName[1]!='t')||(ifaceName[2]!='h'))
+Net.c:    	if(!strcmp(ifaceName, ifa->ifa_name))
+Net.c:        printf("Interface %s is up \n",ifaceName);
+Net.c:        printf("Interface %s is running ",ifaceName);
+Net.h:extern unsigned char GetMacAddress (char* ifaceName, unsigned char* hwAddr);
+Net.h:extern unsigned char GetIpAddress(char* ifaceName,unsigned int *IpAddress);
+Net.h:extern unsigned char GetMaskAddress(char* ifaceName,unsigned int *MaskAddress);
+Net.h:extern void DisplayInterfaceStatus(char* ifaceName);
+Net_process.c:    BindSockDevice(pPtpclock->netEnviroment.ifaceName,sockfd);
+Net_process.c:    memcpy(ifr.ifr_name, pPtpClock->netEnviroment.ifaceName, sizeof(ifr.ifr_name)-1);
+Net_process.c:    BindSockDevice(pPtpClock->netEnviroment.ifaceName,*pSockfd);
+Net_process.c:    SetMacAddress(pNetInfor->ifaceName,mac);
+Net_process.c:    GetIpAddress(pNetInfor->ifaceName,&pNetInfor->ip);
+Net_process.c:    GetMaskAddress(pNetInfor->ifaceName,&pNetInfor->mask);
+Net_process.c:    GetMacAddress(pNetInfor->ifaceName,pNetInfor->mac);
+Net_process.c:    GetGateWay(pNetInfor->ifaceName,&pNetInfor->gwip);
+Ptp_io.c:    printf("\n[%s]\n",infopt->ifaceName);
+Ptp_io.c:    //SetMacAddress(infopt->ifaceName,infopt->mac);
+Ptp_io.c:    SetIpAddress(infopt->ifaceName,infopt->ip);
+Ptp_io.c:    SetMaskAddress(infopt->ifaceName,infopt->mask);
+Ptp_io.c:    if(AddGateWay(infopt->ifaceName,infopt->gwip))
+Ptp_io.c:                                ,pPtpClock->netEnviroment.ifaceName
+Ptp_io.c:    memcpy(pPtpClock->netEnviroment.ifaceName,ifname,4);

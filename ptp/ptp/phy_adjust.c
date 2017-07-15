@@ -1,6 +1,5 @@
 /********************************************************************************************
-*                           版权所有(C) 2015, 电信科学技术第五研究所
-*                                 版权所有
+*                           版权所有(C) 2015, *                                 版权所有
 *********************************************************************************************
 *    文 件 名:       phy_adjust.c
 *    功能描述:       从时钟跟踪主时钟，同步83640 算法
@@ -281,9 +280,7 @@ void AdjustPhase(PtpClock *pPtpClock)
     {
         if(llabs(pPhyControl->time_offset) > THRESHOLD_US)
         {
-            //Dp83640AdjustTime(pPtpClock->TimeOffset);
-            //GetDp83640RuningTime(&pPtpClock->CurentTime);
-            //TriggerSetAndStart(pPtpClock->CurentTime.seconds+1);
+            
             printf("==========>SET time !!\n");
             ResetSmothBuf(pPhyControl);
         }
@@ -302,27 +299,7 @@ void AdjustPhase(PtpClock *pPtpClock)
     }
     else if(pPhyControl->ctl_phase_type == SLOW_MODIFY)
     {
-#if 0
-        if(pPhyControl->line_type == DIRECT_CONNECT)
-        {
-            if(pPhyControl->time_offset >24)
-                pPhyControl->phase_adjsut = 24;
-            else if((pPhyControl->time_offset <-24))
-                pPhyControl->phase_adjsut = -24;
-            else 
-                pPhyControl->phase_adjsut = 0;
 
-            printf("\nmean_path %lld ns ,",pPhyControl->mean_path);
-            printf("time_offset %lld ns ,",pPhyControl->time_offset);
-            printf("direct link taj %lld ns\n\n",-pPhyControl->phase_adjsut);
-            
-            longlong64_to_internalTime(pPhyControl->phase_adjsut,&adjust);
-            Dp83640AdjustTime(adjust);
-            AdjustFrequency(pPtpClock,adjust);
-            pPhyControl->ratediff_cnt++;
-            return;
-        }
-#endif
 
         tOffsetTmp = SmoothFilterArith(pPtpClock,pPhyControl);
                

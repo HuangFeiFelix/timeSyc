@@ -58,7 +58,6 @@ struct LcdCtlMsg
 	Uint8  cmd_tail[4];   //֡β
 };
 
-void HandleMainSreenState(struct root_data *pRootData,Uint16 screen_id, Uint16 control_id,unsigned char *data);
 
 void ProcessLcdMessage(struct root_data *pRootData,char *buf,Uint16 len);
 

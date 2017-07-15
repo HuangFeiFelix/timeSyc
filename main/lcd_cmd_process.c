@@ -6,8 +6,6 @@ static Sint32 test_value = 0;//测试值
 static Uint8 update_en = 0;//更新标记
 
 
-typedef void (*HandleWigetState)(struct root_data *,Uint16, Uint16,unsigned char *);
-HandleWigetState HandleLcdEvent = HandleMainSreenState;
 
 
 /*! 
@@ -286,7 +284,8 @@ void HandleSettingState(struct root_data *pRootData,Uint16 screen_id, Uint16 con
 void HandleMainSreenState(struct root_data *pRootData,Uint16 screen_id, Uint16 control_id,unsigned char *data);
 void HandleClockStatusState(struct root_data *pRootData,Uint16 screen_id, Uint16 control_id,unsigned char *data);
 
-
+typedef void (*HandleWigetState)(struct root_data *,Uint16, Uint16,unsigned char *);
+HandleWigetState HandleLcdEvent = HandleMainSreenState;
 
 void HandleWarnningState(struct root_data *pRootData,Uint16 screen_id, Uint16 control_id,unsigned char *data)
 {

@@ -99,7 +99,6 @@ Uint8 *mmapping()
 { 
     Uint8 *pMapped_add;
     
-#if 0
 	int fd=open("/dev/mem",O_RDWR); 
 	if(fd == -1)
 	{
@@ -113,8 +112,8 @@ Uint8 *mmapping()
 		return NULL; 
 	}
     close(fd);
-#endif
-	 pMapped_add = (char *)malloc(1024 * 2);
+
+	 //pMapped_add = (char *)malloc(1024 * 2);
     return pMapped_add;
 }
 

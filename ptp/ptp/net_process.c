@@ -1,6 +1,5 @@
 /********************************************************************************************
-*                           版权所有(C) 2015, 电信科学技术第五研究所
-*                                 版权所有
+*                           版权所有(C) 2015, *                                 版权所有
 *********************************************************************************************
 *    文 件 名:       net_process.c
 *    功能描述:       ptp网络传输初始化，初始化e2e p2p Ieee802.3 Udp/ip 各种通信所
@@ -129,6 +128,7 @@ void Init_CommUdpSock(PtpClock *pPtpclock,Uint8 sockType,NetComm *pNetComm,char 
     
     /**绑定到网卡  */
     BindSockDevice(pPtpclock->netEnviroment.ifaceName,sockfd);
+
 
     if(pPtpclock->modeType == IPMODE_MULTICAST)
         SetSock_reUse(sockfd);
@@ -294,7 +294,7 @@ void Init_NetComm(PtpClock *pPtpclock,NetComm *pNetComm)
         Init_CommUdpSock(pPtpclock,GENERALSOCK_TYPE,pNetComm,PTP_E2E_MULTICAST_ADDRESS,PTP_GENERAL_PORT);
         
         Init_CommUdpSock(pPtpclock,PGENERALSOCK_TYPE,pNetComm,PTP_PEER_MULTICAST_ADDRESS,PTP_GENERAL_PORT);
-
+        
     }
     else if(pPtpclock->modeType == IPMODE_UNICAST)
     {
