@@ -23,9 +23,9 @@
 
 
 /**FGGA 时间寄存器*/
-#define FPGA_RUNNING_SETTIME_ADD 0x50
-#define FPGA_RUNNING_NAN_ADD     0x50
-#define FPGA_RUNNING_SEC_ADD     0x54
+#define FPGA_RUNNING_SETTIME_ADD 0x70
+#define FPGA_RUNNING_NAN_ADD     0x70
+#define FPGA_RUNNING_SEC_ADD     0x74
 
 /**FPGA 设置时间戳地址  */
 #define FPGA_CORE_TIME_ADD         0xD0
@@ -347,13 +347,13 @@ void Init_FpgaCore(PtpClock *pPtpClock)
         }
     }
     
-    SetFpgaTime(254872);
+    //SetFpgaTime(254872);
 
     /**设置自动调节小数秒的值  ，每次bns*/
-    *(Uint8*)(BASE_ADDR + 0xE8) = 0x0b;
+    //*(Uint8*)(BASE_ADDR + 0xE8) = 0x0b;
 
     /**设置为自动调节小数秒  */
-    *(Uint8*)(BASE_ADDR + 0xE9) = 0x01;
+    //*(Uint8*)(BASE_ADDR + 0xE9) = 0x01;
 
     
     /**设置强制告警  */
@@ -490,24 +490,6 @@ Uint8 GetFpgaAddressVal(short offset)
 }
 
 
-void GetFpgaDcls(char *buf)
-{
-
-    memcpy(buf,(BASE_ADDR+0x60),8); 
-
-
-}
-
-void SetFpgaDcls(char *buf)
-{    
-    int i;
-    memcpy((BASE_ADDR+0x90),buf,11); 
-
-        for(i=0;i<8;i++)
-        printf("%x ",buf[i]);
-    printf("\n");
-    *(Uint8*)(BASE_ADDR+0x9c) = 0x01;
-}
 
 void BlockPtpOutput(PtpClock* pPtpClock)
 {

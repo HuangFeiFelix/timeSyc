@@ -142,7 +142,7 @@ void GetEthxSfp_Status(SfpCtl *pSfpCtl,short portNum)
     char type;
 
    
-    SetI2cChannel(portNum);
+    //SetI2cChannel(portNum);
     usleep(500);
     write(pSfpCtl->i2cfd,&readAddr,1);
 
@@ -954,18 +954,18 @@ void *ThreadUsuallyProcess(void *p)
              /**处理其他  */
             nTimeCnt++;
 
-#if 0
+
             /**获取当前运行时间  */
             GetFpgaRuningTime(&timeTmp);
             printf("fgpa Running time:sec=%d,nao=%d \n",timeTmp.seconds,timeTmp.nanoseconds);
-            
+#if 0
+
             GetFpgaPpsTime(&timeTmp);
             printf("fgpa lock time:sec=%d,nao=%d \n",timeTmp.seconds,timeTmp.nanoseconds);
-#endif
-                
+
             //GetSystemPpsTime(&timeTmp); 
             printf("fgpa system time:sec=%d,nao=%d ",timeTmp.seconds,timeTmp.nanoseconds);
-   
+  #endif      
             for(i=0;i<PTP_PORT_COUNT;i++)
                 g_ptpClock[i].CurentTime= timeTmp;
             
