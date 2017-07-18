@@ -10,26 +10,31 @@
 
 #define ETH0_OFFSET_ADD           (BASE_ADDR + 0x100)       /*网口0基地址*/
 #define ETH1_OFFSET_ADD           (BASE_ADDR + 0x200)       /*网口1基地址*/
-#define ETH2_OFFSET_ADD           (BASE_ADDR + 0x300)       /*网口2基地址*/
-#define ETH3_OFFSET_ADD           (BASE_ADDR + 0x400)       /*网口3基地址*/
-#define ETH4_OFFSET_ADD           (BASE_ADDR + 0x500)       /*网口4基地址*/
-#define ETH5_OFFSET_ADD           (BASE_ADDR + 0x600)       /*网口5基地址*/
-#define ETH6_OFFSET_ADD           (BASE_ADDR + 0x700)       /*网口6基地址*/
-#define ETH7_OFFSET_ADD           (BASE_ADDR + 0x800)       /*网口7基地址*/
+
 
 /**秒脉冲记录的时间戳  */
-#define PPS_STROE_NAN_ADD      0x40
-#define PPS_STROE_SEC_ADD      0x44
+#define PPS_PHASE_OFFSET_ADD      0x10
+#define PPS_PHASE_SYMBOL_ADD      0x13
+
+
+/**秒脉冲记录的时间戳  */
+#define PPS_PTP_STROE_NAN_ADD      0x50
+#define PPS_PTP_STROE_SEC_ADD      0x54
+
+/**秒脉冲记录的时间戳  */
+#define PPS_GPS_STROE_NAN_ADD      0x60
+#define PPS_GPS_STROE_SEC_ADD      0x69
 
 
 /**FGGA 时间寄存器*/
-#define FPGA_RUNNING_SETTIME_ADD 0x50
-#define FPGA_RUNNING_NAN_ADD     0x50
-#define FPGA_RUNNING_SEC_ADD     0x54
+#define FPGA_RUNNING_SETTIME_ADD 0x70
+#define FPGA_RUNNING_NAN_ADD     0x70
+#define FPGA_RUNNING_SEC_ADD     0x74
 
 /**FPGA 设置时间戳地址  */
 #define FPGA_CORE_TIME_ADD         0xD0
 #define FPGA_CORE_SETTIME_ADD      0xD7
+
 
 
 /**发送包的时间戳记录地址  */
@@ -65,11 +70,10 @@
 
 #define PAGE_SIZE (5*1024)
 
-
-#define LED_RUN          0x89
-#define LED_STATUS       0xB1
-
-
+#define LED_ALARM               0x88
+#define LED_RUN                 0x89
+#define LED_SAT_STATUS          0x8A
+#define LED_LOCK_STATUS         0x8C
 
 
 
@@ -149,24 +153,12 @@ void GetFpgaRuningTime(TimeInternal *pTime)
 void GetFpgaPpsTime(TimeInternal *pTime)
 {
 
-    Uint32 sec = *(Uint32*)(BASE_ADDR+PPS_STROE_SEC_ADD);
-    Uint32 nao = *(Uint32*)(BASE_ADDR+PPS_STROE_NAN_ADD);
+    Uint32 sec = *(Uint32*)(BASE_ADDR+PPS_PTP_STROE_NAN_ADD);
+    Uint32 nao = *(Uint32*)(BASE_ADDR+PPS_PTP_STROE_SEC_ADD);
 
     pTime->seconds = sec;
     pTime->nanoseconds = nao;
 }
-
-void GetSystemPpsTime(TimeInternal *pTime)
-{
-
-    Uint32 sec = *(Uint32*)(BASE_ADDR+0x74);
-    //Uint32 nao = *(Uint32*)(BASE_ADDR+PPS_STROE_NAN_ADD);
-
-    pTime->seconds = sec;
-    pTime->nanoseconds = 0;
-    
-}
-
 
 void Init_FpgaCore()
 {
@@ -187,6 +179,21 @@ void Init_FpgaCore()
 void Control_LedRun(Boolean val)
 {
     *(Uint8*)(BASE_ADDR + LED_RUN) = val;
+}
+
+void Control_LedAlarm(Boolean val)
+{
+    *(Uint8*)(BASE_ADDR + LED_ALARM) = val;
+}
+
+void Control_LedSatStatus(Boolean val)
+{
+    *(Uint8*)(BASE_ADDR + LED_SAT_STATUS) = val;
+}
+
+void Control_LedLockStatus(Boolean val)
+{
+    *(Uint8*)(BASE_ADDR + LED_LOCK_STATUS) = val;
 }
 
 

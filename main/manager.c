@@ -123,15 +123,14 @@ struct Req_Frame
 
 void msgUpPackHead(char *buf,struct Head_Frame *pHead)
 {
-    struct Head_Frame *ptmpHead = (struct Head_Frame *)buf;
-    pHead->h1 = ptmpHead->h1;
-    pHead->h2 = ptmpHead->h2;
-    pHead->saddr = ptmpHead->saddr;
-    pHead->daddr = ptmpHead->daddr;
-    pHead->index = ntohs(ptmpHead->index);
-    pHead->ctype = ptmpHead->ctype;
-    pHead->pad_type = ptmpHead->pad_type;
-    pHead->length = ntohl(ptmpHead->length);
+    pHead->h1 = *(char *)(buf + 0);
+    pHead->h2 = *(char *)(buf + 1);
+    pHead->saddr = *(char *)(buf + 2);
+    pHead->daddr = *(char *)(buf + 3);
+    pHead->index = ntohs(*(short *)(buf + 4));
+    pHead->ctype = *(char *)(buf + 6);;
+    pHead->pad_type = *(char *)(buf + 7);;
+    pHead->length = ntohl(*(int *)(buf + 8));
 }
 
 

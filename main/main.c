@@ -138,7 +138,7 @@ void InitDev(struct root_data *pRootData)
    
    pRootData->dev[ENUM_PC_CTL].net_attr.sin_port = pRootData->comm_port;  //
    pRootData->dev[ENUM_PC_CTL].net_attr.ip = ip;
-   init_add_dev(&pRootData->dev[ENUM_PC_CTL],&pRootData->dev_head,TCP_DEVICE,ENUM_PC_CTL);
+   init_add_dev(&pRootData->dev[ENUM_PC_CTL],&pRootData->dev_head,UDP_DEVICE,ENUM_PC_CTL);
 
    #if 0 
     /**1pps + tod ²âÊÔ¿Ú  */
@@ -215,7 +215,7 @@ void *DataHandle_Thread(void *arg)
                         break;
     				case ENUM_PC_CTL:					
 #if 0
-                        printf("dev_id=  %d,com3:receive: ",p_dev->dev_id);
+                        printf("dev_id=  %d,udp:receive: ",p_dev->dev_id);
 
                         for(i=0;i<p_data_list->recv_lev.len;i++)
                             printf("%x ",p_data_list->recv_lev.data[i]);
