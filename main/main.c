@@ -9,9 +9,11 @@ struct root_data *g_RootData;
 #define COMM_SET_SEC            0x84
 #define COMM_MODIFY_SEC         0x85
 
+int comm_sin_port;
 
 
-void AddData_ToSendList(struct root_data *pRoot,char devType,char *buf,short len)
+
+void AddData_ToSendList(struct root_data *pRoot,char devType,void *buf,short len)
 {
     add_send(buf,len,&pRoot->dev[devType]);
 }
@@ -63,9 +65,10 @@ void InitSlotLocal(struct SlotList *pSlotLocal)
     int ret;
     char *ptpConfig = "/mnt/ptp.cfg";
     char *ntpConfig = "/mnt/ntp.cfg";
+    char *md5Config = "/mnt/md5";
     
     Load_PtpParam_FromFile(pSlotLocal->pPtpSetcfg,ptpConfig);
-    
+    Load_NtpdParam_FromFile(pSlotLocal->pNtpSetCfg,ntpConfig,md5Config);
 }
 
 void InitSlotList(struct root_data *pRootData)
@@ -98,12 +101,8 @@ void InitSlotList(struct root_data *pRootData)
 
 
 void InitDev(struct root_data *pRootData)
-{
-    int ip;
-    
+{    
     init_dev_head(&pRootData->dev_head);
-    GetIpAddress(pRootData->comm_iface,&ip);
-
     
     /**初始化UI 设备 ,UI设备通过串口通信id =0*/
 #if 0
@@ -136,8 +135,8 @@ void InitDev(struct root_data *pRootData)
    init_add_dev(&pRootData->dev[ENUM_PC_DISCOVER],&pRootData->dev_head,UDP_DEVICE,ENUM_PC_DISCOVER);
 #endif
    
-   pRootData->dev[ENUM_PC_CTL].net_attr.sin_port = pRootData->comm_port;  //
-   pRootData->dev[ENUM_PC_CTL].net_attr.ip = ip;
+   pRootData->dev[ENUM_PC_CTL].net_attr.sin_port = comm_sin_port;//
+   pRootData->dev[ENUM_PC_CTL].net_attr.ip = inet_addr("127.0.0.1");
    init_add_dev(&pRootData->dev[ENUM_PC_CTL],&pRootData->dev_head,UDP_DEVICE,ENUM_PC_CTL);
 
    #if 0 
@@ -297,8 +296,14 @@ void *DataSend_Thread(void *arg) {
                 
                 if(p_dev->type == UDP_DEVICE)
                 {
+                    struct sockaddr_in addr;
+                    addr.sin_family = AF_INET;
+	                addr.sin_port = htons(p_dev->net_attr.sin_port);
+                    addr.sin_addr.s_addr = p_dev->net_attr.ip;
                     len = p_data_list->send_lev.len;
-                    sendto(p_dev->fd,p_data_list->send_lev.data,len,0,(struct sockaddr *)&p_dev->dest_addr,sizeof(struct sockaddr_in));
+                    
+                    sendto(p_dev->fd,p_data_list->send_lev.data,len,0,(struct sockaddr *)&addr,sizeof(struct sockaddr_in));
+
                     del_data(p_data_list, &p_dev->data_head[1],p_dev);
                 }
                 else if(p_dev->type == TCP_DEVICE)
@@ -573,16 +578,16 @@ int main(int argc,char *argv[])
     pthread_t Id_ThreadUsually;
     int c;
     int val;
+
     
     g_RootData = (struct root_data *)malloc(sizeof(struct root_data));
 	if(!g_RootData)
 		printf("malloc root_para error\n");
 
 	bzero(g_RootData,sizeof(struct root_data));
-    g_RootData->comm_port = 20170;
-    strcpy(g_RootData->comm_iface,"eth0");
+    comm_sin_port = 20170;
     
-    while((c = getopt(argc, argv, "dVhi:p:l:f:")) != -1)
+    while((c = getopt(argc, argv, "dVhp:l:f:")) != -1)
     {
         switch(c)
         {
@@ -592,22 +597,14 @@ int main(int argc,char *argv[])
             case 'p':
               
                 printf("the port is %s\n", optarg);
-                g_RootData->comm_port = atoi(optarg);
+                comm_sin_port = atoi(optarg);
                 break;
             case 'V':
 
                 break;
             case 'l':
                 break;
-            case 'i':
-                if(!GetIpAddress(optarg,&val))
-                {
-                    printf("ethname unknown\n");
-                    print_usage();
-                    exit(0);
-                }
-                strcpy(g_RootData->comm_iface,optarg);
-                break;
+
             case 'h':
             default:
                 print_usage();

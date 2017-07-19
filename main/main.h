@@ -6,7 +6,7 @@
 #include "satellite_api.h"
 #include "clock_rb.h"
 
-#define SLOT_COUNT 6
+#define SLOT_COUNT 4
 #define SLOT_TYPE_CORE 'A'
 #define SLOT_TYPE_PTP  'B'
 #define SLOT_TYPE_NTP  'C'
@@ -144,8 +144,11 @@ struct root_data{
         FILE *file_fd;
 
         Uint8 flag_usuallyRoutine;
-        char comm_iface[10];                 //接口名字
-        int  comm_port;
+
+        struct NetInfor comm_port;
+        struct NetInfor ptp_port;
+        struct NetInfor ntp_port;
+        
 
         
 		pthread_attr_t pattr;	//线程属性

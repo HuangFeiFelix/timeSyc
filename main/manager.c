@@ -85,6 +85,11 @@
 #define AUTO_KEY "autokey"
 
 
+#define FACTORY_DEV_CODE "QH000001"
+#define DEV_TYPE_CODE    "QH000001"
+#define SOFT_VERSION     "0.01"
+#define FPGA_VERSION     "0.03"
+
 struct Head_Frame
 {
     char h1;
@@ -116,10 +121,21 @@ struct Response_Frame
     int port;
 };
 
-struct Req_Frame
+
+struct Device_Information
 {
-    short cmd;
+    char factory_code[8];
+    char device_id[8];
+    char slot1;
+    char pad1_type;
+    char slot2;
+    char pad2_type;
+    char slot3;
+    char pad3_type;
+    char slot4;
+    char pad4_type;
 };
+
 
 void msgUpPackHead(char *buf,struct Head_Frame *pHead)
 {
@@ -1042,6 +1058,209 @@ Uint8 Read_Md5FromKeyFile(struct NtpSetCfg *pNtpSetcfg,char *fileName)
     fclose(md5_file_fd);
 }
 
+#if 0
+
+void SetRouteToEnv(char *network_cfg,struct NetInfor *infopt)
+{
+    Uint8 route_temp[70];
+    
+    struct sockaddr_in temsock;
+    int iOffset =0;
+    
+    Uint32 ethx_fd = open(network_cfg,O_RDWR|O_CREAT|O_TRUNC,0666);
+    if(ethx_fd < 0)
+    {
+        printf("open eth config error!\n");
+        return;
+    }
+    
+    temsock.sin_addr.s_addr= infopt->ip;
+    
+    lseek(ethx_fd,0,SEEK_SET);
+    write(ethx_fd,"#!/bin/sh\n",10);
+    
+    memset(route_temp,0,70);
+   //sprintf(route_temp,"%s%d\n","ip route del default table ",pPtpClock->routeTable);
+    sprintf(route_temp,"%s%d\n","ip route flush table ",100);
+    write(ethx_fd,route_temp,strlen(route_temp));
+        
+    memset(route_temp,0,70);
+
+    /*ip route add default dev eth0 src 192.168.15.121 table 100*/
+
+    sprintf(route_temp,"%s%s%s%s%s%d\n","ip route add default dev "
+                                ,pPtpClock->netEnviroment.ifaceName
+                                ," src "
+                                ,inet_ntoa(temsock.sin_addr)
+                                ," table "
+                                ,pPtpClock->routeTable);
+    
+    write(ethx_fd,route_temp,strlen(route_temp));
+
+
+    /*ip rule add from 192.168.15.229 table 100*/
+    memset(route_temp,0,70);
+    sprintf(route_temp,"%s%s%s%d\n","ip rule add from "
+                                    ,inet_ntoa(temsock.sin_addr)
+                                    ," table "
+                                    ,pPtpClock->routeTable);
+
+    write(ethx_fd,route_temp,strlen(route_temp));
+    write(ethx_fd,"ip route flush cache\n",strlen("ip route flush cache\n"));
+    //fsync(ethx_fd);
+   
+    close(ethx_fd);
+
+
+    /**Ö´ÐÐÃüÁî½Å±¾  */
+    memset(route_temp,0,sizeof(route_temp));
+    memcpy(route_temp,"sh ",strlen("sh "));
+    memcpy(route_temp+3,network_cfg,strlen(network_cfg);
+    system(route_temp);
+
+
+}
+#endif
+
+void SetNetworkToEnv(struct NetInfor *infopt)
+{
+    SetMacAddress(infopt->ifaceName,infopt->mac);
+    sleep(1);
+
+    SetIpAddress(infopt->ifaceName,infopt->ip);
+    SetMaskAddress(infopt->ifaceName,infopt->mask);
+
+    AddGateWay(infopt->ifaceName,infopt->gwip);
+
+}
+
+void Get_Net_FormSysEvn(struct NetInfor *pNetInfor)
+{
+    char mac[6];
+  
+    GetIpAddress(pNetInfor->ifaceName,&pNetInfor->ip);
+    GetMaskAddress(pNetInfor->ifaceName,&pNetInfor->mask);
+    GetMacAddress(pNetInfor->ifaceName,pNetInfor->mac);
+        
+    GetGateWay(pNetInfor->ifaceName,&pNetInfor->gwip);
+}
+
+
+void SaveNetParamToFile(char *network_cfg,struct NetInfor *infopt)
+{
+    Uint8 line_str[200];
+    struct sockaddr_in temsock;
+    FILE *network_fd = fopen(network_cfg,"w+");
+    
+    if(network_fd == NULL)
+    {
+        printf("SaveNet can not find network.conf file\n");
+        return;
+    }
+       
+    memset(line_str,0,sizeof(line_str));
+    
+    temsock.sin_addr.s_addr = infopt->ip;
+    sprintf(line_str,"%s:%s\n","IP",inet_ntoa(temsock.sin_addr));
+    fputs(line_str,network_fd);
+    
+    memset(line_str,0,sizeof(line_str));
+    temsock.sin_addr.s_addr = infopt->gwip;
+    sprintf(line_str,"%s:%s\n","GATEWAY",inet_ntoa(temsock.sin_addr));
+    fputs(line_str,network_fd);
+    
+    memset(line_str,0,sizeof(line_str));
+    temsock.sin_addr.s_addr = infopt->mask;
+    sprintf(line_str,"%s:%s\n","MASK",inet_ntoa(temsock.sin_addr));
+    fputs(line_str,network_fd);
+    
+    memset(line_str,0,sizeof(line_str));
+    sprintf(line_str,"%s:%x.%x.%x.%x.%x.%x\n","MAC",infopt->mac[0]
+        ,infopt->mac[1]
+        ,infopt->mac[2]
+        ,infopt->mac[3]
+        ,infopt->mac[4]
+        ,infopt->mac[5]);
+    
+    fputs(line_str,network_fd);
+    
+    fflush(network_fd);
+    fclose(network_fd);
+
+}
+
+int Load_NetWorkParam_FromFile(char *network_cfg,struct NetInfor *infopt)
+{
+    Uint8 line_str[50];
+    
+    Uint8 tile[10];
+    Uint8 *pIndex;
+    Uint8 *pStr = line_str;
+    struct in_addr temsock;
+    
+    Uint8 *pMack;
+    int i;
+    
+    memset(line_str,0,sizeof(line_str));
+    memset(tile,0,sizeof(tile));
+    
+    FILE *net_work_fd = fopen(network_cfg,"r");
+    if(net_work_fd == NULL)
+    {
+        printf("can not find network.conf file\n");
+        Get_Net_FormSysEvn(infopt);
+        SaveNetParamToFile(network_cfg,infopt);
+        //SetRouteToEnv(network_cfg,infopt);
+        return -1;
+    }
+    
+    while(fgets(line_str,sizeof(line_str),net_work_fd))
+    {
+        
+        pIndex = strchr(line_str,':');
+        memcpy(tile,line_str,pIndex-pStr);
+
+        pIndex++;
+        
+        if(strcmp("IP",tile) == 0)
+        {
+            inet_aton(pIndex,&temsock);
+            infopt->ip = temsock.s_addr;
+
+        }
+        if(strcmp("GATEWAY",tile) == 0)
+        {
+            inet_aton(pIndex,&temsock);
+            infopt->gwip = temsock.s_addr;
+
+        }
+        if(strcmp("MASK",tile) == 0)
+        {
+            inet_aton(pIndex,&temsock);
+            infopt->mask = temsock.s_addr;
+            
+        }
+
+        if(strcmp("MAC",tile) == 0)
+        {
+
+            pMack = pIndex;
+    		for(i = 0; i < 6; i++)
+    		{
+    			pMack = strtok(pIndex,".");
+    			infopt->mac[i] = strtol(pMack,NULL,16);			
+    			pIndex = NULL;
+    		}		            
+        }
+
+        memset(tile,0,sizeof(tile));
+        memset(line_str,0,sizeof(line_str));
+    }
+    SetNetworkToEnv(infopt);
+    //SetRouteToEnv(network_cfg,infopt);
+    fclose(net_work_fd);
+}
+
 
 void Load_NtpdParam_FromFile(struct NtpSetCfg *pNtpSetcfg,char *ntpCfgFile,char *md5CfgFile)
 {
@@ -1959,23 +2178,72 @@ void process_req_ptp_cfg_all(struct root_data *pRootData,struct Head_Frame *pHea
     
 }
 
+void handle_req_dev_infor(struct root_data *pRootData)
+{
+    struct Device_Information devinfo;
+    memset(&devinfo,0,sizeof(devinfo));
+
+    strcpy(devinfo.factory_code,FACTORY_DEV_CODE);
+    strcpy(devinfo.device_id,DEV_TYPE_CODE);
+    devinfo.slot1 = 1;
+    devinfo.pad1_type = pRootData->slot_list[1].slot_type;
+    devinfo.slot1 = 2;
+    devinfo.pad1_type = pRootData->slot_list[2].slot_type;
+    devinfo.slot1 = 3;
+    devinfo.pad1_type = pRootData->slot_list[3].slot_type;
+    devinfo.slot1 = 4;
+    devinfo.pad1_type = pRootData->slot_list[4].slot_type;
+
+    AddData_ToSendList(pRootData,ENUM_PC_CTL,&devinfo,sizeof(devinfo));
+}
+
+void handle_req_version(struct root_data *pRootData)
+{
+    char buf[8];
+    memset(buf,0,sizeof(buf));
+
+    memcpy(&buf[0],SOFT_VERSION,4);
+    memcpy(&buf[4],FPGA_VERSION,4);
+    
+
+    AddData_ToSendList(pRootData,ENUM_PC_CTL,buf,sizeof(buf));
+}
+
+
+void handle_req_network(struct root_data *pRootData)
+{
+    char buf[100];
+    memset(buf,0,sizeof(buf));
+
+    *(int*)(buf+0) = htonl(pRootData->comm_port.ip);
+    *(int*)(buf+4) = htonl(pRootData->comm_port.mask);
+    *(int*)(buf+8) = htonl(pRootData->comm_port.gwip);
+    memcpy(buf+12,pRootData->comm_port.mac,6);
+           
+    AddData_ToSendList(pRootData,ENUM_PC_CTL,buf,18);
+}
+
 void process_pc_ctl_req(struct root_data *pRootData,struct Head_Frame *pHeadFrame,char *buf)
 {
     int iOffset = 0;
-    struct Req_Frame *pReqFrame = (struct Req_Frame *)(buf+HEAD_FRAME_LENGTH);
-    short cmd_type = ntohs(pReqFrame->cmd);
+    
+    short cmd_type = buf[HEAD_FRAME_LENGTH]<<8+buf[HEAD_FRAME_LENGTH+1];
 
 
     switch(cmd_type)
     {
 
      case CMD_DEV_INFORMATION:
+        handle_req_dev_infor(pRootData);
         break;
      case CMD_NET_WORK_ADDRESS:
+        handle_req_network(pRootData);
         break;
      case CMD_VERSION_INFROMATION:
+        handle_req_version(pRootData);
         break;
      case CMD_GPS_STATUS:
+        
         break;
      case CMD_SYS_SET:
         break;
@@ -1996,8 +2264,8 @@ void process_pc_ctl_req(struct root_data *pRootData,struct Head_Frame *pHeadFram
 void process_pc_ctl_set(struct root_data *pRootData,struct Head_Frame *pHeadFrame,char *buf)
 {
     int iOffset = 0;
-    struct Req_Frame *pReqFrame = (struct Req_Frame *)(buf+HEAD_FRAME_LENGTH);
-    short cmd_type = ntohs(pReqFrame->cmd);
+
+    short cmd_type = buf[HEAD_FRAME_LENGTH]<<8+buf[HEAD_FRAME_LENGTH+1];
 
     switch(cmd_type)
     {

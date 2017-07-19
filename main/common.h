@@ -180,7 +180,8 @@ typedef struct {
 } Integer64;
 
 
-typedef struct 
+
+struct NetInfor
 {
     char ifaceName[5];  /** 所在网口号 */
     
@@ -188,7 +189,8 @@ typedef struct
     Uint32 gwip;		/** 本机网关*/
     Uint32 mask;		/** 本机子网掩码地址*/
     Uint8  mac[6];		/**本机MAC 地址 */
-}NetInfor,*PNetInfor;
+};
+
 
 typedef struct {
     Integer32 seconds;
