@@ -388,7 +388,7 @@ int open_udp(struct device *p_dev, struct dev_head *dev_head)
     sockaddr.sin_addr.s_addr = htonl(INADDR_ANY);
     
     setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (const char*)&opt,sizeof(opt));
-    setsockopt(fd,SOL_SOCKET,SO_BROADCAST,(const char*)&opt,sizeof(opt));
+    //setsockopt(fd,SOL_SOCKET,SO_BROADCAST,(const char*)&opt,sizeof(opt));
 
     if (0 > bind(fd, (struct sockaddr *)&sockaddr, sizeof(struct sockaddr_in)))
     {

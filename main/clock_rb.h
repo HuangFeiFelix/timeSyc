@@ -105,7 +105,7 @@ struct clock_info
 {
    /**用于  钟状态机*/
    char      workStatus;  /*工作状态:free 、fast 、lock、hold*/
-   char      ref_type;          /*参考输入：0:卫星1pps ，1: 10M输入1pps）*/
+   char      ref_type;          /*参考输入：0:卫星1pps ，1: ptp）*/
    char      clock_mode;        /*时钟模式0，内部，1，外部*/
    float     lPhasePrevious; /*上一次平均鉴相数据*/
 

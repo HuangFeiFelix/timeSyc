@@ -31,7 +31,6 @@ enum
     ENUM_SLOT_2_ADDR,
     ENUM_SLOT_3_ADDR,
     ENUM_SLOT_4_ADDR,
-    ENUM_SLOT_5_ADDR,
     ENUM_SLOT_PC_ADDR = 0xff
 };
 
@@ -105,6 +104,7 @@ struct NtpSetCfg
     Uint8     sympassive;                   // flag
 	Uint8     blacklist;                    // flag
 	Uint8     whitelist;                    // flag
+    
 	Uint8     blacklist_flag[16];           //黑名单标识列表
 	Uint8     whitelist_flag[16];           //白名单标识列表
 	Uint32    blacklist_ip[16];             //黑名单ip地址列表

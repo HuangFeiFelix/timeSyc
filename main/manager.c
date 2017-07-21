@@ -24,7 +24,7 @@
 #define CMD_PTP_CFG_NORMAL      0x0011
 #define CMD_PTP_CFG_SLAVE       0x0012
 #define CMD_PTP_CFG_MASTER      0x0013
-#define CMD_PTP_CFG_UNICAST     0x0014
+
 
 #define CMD_NTP_CFG_NORMAL      0x0020
 #define CMD_NTP_CFG_MD5_ENABLE  0x0021
@@ -89,6 +89,19 @@
 #define DEV_TYPE_CODE    "QH000001"
 #define SOFT_VERSION     "0.01"
 #define FPGA_VERSION     "0.03"
+
+struct Md5key factory_key[10]={ 
+                          {0,0,""},
+                          {1,16,"0123456789abcdef"},
+						  {1,16,"123456789abcdef0"},
+						  {1,16,"23456789abcdef01"},
+						  {1,16,"3456789abcdef012"},
+						  {1,16,"okdidflg_+|-=;'d"},
+						  {1,16,"wk3k4kflv,f;ro&"},
+						  {1,16,">dfwertrtsdf90*&"},
+						  {1,10,"*&^%$45678"},
+						 };
+
 
 struct Head_Frame
 {
@@ -175,6 +188,30 @@ int msgPackFrame(char *buf,struct Head_Frame *iHead,void *sendMsg,int msglen)
 
     return iOffset;
 }
+
+int msgPackFrameToSend(struct root_data *pRootData,struct Head_Frame *iHead,short msgType,void *sendMsg,int msglen)
+{
+    int iOffset;
+    struct Head_Frame s;
+    char buf[1024];
+
+    memset(buf,0,sizeof(buf));
+    iOffset = 0;
+    
+    msgPackHead(&s,iHead->daddr,iHead->saddr,iHead->index,msgType,iHead->pad_type,msglen);
+    memcpy(buf+iOffset,&s,sizeof(struct Head_Frame));
+    iOffset += sizeof(struct Head_Frame);
+    
+    memcpy(buf+iOffset,sendMsg,msglen);
+    iOffset += msglen;
+    buf[iOffset++] = 0x0d;
+    buf[iOffset++] = 0x0a;
+
+    AddData_ToSendList(pRootData,ENUM_PC_CTL,buf,iOffset);
+
+    return iOffset;
+}
+
 
 Uint32 CaculateSecond(Uint32 input)
 {
@@ -2162,26 +2199,15 @@ void handle_discovery_message(struct root_data *pRootData,char *buf,int len)
     
 }
 
-void process_req_ptp_cfg_all(struct root_data *pRootData,struct Head_Frame *pHeadFrame)
-{
-    int dIndex = pHeadFrame->daddr;
-    struct SlotList *pSlotList = &pRootData->slot_list[dIndex];
-    if(pHeadFrame->pad_type == pSlotList->slot_type)
-    {
-        
 
-    }
-    else
-    {
-        
-    }
-    
-}
 
-void handle_req_dev_infor(struct root_data *pRootData)
+void handle_req_dev_infor(struct root_data *pRootData,struct Head_Frame *pHeadFrame)
 {
     struct Device_Information devinfo;
     memset(&devinfo,0,sizeof(devinfo));
+
+    if(pHeadFrame->daddr != ENUM_SLOT_COR_ADDR)
+        return;
 
     strcpy(devinfo.factory_code,FACTORY_DEV_CODE);
     strcpy(devinfo.device_id,DEV_TYPE_CODE);
@@ -2194,34 +2220,392 @@ void handle_req_dev_infor(struct root_data *pRootData)
     devinfo.slot1 = 4;
     devinfo.pad1_type = pRootData->slot_list[4].slot_type;
 
-    AddData_ToSendList(pRootData,ENUM_PC_CTL,&devinfo,sizeof(devinfo));
+    msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_DATA,&devinfo,sizeof(devinfo));
 }
 
-void handle_req_version(struct root_data *pRootData)
-{
-    char buf[8];
-    memset(buf,0,sizeof(buf));
-
-    memcpy(&buf[0],SOFT_VERSION,4);
-    memcpy(&buf[4],FPGA_VERSION,4);
-    
-
-    AddData_ToSendList(pRootData,ENUM_PC_CTL,buf,sizeof(buf));
-}
-
-
-void handle_req_network(struct root_data *pRootData)
+void handle_req_version(struct root_data *pRootData,struct Head_Frame *pHeadFrame)
 {
     char buf[100];
+    int iOffset = 0;
     memset(buf,0,sizeof(buf));
 
-    *(int*)(buf+0) = htonl(pRootData->comm_port.ip);
-    *(int*)(buf+4) = htonl(pRootData->comm_port.mask);
-    *(int*)(buf+8) = htonl(pRootData->comm_port.gwip);
-    memcpy(buf+12,pRootData->comm_port.mac,6);
-           
-    AddData_ToSendList(pRootData,ENUM_PC_CTL,buf,18);
+    if(pHeadFrame->daddr != ENUM_SLOT_COR_ADDR)
+        return;
+
+    memcpy(&buf[iOffset],SOFT_VERSION,4);
+    iOffset += 4;
+    memcpy(&buf[iOffset],FPGA_VERSION,4);
+    iOffset += 4;
+
+    msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_DATA,buf,iOffset);
+
 }
+
+
+void handle_req_network(struct root_data *pRootData,struct Head_Frame *pHeadFrame)
+{
+    char buf[100];
+    int iOffset = 0;
+    memset(buf,0,sizeof(buf));
+
+    if(pHeadFrame->daddr != ENUM_SLOT_COR_ADDR)
+        return;
+
+    *(int*)(buf+iOffset) = htonl(pRootData->comm_port.ip);
+    iOffset += 4;
+    *(int*)(buf+iOffset) = htonl(pRootData->comm_port.mask);
+    iOffset += 4;
+    *(int*)(buf+iOffset) = htonl(pRootData->comm_port.gwip);
+    iOffset += 4;
+    memcpy(buf+iOffset,pRootData->comm_port.mac,6);
+    iOffset += 6;
+    
+     msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_DATA,buf,iOffset);
+}
+
+void handle_req_gps_status(struct root_data *pRootData,struct Head_Frame *pHeadFrame)
+{
+    char buf[100];
+    int iOffset = 0;
+    struct Satellite_Data *pSatellite = &pRootData->satellite_data;
+    
+    memset(buf,0,sizeof(buf));
+    
+    if(pHeadFrame->daddr != ENUM_SLOT_COR_ADDR)
+        return;
+
+    buf[iOffset++] = pSatellite->satellite_see;
+    buf[iOffset++] = pSatellite->satellite_use;
+    buf[iOffset++] = pSatellite->time_enable;
+    buf[iOffset++] = pSatellite->gps_utc_leaps;
+    buf[iOffset++] = pSatellite->leap_enable;
+    buf[iOffset++] = pSatellite->leap58or60;
+    buf[iOffset++] = pSatellite->eastorwest;
+    buf[iOffset++] = pSatellite->northorsouth;
+    buf[iOffset++] = (pSatellite->longitude_d>>16)&0xff;
+    buf[iOffset++] = (pSatellite->longitude_d)&0xff;
+    buf[iOffset++] = (pSatellite->longitude_f>>16)&0xff;
+    buf[iOffset++] = (pSatellite->longitude_f)&0xff;
+    buf[iOffset++] = (pSatellite->longitude_m>>16)&0xff;
+    buf[iOffset++] = (pSatellite->longitude_m)&0xff;
+
+    buf[iOffset++] = (pSatellite->latitude_d>>16)&0xff;
+    buf[iOffset++] = (pSatellite->latitude_d)&0xff;
+    buf[iOffset++] = (pSatellite->latitude_f>>16)&0xff;
+    buf[iOffset++] = (pSatellite->latitude_f)&0xff;
+    buf[iOffset++] = (pSatellite->latitude_m>>16)&0xff;
+    buf[iOffset++] = (pSatellite->latitude_m)&0xff;
+           
+    msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_DATA,buf,iOffset);
+}
+
+void handle_req_system_setting(struct root_data *pRootData,struct Head_Frame *pHeadFrame)
+{
+    char buf[100];
+    int iOffset = 0;
+    memset(buf,0,sizeof(buf));
+
+    if(pHeadFrame->daddr != ENUM_SLOT_COR_ADDR)
+        return;
+
+    struct clock_info *pClockInfo = &pRootData->clock_info;
+
+    buf[iOffset++] = pClockInfo->ref_type;
+    buf[iOffset++] = 0;
+    buf[iOffset++] = 0;
+    buf[iOffset++] = 0;
+    
+    msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_DATA,buf,iOffset);
+}
+
+void packmsg_ptp_all(struct PtpSetCfg *pPtpSetcfg,char *buf,int *len)
+{
+    int i;
+    int iOffset = *len;
+    
+    buf[iOffset++] = pPtpSetcfg->clockType;
+    buf[iOffset++] = pPtpSetcfg->domainNumber;
+    buf[iOffset++] = pPtpSetcfg->domainFilterSwitch;
+    buf[iOffset++] = pPtpSetcfg->protoType;
+    buf[iOffset++] = pPtpSetcfg->modeType;
+    buf[iOffset++] = pPtpSetcfg->transmitDelayType;
+    buf[iOffset++] = pPtpSetcfg->stepType;
+    buf[iOffset++] = pPtpSetcfg->UniNegotiationEnable;
+    buf[iOffset++] = pPtpSetcfg->logSyncInterval;
+    buf[iOffset++] = pPtpSetcfg->logAnnounceInterval;
+    buf[iOffset++] = pPtpSetcfg->logMinDelayReqInterval;
+    buf[iOffset++] = pPtpSetcfg->logMinPdelayReqInterval;
+    buf[iOffset++] = pPtpSetcfg->grandmasterPriority1;
+    buf[iOffset++] = pPtpSetcfg->grandmasterPriority2;
+    buf[iOffset++] = pPtpSetcfg->validServerNum;
+    buf[iOffset++] = pPtpSetcfg->UnicastDuration;
+    buf[iOffset++] = pPtpSetcfg->currentUtcOffset;
+
+    for(i = 0;i < 10;i++)
+    {
+       *(Uint32 *)(buf+iOffset) = pPtpSetcfg->serverList[i].serverIp;
+       iOffset += 4;
+    }
+
+    for(i = 0;i < 10;i++)
+    {
+        memcpy((buf+iOffset),pPtpSetcfg->serverList[i].serverMac,6);
+        iOffset += 6;
+    }
+
+    *len = iOffset;
+    
+}
+
+void packmsg_ptp_nomal(struct PtpSetCfg *pPtpSetcfg,char *buf,int *len)
+{
+    int i;
+    int iOffset = *len;
+    
+    buf[iOffset++] = pPtpSetcfg->clockType;
+    buf[iOffset++] = pPtpSetcfg->domainNumber;
+    buf[iOffset++] = pPtpSetcfg->domainFilterSwitch;
+    buf[iOffset++] = pPtpSetcfg->protoType;
+    buf[iOffset++] = pPtpSetcfg->modeType;
+    buf[iOffset++] = pPtpSetcfg->transmitDelayType;
+    buf[iOffset++] = pPtpSetcfg->stepType;
+
+    *len = iOffset;
+}
+
+void packmsg_ptp_master(struct PtpSetCfg *pPtpSetcfg,char *buf,int *len)
+{
+    int i;
+    int iOffset = *len;
+    buf[iOffset++] = pPtpSetcfg->logSyncInterval;
+    buf[iOffset++] = pPtpSetcfg->logAnnounceInterval;
+    buf[iOffset++] = pPtpSetcfg->grandmasterPriority1;
+    buf[iOffset++] = pPtpSetcfg->grandmasterPriority2;
+    buf[iOffset++] = pPtpSetcfg->validServerNum;
+    buf[iOffset++] = pPtpSetcfg->currentUtcOffset;
+    
+    *len = iOffset;
+
+}
+
+void packmsg_ptp_slave(struct PtpSetCfg *pPtpSetcfg,char *buf,int *len)
+{
+    int i;
+    int iOffset = *len;
+    
+    buf[iOffset++] = pPtpSetcfg->logMinDelayReqInterval;
+    buf[iOffset++] = pPtpSetcfg->logMinPdelayReqInterval;
+    buf[iOffset++] = pPtpSetcfg->UniNegotiationEnable;
+    buf[iOffset++] = pPtpSetcfg->validServerNum;
+    buf[iOffset++] = pPtpSetcfg->UnicastDuration;
+    buf[iOffset++] = pPtpSetcfg->currentUtcOffset;
+
+    for(i = 0;i < 10;i++)
+    {
+       *(Uint32 *)(buf+iOffset) = pPtpSetcfg->serverList[i].serverIp;
+       iOffset += 4;
+    }
+
+    for(i = 0;i < 10;i++)
+    {
+        memcpy((buf+iOffset),pPtpSetcfg->serverList[i].serverMac,6);
+        iOffset += 6;
+    }
+
+    *len = iOffset;
+
+}
+
+void packmsg_ntp_normal(struct NtpSetCfg *pNtpSetCfg,char *buf,int *len)
+{
+    int i;
+    int iOffset = *len;
+    
+    buf[iOffset++] = pNtpSetCfg->broadcast;
+    buf[iOffset++] = pNtpSetCfg->freq_b;
+    buf[iOffset++] = pNtpSetCfg->multicast;
+    
+    buf[iOffset++] = pNtpSetCfg->freq_m;
+    buf[iOffset++] = pNtpSetCfg->md5_flag;
+    buf[iOffset++] = pNtpSetCfg->sympassive;
+    buf[iOffset++] = 0;
+
+
+    for(i=1;i<9;i++)
+    {
+        buf[iOffset++] = pNtpSetCfg->current_key[i].key_valid;
+        buf[iOffset++] = pNtpSetCfg->current_key[i].key_length;
+        memcpy(buf+iOffset,pNtpSetCfg->current_key[i].key,20);
+        buf += 20;
+    }
+
+    *len = iOffset;
+
+}
+
+
+
+void packmsg_ntp_md5_enable(struct NtpSetCfg *pNtpSetCfg,char *buf,int *len)
+{
+    int i;
+    int iOffset = *len;
+    
+    buf[iOffset++] = pNtpSetCfg->broadcast_key_num;
+    buf[iOffset++] = pNtpSetCfg->multicast_key_num;
+    buf[iOffset++] = pNtpSetCfg->md5_flag;
+    buf[iOffset++] = pNtpSetCfg->sympassive;
+
+
+    *len = iOffset;
+
+}
+
+void packmsg_ntp_md5_blacklist(struct NtpSetCfg *pNtpSetCfg,char *buf,int *len)
+{
+    int i;
+    int iOffset = *len;
+    
+    buf[iOffset++] = pNtpSetCfg->blacklist;
+
+    for(i=0;i<16;i++)
+    {
+        
+        buf[iOffset++] = pNtpSetCfg->blacklist_flag[i];
+        
+        *(int *)(buf+iOffset) = pNtpSetCfg->blacklist_ip[i];
+        iOffset += 4;
+        
+        *(int *)(buf+iOffset) = pNtpSetCfg->blacklist_mask[i];
+        iOffset += 4;
+    }
+
+
+    *len = iOffset;
+
+}
+
+void packmsg_ntp_md5_whitlelist(struct NtpSetCfg *pNtpSetCfg,char *buf,int *len)
+{
+    int i;
+    int iOffset = *len;
+    
+    buf[iOffset++] = pNtpSetCfg->whitelist;
+
+    for(i=0;i<16;i++)
+    {
+        
+        buf[iOffset++] = pNtpSetCfg->whitelist_flag[i];
+        
+        *(int *)(buf+iOffset) = pNtpSetCfg->whitelist_ip[i];
+        iOffset += 4;
+        
+        *(int *)(buf+iOffset) = pNtpSetCfg->whitelist_mask[i];
+        iOffset += 4;
+    }
+
+
+    *len = iOffset;
+
+
+}
+
+
+void handle_req_ptp_all(struct root_data *pRootData,struct Head_Frame *pHeadFrame)
+{
+    char buf[500];
+    int iOffset = 0;
+    
+    memset(buf,0,sizeof(buf));
+
+    int dIndex = pHeadFrame->daddr;
+    struct SlotList *pSlotList = &pRootData->slot_list[dIndex];
+    if(pHeadFrame->pad_type == pSlotList->slot_type)
+    {
+        packmsg_ptp_all(pSlotList->pPtpSetcfg,buf,&iOffset);
+        msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_DATA,buf,iOffset);
+    }
+    else
+    {
+        buf[iOffset++] = 0x00;
+        buf[iOffset++] = 0x01;/**盘类型不匹配  */
+        msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_NAK,buf,iOffset);
+    }
+
+
+
+}
+
+void handle_req_ptp_normal(struct root_data *pRootData,struct Head_Frame *pHeadFrame)
+{
+    char buf[500];
+    int iOffset = 0;
+    
+    memset(buf,0,sizeof(buf));
+
+    int dIndex = pHeadFrame->daddr;
+    struct SlotList *pSlotList = &pRootData->slot_list[dIndex];
+    if(pHeadFrame->pad_type == pSlotList->slot_type)
+    {
+        packmsg_ptp_nomal(pSlotList->pPtpSetcfg,buf,&iOffset);
+        msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_DATA,buf,iOffset);
+    }
+    else
+    {
+        buf[iOffset++] = 0x00;
+        buf[iOffset++] = 0x01;/**盘类型不匹配  */
+        msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_NAK,buf,iOffset);
+    }
+
+}
+
+void handle_req_ptp_master(struct root_data *pRootData,struct Head_Frame *pHeadFrame)
+{
+    char buf[500];
+    int iOffset = 0;
+    
+    memset(buf,0,sizeof(buf));
+
+    int dIndex = pHeadFrame->daddr;
+    struct SlotList *pSlotList = &pRootData->slot_list[dIndex];
+    if(pHeadFrame->pad_type == pSlotList->slot_type)
+    {
+        packmsg_ptp_master(pSlotList->pPtpSetcfg,buf,&iOffset);
+        msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_DATA,buf,iOffset);
+    }
+    else
+    {
+        buf[iOffset++] = 0x00;
+        buf[iOffset++] = 0x01;/**盘类型不匹配  */
+        msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_NAK,buf,iOffset);
+    }
+
+}
+
+
+void handle_req_ptp_slave(struct root_data *pRootData,struct Head_Frame *pHeadFrame)
+{
+    char buf[500];
+    int iOffset = 0;
+    
+    memset(buf,0,sizeof(buf));
+
+    int dIndex = pHeadFrame->daddr;
+    struct SlotList *pSlotList = &pRootData->slot_list[dIndex];
+    if(pHeadFrame->pad_type == pSlotList->slot_type)
+    {
+        packmsg_ptp_slave(pSlotList->pPtpSetcfg,buf,&iOffset);
+        msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_DATA,buf,iOffset);
+    }
+    else
+    {
+        buf[iOffset++] = 0x00;
+        buf[iOffset++] = 0x01;/**盘类型不匹配  */
+        msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_NAK,buf,iOffset);
+    }
+
+
+}
+
 
 void process_pc_ctl_req(struct root_data *pRootData,struct Head_Frame *pHeadFrame,char *buf)
 {
@@ -2234,22 +2618,39 @@ void process_pc_ctl_req(struct root_data *pRootData,struct Head_Frame *pHeadFram
     {
 
      case CMD_DEV_INFORMATION:
-        handle_req_dev_infor(pRootData);
+
+        handle_req_dev_infor(pRootData,pHeadFrame);
         break;
      case CMD_NET_WORK_ADDRESS:
-        handle_req_network(pRootData);
+
+        handle_req_network(pRootData,pHeadFrame);
         break;
      case CMD_VERSION_INFROMATION:
-        handle_req_version(pRootData);
+
+        handle_req_version(pRootData,pHeadFrame);
         break;
      case CMD_GPS_STATUS:
-        
+
+        handle_req_gps_status(pRootData,pHeadFrame);
         break;
      case CMD_SYS_SET:
+
+        handle_req_system_setting(pRootData,pHeadFrame);
         break;
      case CMD_PTP_CFG_ALL:
-        
+        handle_req_ptp_all(pRootData,pHeadFrame);
         break;
+
+     case CMD_PTP_CFG_NORMAL:
+        handle_req_ptp_normal(pRootData,pHeadFrame);
+        break;
+     case CMD_PTP_CFG_SLAVE:
+        handle_req_ptp_slave(pRootData,pHeadFrame);
+        break;
+     case CMD_PTP_CFG_MASTER:
+        handle_req_ptp_master(pRootData,pHeadFrame);
+        break;
+             
      case CMD_NTP_CFG_NORMAL:
         break;
      case CMD_NTP_CFG_BLACKLIST:
@@ -2280,8 +2681,7 @@ void process_pc_ctl_set(struct root_data *pRootData,struct Head_Frame *pHeadFram
        break;
     case CMD_PTP_CFG_MASTER:
        break;
-    case CMD_PTP_CFG_UNICAST:
-       break;
+
     case CMD_NTP_CFG_NORMAL:
        break;
     case CMD_NTP_CFG_MD5_ENABLE:

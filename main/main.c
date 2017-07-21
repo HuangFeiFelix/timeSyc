@@ -11,6 +11,13 @@ struct root_data *g_RootData;
 
 int comm_sin_port;
 
+char *ctlEthConfig = "/mnt/network_ctl.cfg";
+char *ptpEthConfig = "/mnt/network_ptp.cfg";
+char *ntpEthConfig = "/mnt/network_ntp.cfg";
+char *ptpConfig = "/mnt/ptp.cfg";
+char *ntpConfig = "/mnt/ntp.cfg";
+char *md5Config = "/mnt/md5";
+    
 
 
 void AddData_ToSendList(struct root_data *pRoot,char devType,void *buf,short len)
@@ -63,12 +70,10 @@ void Init_Thread_Attr(pthread_attr_t *pThreadAttr)
 void InitSlotLocal(struct SlotList *pSlotLocal)
 {
     int ret;
-    char *ptpConfig = "/mnt/ptp.cfg";
-    char *ntpConfig = "/mnt/ntp.cfg";
-    char *md5Config = "/mnt/md5";
-    
+
     Load_PtpParam_FromFile(pSlotLocal->pPtpSetcfg,ptpConfig);
     Load_NtpdParam_FromFile(pSlotLocal->pNtpSetCfg,ntpConfig,md5Config);
+    
 }
 
 void InitSlotList(struct root_data *pRootData)
@@ -88,7 +93,7 @@ void InitSlotList(struct root_data *pRootData)
 
     InitSlotLocal(pSlotList);
     
-    for(i = 1;i < SLOT_COUNT;i++)
+    for(i = 1;i <= SLOT_COUNT;i++)
     {
         pRootData->slot_list[i].slot_type = 0;
         pRootData->slot_list[i].pNtpSetCfg = NULL;
@@ -98,7 +103,17 @@ void InitSlotList(struct root_data *pRootData)
 
 }
 
-
+void InitNetInforAll(struct root_data *pRootData)
+{
+    
+    strcpy(pRootData->ptp_port.ifaceName,"eth0");
+    strcpy(pRootData->ntp_port.ifaceName,"eth1");
+    strcpy(pRootData->comm_port.ifaceName,"eth2");
+    Load_NetWorkParam_FromFile(ctlEthConfig,&pRootData->comm_port);
+    Load_NetWorkParam_FromFile(ntpEthConfig,&pRootData->ntp_port);
+    Load_NetWorkParam_FromFile(ptpEthConfig,&pRootData->ptp_port);
+    
+}
 
 void InitDev(struct root_data *pRootData)
 {    
