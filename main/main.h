@@ -56,8 +56,9 @@ struct PtpSetCfg
     Uint32 UnicastDuration;       /** 单播协商机制，老化时间 */
     Integer8 logSyncInterval;
     Integer8 logAnnounceInterval;
-    Integer8 logMinPdelayReqInterval;
+    
     Integer8 logMinDelayReqInterval;
+    Integer8 logMinPdelayReqInterval;
    
     UInteger8 grandmasterPriority1;
     UInteger8 grandmasterPriority2;
@@ -126,7 +127,7 @@ struct SlotList
 struct root_data{
 
 		struct dev_head dev_head;	//设备信息头
-        struct device dev[10];		//使用设备信息
+        struct device dev[12];		//使用设备信息
         int dev_fd;
         
         struct SlotList slot_list[6];
@@ -159,5 +160,17 @@ struct root_data{
 };
 
 extern struct root_data *g_RootData;
+extern char *ctlEthConfig;
+extern char *ptpEthConfig;
+extern char *ntpEthConfig;
+extern char *ptpConfig;
+extern char *ntpConfig;
+extern char *md5Config;
+
+
+extern void start_ptp_daemon();
+extern void stop_ptp_daemon();
+extern void start_ntp_daemon();
+extern void stop_ntp_daemon();
 
 #endif

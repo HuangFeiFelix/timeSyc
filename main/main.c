@@ -3,6 +3,7 @@
 #include "net.h"
 #include "manager.h"
 #include "fpga_time.h"
+#include "lcd_cmd_process.h"
 
 struct root_data *g_RootData;
 #define COMM_GET_SEC            0x83
@@ -18,11 +19,40 @@ char *ptpConfig = "/mnt/ptp.cfg";
 char *ntpConfig = "/mnt/ntp.cfg";
 char *md5Config = "/mnt/md5";
     
-
+#define PATH_PTP_DAEMON "/mnt/ptp"
+#define PATH_NTP_DAEMON "/mnt/ntpd"
 
 void AddData_ToSendList(struct root_data *pRoot,char devType,void *buf,short len)
 {
     add_send(buf,len,&pRoot->dev[devType]);
+}
+
+
+void start_ptp_daemon()
+{
+    system(PATH_PTP_DAEMON);
+}
+
+
+void stop_ptp_daemon()
+{
+    system("pkill ptp");
+}
+
+
+void start_ntp_daemon()
+{
+
+}
+
+void stop_ntp_daemon()
+{
+
+}
+
+void reset_sys_daemon()
+{
+
 }
 
 void Init_Thread_Attr(pthread_attr_t *pThreadAttr)
@@ -120,9 +150,9 @@ void InitDev(struct root_data *pRootData)
     init_dev_head(&pRootData->dev_head);
     
     /**初始化UI 设备 ,UI设备通过串口通信id =0*/
-#if 0
+#if 1
     pRootData->dev[ENUM_LCD].com_attr.com_port = ENUM_LCD;  //串口1
-    pRootData->dev[ENUM_LCD].com_attr.baud_rate = 9600;
+    pRootData->dev[ENUM_LCD].com_attr.baud_rate = 115200;
     init_add_dev(&pRootData->dev[ENUM_LCD],&pRootData->dev_head,COMM_DEVICE,ENUM_LCD);
 #endif
 #if 0
@@ -172,11 +202,11 @@ void InitDev(struct root_data *pRootData)
     init_add_dev(&pRootData->dev[ENUM_PROBE],&pRootData->dev_head,UDP_DEVICE,ENUM_PROBE);
     #endif
     /**本地PTP   */
-    pRootData->dev[ENUM_IPC_PTP].net_attr.sin_port = 8899;
+    pRootData->dev[ENUM_IPC_PTP].net_attr.sin_port = 9990;
     pRootData->dev[ENUM_IPC_PTP].net_attr.ip = inet_addr("127.0.0.1");
     init_add_dev(&pRootData->dev[ENUM_IPC_PTP],&pRootData->dev_head,UDP_DEVICE,ENUM_IPC_PTP);
 
-    pRootData->dev[ENUM_IPC_NTP].net_attr.sin_port = 9999;
+    pRootData->dev[ENUM_IPC_NTP].net_attr.sin_port = 9991;
     pRootData->dev[ENUM_IPC_NTP].net_attr.ip = inet_addr("127.0.0.1");
     init_add_dev(&pRootData->dev[ENUM_IPC_NTP],&pRootData->dev_head,UDP_DEVICE,ENUM_IPC_NTP);
 
@@ -208,9 +238,7 @@ void *DataHandle_Thread(void *arg)
 #if 0
                         for(i=0;i<p_data_list->recv_lev.len;i++)
                             printf("%d ",p_data_list->recv_lev.data[i]);
-                        printf("\n");
-
-                        
+                        printf("\n");           
                         ProcessUiData(pRoot,&p_data_list->recv_lev);
 #endif
     					break;
@@ -235,7 +263,7 @@ void *DataHandle_Thread(void *arg)
                             printf("%x ",p_data_list->recv_lev.data[i]);
                         printf("\n");
 #endif
-                        printf("handle TCP pc_ctl_message %d\n",p_dev->dev_id);
+                        printf("handle UDP pc_ctl_message %d\n",p_dev->dev_id);
 
                         handle_pc_ctl_message(pRootData,p_data_list->recv_lev.data,p_data_list->recv_lev.len);
 
@@ -481,6 +509,26 @@ void MaintainCoreTime(struct root_data *pRoot,TimeInternal *ptptTime)
             
 }
 
+void update_lcd_display(struct root_data *pRootData,struct tm* t_tm)
+{
+    switch(pRootData->lcd_sreen_id)
+    {
+        case MAIN_SCREEN_ID:
+            break;
+        case CLOCK_STATUS_SCREEN_ID:
+            break;
+        case WARN_SCREEN_ID:
+            break;
+
+        case ETH_CTL_SCREEN_ID:       
+        case ETH_PTP_SCREEN_ID:      
+        case ETH_NTP_SCREEN_ID:
+            break;
+        default:
+            break;
+    }
+}
+
 
 void *ThreadUsuallyProcess(void *arg)
 {
@@ -503,15 +551,14 @@ void *ThreadUsuallyProcess(void *arg)
 
             GetFpgaPpsTime(&timeTmp); 
             printf("fgpa system time:sec=%d,nao=%d \n",timeTmp.seconds,timeTmp.nanoseconds);
-
             current_time = timeTmp.seconds;
             tm = gmtime(&current_time);
-            //printf("fgpatime:%d/%d/%d %d:%d:%d\n",tm->tm_year+1900,tm->tm_mon+1,tm->tm_mday,tm->tm_hour,tm->tm_min,tm->tm_sec);
+            printf("fgpatime:%d/%d/%d %d:%d:%d\n",tm->tm_year+1900,tm->tm_mon+1,tm->tm_mday,tm->tm_hour,tm->tm_min,tm->tm_sec);
           
             
-            /**钟控处理  */
             Display_SatelliteData(&pRootData->satellite_data);
 
+            
             
             //ClockStateProcess(pClockInfo);
             

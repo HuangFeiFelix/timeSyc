@@ -153,8 +153,8 @@ void GetFpgaRuningTime(TimeInternal *pTime)
 void GetFpgaPpsTime(TimeInternal *pTime)
 {
 
-    Uint32 sec = *(Uint32*)(BASE_ADDR+PPS_PTP_STROE_NAN_ADD);
-    Uint32 nao = *(Uint32*)(BASE_ADDR+PPS_PTP_STROE_SEC_ADD);
+    Uint32 sec = *(Uint32*)(BASE_ADDR+PPS_PTP_STROE_SEC_ADD);
+    Uint32 nao = *(Uint32*)(BASE_ADDR+PPS_PTP_STROE_NAN_ADD);
 
     pTime->seconds = sec;
     pTime->nanoseconds = nao;

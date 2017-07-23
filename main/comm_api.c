@@ -38,7 +38,7 @@ int open_port(int com_port)
 {
 	int fd;
 
-	char *dev[] = {"/dev/ttyPS1", "/dev/ttyS0", "/dev/ttyUL2", "/dev/ttyUL3", "/dev/ttyPS5"};
+	char *dev[] = {"/dev/ttyPS1", "/dev/ttyUL1", "/dev/ttyUL2",  "/dev/ttyUL3","/dev/ttyPS5"};
 	if ((com_port < 0) || (com_port > MAX_COM_NUM))
 	{
 		return -1;
@@ -241,7 +241,7 @@ void add_uart_lcd(struct uart_buf *pUart, unsigned char data)
     }
 
     last_data = data;
-    //printf("%x----%d---\n",data,pUart->cur);
+    printf("%x----%d---\n",data,pUart->cur);
 
 }
 
@@ -617,12 +617,14 @@ int recv_ui_com_data(struct device *p_dev, struct dev_head *dev_head)
 
 int recv_lcd_com_data(struct device *p_dev, struct dev_head *dev_head)
 {
-	char buf,*p_buf = p_dev->com_attr.uart_buf.buf;
+	char buf;
+    char *p_buf = p_dev->com_attr.uart_buf.buf;
 	int fd = p_dev->fd, len = 0;
 	if (FD_ISSET(fd,&dev_head->tmp_set) > 0)
 	{
 		if ((len = read(fd, &buf, UART_LEN)) > 0)
 			add_uart_lcd(&p_dev->com_attr.uart_buf, buf);
+        
 	}
 	if (p_dev->com_attr.uart_buf.flags == 0x10)
 	{
@@ -630,6 +632,7 @@ int recv_lcd_com_data(struct device *p_dev, struct dev_head *dev_head)
 		add_recv(p_buf, fd,p_dev->com_attr.uart_buf.cur, p_dev);
 		p_dev->com_attr.uart_buf.flags = 0x00;
 	}
+
 	return TRUE;
 }
 

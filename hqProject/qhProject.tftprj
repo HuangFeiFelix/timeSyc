@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<VisualTFT Name="qhProject" OutputDirectory="output\" StartupPage="main" StartupAction="" StartupActionLoop="1" DeviceType="12001" DeviceEnableControl="1" DeviceEnableTouchPane="1" DeviceEnableBuzzer="2" DeviceEnableCRC="0" DeviceBaudRate="3" DeviceCoordinateUpdateMode="4" DeviceControlNotify="2" DeviceScreenNotify="0" DeviceScreenRvs="0" DeviceBacklightAutoControl="0" DeviceBacklightTime="10" DeviceBacklightOn="200" DeviceBacklightOff="50" DeviceBacklightNotify="0" DeviceLockConfig="1" DeviceStartupVoice="0" DeviceVoiceVolume="100" CompatibleScreenRotate="1" AddResourceFloder="1" FastRefreshScreen="0" Version="1.0" DeviceEnableSlidingScreen="0" BacklightAutoControl="0" BacklightNotify="0" StandbyPage="">
+	<Pages><Page RelativePath="main.tft"/><Page RelativePath="ClockStatus.tft"/><Page RelativePath="ParamSetting.tft"/><Page RelativePath="Warning.tft"/><Page RelativePath="ethCTL.tft"/><Page RelativePath="ethPTP.tft"/><Page RelativePath="ethNTP.tft"/></Pages>
+	<Images><Image RelativePath="Images\pushbutton.jpg" Download="0"/></Images>
+	<Waves/>
+</VisualTFT>

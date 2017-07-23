@@ -33,7 +33,8 @@
 
 #define REF_SATLITE 0
 #define REF_10MHZ   1
-#define REF_2KHz    3
+#define REF_2KHz    2
+#define REF_PTP     3
 
 #define E1FastKaSmall 30
 #define E1FastKaMiddle 40  //<1exp(-9)
@@ -62,14 +63,11 @@ struct clock_alarm_data
 
     /**输入信号 */
     Uint8 alarmBd1pps;      /**BD接收机1PPS检波告  */
+    
     Uint8 alarmBdTod;       /**BD接收机串口报文检波告警  */
     Uint8 alarmRef10M;      /**参考检波告警  */
     Uint8 ref10Mor2M;       /**1:10M    2,2M   3,告警*/
-    Uint8 alarmInputPpsTod; /**1PPS（+TOD）检波 */
-    Uint8 alarmInputTod;         /**TOD检波  */
-    Uint8 alarmInputDcls;   /**DCLS检波  */
-    Uint8 alarmInput26503_2M;/**DS26503输出2MHz检波  */
-    Uint8 alarmBattery;
+    
     Uint8 alarmSatellite;  /**卫星信号出问题  1告警，0 不告警*/
 };
 

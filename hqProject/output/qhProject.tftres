@@ -1,0 +1,17 @@
+<Resource>
+    <pages>
+        <page name="main" id="0" />
+        <page name="ClockStatus" id="1" />
+        <page name="ParamSetting" id="2" />
+        <page name="Warning" id="3" />
+        <page name="ethCTL" id="4" />
+        <page name="ethPTP" id="5" />
+        <page name="ethNTP" id="6" />
+    </pages>
+    <images>
+        <image id="0" url="e:\hqproject\Images\pushbutton.jpg" width="75" height="30" crop="0" effect_left="0" effect_top="0" effect_width="75" effect_height="30" size="4500" />
+        <image id="1" url="e:\hqproject\Images\noselect.jpg" width="25" height="25" crop="0" effect_left="0" effect_top="0" effect_width="25" effect_height="25" size="1250" />
+        <image id="2" url="e:\hqproject\Images\select.jpg" width="25" height="25" crop="0" effect_left="0" effect_top="0" effect_width="25" effect_height="25" size="1250" />
+    </images>
+    <waves />
+</Resource>

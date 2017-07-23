@@ -214,10 +214,11 @@ typedef enum
 
 enum
 {
-    ENUM_BUS =0,
+    ENUM_GPS = 0,
     ENUM_LCD,
-    ENUM_GPS,
     ENUM_RB,
+    ENUM_XO,
+    ENUM_BUS,
     ENUM_PC_CTL,
     ENUM_PC_DISCOVER,
     ENUM_PPS_TOD,

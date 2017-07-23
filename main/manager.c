@@ -15,10 +15,13 @@
 
 #define CMD_HEART_BEAT          0x0000
 #define CMD_DEV_INFORMATION     0x0001
-#define CMD_NET_WORK_ADDRESS    0x0002
+#define CMD_NET_WORK_CTL        0x0002
 #define CMD_VERSION_INFROMATION 0x0003
 #define CMD_GPS_STATUS          0x0004
 #define CMD_SYS_SET             0x0005
+#define CMD_NET_WORK_PTP        0x0006
+#define CMD_NET_WORK_NTP        0x0007
+#define CMD_RESET_SYS           0x0008
 
 #define CMD_PTP_CFG_ALL         0x0010
 #define CMD_PTP_CFG_NORMAL      0x0011
@@ -28,9 +31,8 @@
 
 #define CMD_NTP_CFG_NORMAL      0x0020
 #define CMD_NTP_CFG_MD5_ENABLE  0x0021
-#define CMD_NTP_CFG_MD5_KEY     0x0022
-#define CMD_NTP_CFG_BLACKLIST   0x0023
-#define CMD_NTP_CFG_WHITELSIT   0x0024
+#define CMD_NTP_CFG_BLACKLIST   0x0022
+#define CMD_NTP_CFG_WHITELSIT   0x0023
 
 #define CONFIG_FILE_SIZE 8096
 #define LINE_LENGTH      200
@@ -103,52 +105,6 @@ struct Md5key factory_key[10]={
 						 };
 
 
-struct Head_Frame
-{
-    char h1;
-    char h2;
-    char saddr;
-    char daddr;
-    short index;
-    char ctype;
-    char pad_type;
-    int length;
-};
-
-
-struct Discovery_Frame
-{
-    char h1;
-    char h2;
-    char saddr;
-    char daddr;
-    short index;
-    char ctype;
-    char end1;
-    char end2;
-};
-
-struct Response_Frame
-{
-    int ipaddr;
-    int port;
-};
-
-
-struct Device_Information
-{
-    char factory_code[8];
-    char device_id[8];
-    char slot1;
-    char pad1_type;
-    char slot2;
-    char pad2_type;
-    char slot3;
-    char pad3_type;
-    char slot4;
-    char pad4_type;
-};
-
 
 void msgUpPackHead(char *buf,struct Head_Frame *pHead)
 {
@@ -160,6 +116,46 @@ void msgUpPackHead(char *buf,struct Head_Frame *pHead)
     pHead->ctype = *(char *)(buf + 6);;
     pHead->pad_type = *(char *)(buf + 7);;
     pHead->length = ntohl(*(int *)(buf + 8));
+}
+
+
+void msgUpPack_ptp_all(char *data,struct PtpSetCfg *pPtpSetcfg)
+{
+        
+    int i;
+    int iOffset = 0;
+    
+    pPtpSetcfg->clockType = data[iOffset++];
+    pPtpSetcfg->domainNumber = data[iOffset++];
+    pPtpSetcfg->domainFilterSwitch = data[iOffset++];
+    pPtpSetcfg->protoType = data[iOffset++];
+    pPtpSetcfg->modeType = data[iOffset++];
+    pPtpSetcfg->transmitDelayType = data[iOffset++];
+    pPtpSetcfg->stepType = data[iOffset++];
+    pPtpSetcfg->UniNegotiationEnable = data[iOffset++];
+    pPtpSetcfg->logSyncInterval = data[iOffset++];
+    pPtpSetcfg->logAnnounceInterval = data[iOffset++];
+    pPtpSetcfg->logMinDelayReqInterval = data[iOffset++];
+    pPtpSetcfg->logMinPdelayReqInterval = data[iOffset++];
+    pPtpSetcfg->grandmasterPriority1 = data[iOffset++];
+    pPtpSetcfg->grandmasterPriority2 = data[iOffset++];
+    pPtpSetcfg->validServerNum = data[iOffset++];
+    pPtpSetcfg->UnicastDuration = data[iOffset++];
+    pPtpSetcfg->currentUtcOffset = data[iOffset++];
+    
+
+    for(i = 0;i < 10;i++)
+    {
+       pPtpSetcfg->serverList[i].serverIp = *(Uint32 *)(data+iOffset);
+       iOffset += 4;
+    }
+
+    for(i = 0;i < 10;i++)
+    {
+        memcpy(pPtpSetcfg->serverList[i].serverMac,(data+iOffset),6);
+        iOffset += 6;
+    }
+
 }
 
 
@@ -201,9 +197,13 @@ int msgPackFrameToSend(struct root_data *pRootData,struct Head_Frame *iHead,shor
     msgPackHead(&s,iHead->daddr,iHead->saddr,iHead->index,msgType,iHead->pad_type,msglen);
     memcpy(buf+iOffset,&s,sizeof(struct Head_Frame));
     iOffset += sizeof(struct Head_Frame);
-    
-    memcpy(buf+iOffset,sendMsg,msglen);
-    iOffset += msglen;
+
+    if(sendMsg != NULL)
+    {
+        memcpy(buf+iOffset,sendMsg,msglen);
+        iOffset += msglen;
+    }
+
     buf[iOffset++] = 0x0d;
     buf[iOffset++] = 0x0a;
 
@@ -945,7 +945,6 @@ static void Load_ServerAddr(struct NtpSetCfg *pNtpSetcfg,Uint8 pData[200][200],i
         printf("Server close\n");
         return;
     }
-    //g_Ntp_Parameter.sympassive = TRUE;
 
 }
 
@@ -1164,6 +1163,15 @@ void SetNetworkToEnv(struct NetInfor *infopt)
     SetMacAddress(infopt->ifaceName,infopt->mac);
     sleep(1);
 
+    SetIpAddress(infopt->ifaceName,infopt->ip);
+    SetMaskAddress(infopt->ifaceName,infopt->mask);
+
+    AddGateWay(infopt->ifaceName,infopt->gwip);
+
+}
+
+void SetCmdNetworkToEnv(struct NetInfor *infopt)
+{
     SetIpAddress(infopt->ifaceName,infopt->ip);
     SetMaskAddress(infopt->ifaceName,infopt->mask);
 
@@ -2203,24 +2211,36 @@ void handle_discovery_message(struct root_data *pRootData,char *buf,int len)
 
 void handle_req_dev_infor(struct root_data *pRootData,struct Head_Frame *pHeadFrame)
 {
-    struct Device_Information devinfo;
-    memset(&devinfo,0,sizeof(devinfo));
+    char buf[100];
+    int iOffset = 0;
+    
+    memset(buf,0,sizeof(buf));
 
     if(pHeadFrame->daddr != ENUM_SLOT_COR_ADDR)
+    {
+        buf[iOffset++] = 0x00;
+        buf[iOffset++] = 0x01;/**盘类型不匹配  */
+        msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_NAK,buf,iOffset);
         return;
+    }
 
-    strcpy(devinfo.factory_code,FACTORY_DEV_CODE);
-    strcpy(devinfo.device_id,DEV_TYPE_CODE);
-    devinfo.slot1 = 1;
-    devinfo.pad1_type = pRootData->slot_list[1].slot_type;
-    devinfo.slot1 = 2;
-    devinfo.pad1_type = pRootData->slot_list[2].slot_type;
-    devinfo.slot1 = 3;
-    devinfo.pad1_type = pRootData->slot_list[3].slot_type;
-    devinfo.slot1 = 4;
-    devinfo.pad1_type = pRootData->slot_list[4].slot_type;
+    strcpy(buf+iOffset,FACTORY_DEV_CODE);
+    iOffset += strlen(FACTORY_DEV_CODE);
 
-    msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_DATA,&devinfo,sizeof(devinfo));
+    strcpy(buf+iOffset,DEV_TYPE_CODE);
+    iOffset += strlen(DEV_TYPE_CODE);
+    
+    buf[iOffset++] = 1;
+    buf[iOffset++] = pRootData->slot_list[1].slot_type;
+    buf[iOffset++] = 2;
+    buf[iOffset++] = pRootData->slot_list[2].slot_type;
+    buf[iOffset++] = 3;
+    buf[iOffset++] = pRootData->slot_list[3].slot_type;
+    buf[iOffset++] = 4;
+    buf[iOffset++] = pRootData->slot_list[4].slot_type;
+
+
+    msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_DATA,buf,iOffset);
 }
 
 void handle_req_version(struct root_data *pRootData,struct Head_Frame *pHeadFrame)
@@ -2230,7 +2250,13 @@ void handle_req_version(struct root_data *pRootData,struct Head_Frame *pHeadFram
     memset(buf,0,sizeof(buf));
 
     if(pHeadFrame->daddr != ENUM_SLOT_COR_ADDR)
+    {
+        buf[iOffset++] = 0x00;
+        buf[iOffset++] = 0x01;/**盘类型不匹配  */
+        msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_NAK,buf,iOffset);
         return;
+    }
+
 
     memcpy(&buf[iOffset],SOFT_VERSION,4);
     iOffset += 4;
@@ -2242,14 +2268,19 @@ void handle_req_version(struct root_data *pRootData,struct Head_Frame *pHeadFram
 }
 
 
-void handle_req_network(struct root_data *pRootData,struct Head_Frame *pHeadFrame)
+void handle_req_network_ctl(struct root_data *pRootData,struct Head_Frame *pHeadFrame)
 {
     char buf[100];
     int iOffset = 0;
     memset(buf,0,sizeof(buf));
 
     if(pHeadFrame->daddr != ENUM_SLOT_COR_ADDR)
+    {
+        buf[iOffset++] = 0x00;
+        buf[iOffset++] = 0x01;/**盘类型不匹配  */
+        msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_NAK,buf,iOffset);
         return;
+    }
 
     *(int*)(buf+iOffset) = htonl(pRootData->comm_port.ip);
     iOffset += 4;
@@ -2258,6 +2289,58 @@ void handle_req_network(struct root_data *pRootData,struct Head_Frame *pHeadFram
     *(int*)(buf+iOffset) = htonl(pRootData->comm_port.gwip);
     iOffset += 4;
     memcpy(buf+iOffset,pRootData->comm_port.mac,6);
+    iOffset += 6;
+    
+     msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_DATA,buf,iOffset);
+}
+
+void handle_req_network_ptp(struct root_data *pRootData,struct Head_Frame *pHeadFrame)
+{
+    char buf[100];
+    int iOffset = 0;
+    memset(buf,0,sizeof(buf));
+
+    if(pHeadFrame->daddr != ENUM_SLOT_COR_ADDR)
+    {
+        buf[iOffset++] = 0x00;
+        buf[iOffset++] = 0x01;/**盘类型不匹配  */
+        msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_NAK,buf,iOffset);
+        return;
+    }
+
+    *(int*)(buf+iOffset) = htonl(pRootData->ptp_port.ip);
+    iOffset += 4;
+    *(int*)(buf+iOffset) = htonl(pRootData->ptp_port.mask);
+    iOffset += 4;
+    *(int*)(buf+iOffset) = htonl(pRootData->ptp_port.gwip);
+    iOffset += 4;
+    memcpy(buf+iOffset,pRootData->ptp_port.mac,6);
+    iOffset += 6;
+    
+     msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_DATA,buf,iOffset);
+}
+
+void handle_req_network_ntp(struct root_data *pRootData,struct Head_Frame *pHeadFrame)
+{
+    char buf[100];
+    int iOffset = 0;
+    memset(buf,0,sizeof(buf));
+
+    if(pHeadFrame->daddr != ENUM_SLOT_COR_ADDR)
+    {
+        buf[iOffset++] = 0x00;
+        buf[iOffset++] = 0x01;/**盘类型不匹配  */
+        msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_NAK,buf,iOffset);
+        return;
+    }
+
+    *(int*)(buf+iOffset) = htonl(pRootData->ntp_port.ip);
+    iOffset += 4;
+    *(int*)(buf+iOffset) = htonl(pRootData->ntp_port.mask);
+    iOffset += 4;
+    *(int*)(buf+iOffset) = htonl(pRootData->ntp_port.gwip);
+    iOffset += 4;
+    memcpy(buf+iOffset,pRootData->ntp_port.mac,6);
     iOffset += 6;
     
      msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_DATA,buf,iOffset);
@@ -2272,7 +2355,13 @@ void handle_req_gps_status(struct root_data *pRootData,struct Head_Frame *pHeadF
     memset(buf,0,sizeof(buf));
     
     if(pHeadFrame->daddr != ENUM_SLOT_COR_ADDR)
+    {
+        buf[iOffset++] = 0x00;
+        buf[iOffset++] = 0x01;/**盘类型不匹配  */
+        msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_NAK,buf,iOffset);
         return;
+    }
+
 
     buf[iOffset++] = pSatellite->satellite_see;
     buf[iOffset++] = pSatellite->satellite_use;
@@ -2306,7 +2395,13 @@ void handle_req_system_setting(struct root_data *pRootData,struct Head_Frame *pH
     memset(buf,0,sizeof(buf));
 
     if(pHeadFrame->daddr != ENUM_SLOT_COR_ADDR)
+    {
+        buf[iOffset++] = 0x00;
+        buf[iOffset++] = 0x01;/**盘类型不匹配  */
+        msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_NAK,buf,iOffset);
         return;
+    }
+
 
     struct clock_info *pClockInfo = &pRootData->clock_info;
 
@@ -2416,6 +2511,8 @@ void packmsg_ptp_slave(struct PtpSetCfg *pPtpSetcfg,char *buf,int *len)
 
 }
 
+
+
 void packmsg_ntp_normal(struct NtpSetCfg *pNtpSetCfg,char *buf,int *len)
 {
     int i;
@@ -2428,7 +2525,6 @@ void packmsg_ntp_normal(struct NtpSetCfg *pNtpSetCfg,char *buf,int *len)
     buf[iOffset++] = pNtpSetCfg->freq_m;
     buf[iOffset++] = pNtpSetCfg->md5_flag;
     buf[iOffset++] = pNtpSetCfg->sympassive;
-    buf[iOffset++] = 0;
 
 
     for(i=1;i<9;i++)
@@ -2436,7 +2532,7 @@ void packmsg_ntp_normal(struct NtpSetCfg *pNtpSetCfg,char *buf,int *len)
         buf[iOffset++] = pNtpSetCfg->current_key[i].key_valid;
         buf[iOffset++] = pNtpSetCfg->current_key[i].key_length;
         memcpy(buf+iOffset,pNtpSetCfg->current_key[i].key,20);
-        buf += 20;
+        iOffset += 20;
     }
 
     *len = iOffset;
@@ -2460,7 +2556,7 @@ void packmsg_ntp_md5_enable(struct NtpSetCfg *pNtpSetCfg,char *buf,int *len)
 
 }
 
-void packmsg_ntp_md5_blacklist(struct NtpSetCfg *pNtpSetCfg,char *buf,int *len)
+void packmsg_ntp_blacklist(struct NtpSetCfg *pNtpSetCfg,char *buf,int *len)
 {
     int i;
     int iOffset = *len;
@@ -2484,7 +2580,7 @@ void packmsg_ntp_md5_blacklist(struct NtpSetCfg *pNtpSetCfg,char *buf,int *len)
 
 }
 
-void packmsg_ntp_md5_whitlelist(struct NtpSetCfg *pNtpSetCfg,char *buf,int *len)
+void packmsg_ntp_whitlelist(struct NtpSetCfg *pNtpSetCfg,char *buf,int *len)
 {
     int i;
     int iOffset = *len;
@@ -2606,13 +2702,582 @@ void handle_req_ptp_slave(struct root_data *pRootData,struct Head_Frame *pHeadFr
 
 }
 
+void handle_req_ntp_normal(struct root_data *pRootData,struct Head_Frame *pHeadFrame)
+{
+    char buf[500];
+    int iOffset = 0;
+    
+    memset(buf,0,sizeof(buf));
+
+    int dIndex = pHeadFrame->daddr;
+    struct SlotList *pSlotList = &pRootData->slot_list[dIndex];
+    if(pHeadFrame->pad_type == pSlotList->slot_type)
+    {
+        packmsg_ntp_normal(pSlotList->pNtpSetCfg,buf,&iOffset);
+        msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_DATA,buf,iOffset);
+    }
+    else
+    {
+        buf[iOffset++] = 0x00;
+        buf[iOffset++] = 0x01;/**盘类型不匹配  */
+        msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_NAK,buf,iOffset);
+    }
+
+
+}
+
+
+void handle_req_ntp_md5_enable(struct root_data *pRootData,struct Head_Frame *pHeadFrame)
+{
+    char buf[500];
+    int iOffset = 0;
+    
+    memset(buf,0,sizeof(buf));
+
+    int dIndex = pHeadFrame->daddr;
+    struct SlotList *pSlotList = &pRootData->slot_list[dIndex];
+    if(pHeadFrame->pad_type == pSlotList->slot_type)
+    {
+        packmsg_ntp_md5_enable(pSlotList->pNtpSetCfg,buf,&iOffset);
+        msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_DATA,buf,iOffset);
+    }
+    else
+    {
+        buf[iOffset++] = 0x00;
+        buf[iOffset++] = 0x01;/**盘类型不匹配  */
+        msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_NAK,buf,iOffset);
+    }
+
+
+}
+
+void handle_req_ntp_blacklist(struct root_data *pRootData,struct Head_Frame *pHeadFrame)
+{
+    char buf[500];
+    int iOffset = 0;
+    
+    memset(buf,0,sizeof(buf));
+
+    int dIndex = pHeadFrame->daddr;
+    struct SlotList *pSlotList = &pRootData->slot_list[dIndex];
+    if(pHeadFrame->pad_type == pSlotList->slot_type)
+    {
+        packmsg_ntp_blacklist(pSlotList->pNtpSetCfg,buf,&iOffset);
+        msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_DATA,buf,iOffset);
+    }
+    else
+    {
+        buf[iOffset++] = 0x00;
+        buf[iOffset++] = 0x01;/**盘类型不匹配  */
+        msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_NAK,buf,iOffset);
+    }
+
+
+}
+
+void handle_req_ntp_whitlelist(struct root_data *pRootData,struct Head_Frame *pHeadFrame)
+{
+    char buf[500];
+    int iOffset = 0;
+    
+    memset(buf,0,sizeof(buf));
+
+    int dIndex = pHeadFrame->daddr;
+    struct SlotList *pSlotList = &pRootData->slot_list[dIndex];
+    if(pHeadFrame->pad_type == pSlotList->slot_type)
+    {
+        packmsg_ntp_whitlelist(pSlotList->pNtpSetCfg,buf,&iOffset);
+        msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_DATA,buf,iOffset);
+    }
+    else
+    {
+        buf[iOffset++] = 0x00;
+        buf[iOffset++] = 0x01;/**盘类型不匹配  */
+        msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_NAK,buf,iOffset);
+    }
+
+
+}
+
+
+void handle_no_cmd_error(struct root_data *pRootData,struct Head_Frame *pHeadFrame)
+{
+    char buf[100];
+    int iOffset = 0; 
+    memset(buf,0,sizeof(buf));
+
+    buf[iOffset++] = 0x00;
+    buf[iOffset++] = 0x02;/**无效命令  */
+    msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_NAK,buf,iOffset);
+
+}
+
+
+void handle_set_network_ctl(struct root_data *pRootData,struct Head_Frame *pHeadFrame,char *data)
+{
+    char buf[100];
+    int iOffset = 0;
+    int index = 0;
+
+    struct NetInfor m_network_ctl;
+
+    
+    memset(buf,0,sizeof(buf));
+
+    if(pHeadFrame->daddr != ENUM_SLOT_COR_ADDR)
+    {
+        buf[iOffset++] = 0x00;
+        buf[iOffset++] = 0x01;/**盘类型不匹配  */
+        msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_NAK,buf,iOffset);
+        return;
+    }
+
+    memcpy(&m_network_ctl,&pRootData->comm_port,sizeof(struct NetInfor));
+
+    
+    m_network_ctl.ip = ntohl(*(int*)(data+index));
+    index += 4;
+    m_network_ctl.mask = ntohl(*(int*)(data+index));
+    index += 4;
+    m_network_ctl.gwip = ntohl(*(int*)(data+index));
+    index += 4;
+    memcpy(m_network_ctl.mac,data+index,6);
+    index += 6;
+
+    if(memcmp(&m_network_ctl,&pRootData->comm_port,sizeof(struct NetInfor)) != 0)
+    {
+        memcpy(&pRootData->comm_port,&m_network_ctl,sizeof(struct NetInfor));
+        SaveNetParamToFile(ctlEthConfig,&pRootData->comm_port);
+    }
+    
+    msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_ACK,NULL,iOffset);
+}
+
+void handle_set_network_ptp(struct root_data *pRootData,struct Head_Frame *pHeadFrame,char *data)
+{
+    char buf[100];
+    int iOffset = 0;
+    int index = 0;
+
+    struct NetInfor m_network_ctl;
+
+    
+    memset(buf,0,sizeof(buf));
+
+    if(pHeadFrame->daddr != ENUM_SLOT_COR_ADDR)
+    {
+        buf[iOffset++] = 0x00;
+        buf[iOffset++] = 0x01;/**盘类型不匹配  */
+        msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_NAK,buf,iOffset);
+        return;
+    }
+
+    memcpy(&m_network_ctl,&pRootData->ptp_port,sizeof(struct NetInfor));
+
+    
+    m_network_ctl.ip = ntohl(*(int*)(data+index));
+    index += 4;
+    m_network_ctl.mask = ntohl(*(int*)(data+index));
+    index += 4;
+    m_network_ctl.gwip = ntohl(*(int*)(data+index));
+    index += 4;
+    memcpy(m_network_ctl.mac,data+index,6);
+    index += 6;
+
+    msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_ACK,NULL,iOffset);
+
+
+    if(memcmp(&m_network_ctl,&pRootData->ptp_port,sizeof(struct NetInfor)) != 0)
+    {
+        memcpy(&pRootData->ptp_port,&m_network_ctl,sizeof(struct NetInfor));
+        SaveNetParamToFile(ptpEthConfig,&pRootData->ptp_port);
+        usleep(2000);
+        SetCmdNetworkToEnv(&pRootData->ptp_port);
+        usleep(2000);
+        stop_ptp_daemon();
+        usleep(2000);
+        start_ptp_daemon();
+    }
+    
+    
+}
+
+void handle_set_network_ntp(struct root_data *pRootData,struct Head_Frame *pHeadFrame,char *data)
+{
+    char buf[100];
+    int iOffset = 0;
+    int index = 0;
+
+    struct NetInfor m_network_ctl;
+
+    
+    memset(buf,0,sizeof(buf));
+
+    if(pHeadFrame->daddr != ENUM_SLOT_COR_ADDR)
+    {
+        buf[iOffset++] = 0x00;
+        buf[iOffset++] = 0x01;/**盘类型不匹配  */
+        msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_NAK,buf,iOffset);
+        return;
+    }
+
+    memcpy(&m_network_ctl,&pRootData->ntp_port,sizeof(struct NetInfor));
+
+    
+    m_network_ctl.ip = ntohl(*(int*)(data+index));
+    index += 4;
+    m_network_ctl.mask = ntohl(*(int*)(data+index));
+    index += 4;
+    m_network_ctl.gwip = ntohl(*(int*)(data+index));
+    index += 4;
+    memcpy(m_network_ctl.mac,data+index,6);
+    index += 6;
+
+    msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_ACK,NULL,iOffset);
+    
+    if(memcmp(&m_network_ctl,&pRootData->ntp_port,sizeof(struct NetInfor)) != 0)
+    {
+        memcpy(&pRootData->ntp_port,&m_network_ctl,sizeof(struct NetInfor));
+        SaveNetParamToFile(ptpEthConfig,&pRootData->ntp_port);
+        usleep(2000);
+        SetCmdNetworkToEnv(&pRootData->ntp_port);
+        usleep(2000);
+        stop_ntp_daemon();
+        usleep(2000);
+        start_ntp_daemon();
+    }
+    
+}
+
+void handle_data_resetsys(struct root_data *pRootData,struct Head_Frame *pHeadFrame)
+{
+    char buf[100];
+    int iOffset = 0;
+    
+    memset(buf,0,sizeof(buf));
+
+    if(pHeadFrame->daddr != ENUM_SLOT_COR_ADDR)
+    {
+        buf[iOffset++] = 0x00;
+        buf[iOffset++] = 0x01;/**盘类型不匹配  */
+        msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_NAK,buf,iOffset);
+        return;
+    }
+    
+    msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_ACK,NULL,iOffset);
+
+    usleep(2000);
+    reset_sys_daemon();
+}
+
+
+
+void handle_set_system_setting(struct root_data *pRootData,struct Head_Frame *pHeadFrame,char *data)
+{
+    char buf[100];
+    int iOffset = 0;
+    memset(buf,0,sizeof(buf));
+
+    if(pHeadFrame->daddr != ENUM_SLOT_COR_ADDR)
+    {
+        buf[iOffset++] = 0x00;
+        buf[iOffset++] = 0x01;/**盘类型不匹配  */
+        msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_NAK,buf,iOffset);
+        return;
+    }
+
+    struct clock_info *pClockInfo = &pRootData->clock_info;
+    pClockInfo->ref_type = buf[0];
+
+    msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_ACK,NULL,iOffset);
+}
+
+void handle_set_ptp_all(struct root_data *pRootData,struct Head_Frame *pHeadFrame,char *data)
+{
+    char buf[500];
+    int iOffset = 0;
+    char set_success = FALSE;;
+    
+    struct PtpSetCfg m_ptpset_cfg;
+    
+    memset(buf,0,sizeof(buf));
+    
+    int dIndex = pHeadFrame->daddr;
+    struct SlotList *pSlotList = &pRootData->slot_list[dIndex];
+    if(pHeadFrame->pad_type == pSlotList->slot_type)
+    {
+        msgUpPack_ptp_all(data,&m_ptpset_cfg);
+        if(memcmp(pSlotList->pPtpSetcfg,&m_ptpset_cfg,sizeof(struct PtpSetCfg)) != 0)
+            set_success = TRUE;
+        
+        msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_ACK,NULL,iOffset);
+    }
+    else
+    {
+        buf[iOffset++] = 0x00;
+        buf[iOffset++] = 0x01;/**盘类型不匹配  */
+        msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_NAK,buf,iOffset);
+    }
+
+    /**下发指令生效  */
+    if(set_success)
+    {
+        memcpy(pSlotList->pPtpSetcfg,&m_ptpset_cfg,sizeof(struct PtpSetCfg));
+        Save_PtpParam_ToFile(pSlotList->pPtpSetcfg,ptpConfig);
+        stop_ptp_daemon();
+        usleep(20000);
+        start_ptp_daemon();
+    }
+}
+
+
+void handle_set_ntp_normal(struct root_data *pRootData,struct Head_Frame *pHeadFrame,char *data)
+{
+    char buf[500];
+    int iOffset = 0;
+    int index = 0;
+    int i;
+    char set_success = FALSE;;
+    
+    struct NtpSetCfg m_ntpset_cfg;
+    
+    memset(buf,0,sizeof(buf));
+    
+    int dIndex = pHeadFrame->daddr;
+    struct SlotList *pSlotList = &pRootData->slot_list[dIndex];
+    if(pHeadFrame->pad_type == pSlotList->slot_type)
+    {
+       
+        memcpy(&m_ntpset_cfg,pSlotList->pNtpSetCfg,sizeof(struct NtpSetCfg));
+
+        pSlotList->pNtpSetCfg->broadcast = data[index++];
+        pSlotList->pNtpSetCfg->freq_b = data[index++];;
+        pSlotList->pNtpSetCfg->multicast = data[index++];;
+
+        pSlotList->pNtpSetCfg->freq_m = data[index++];;
+        pSlotList->pNtpSetCfg->md5_flag = data[index++];;
+        pSlotList->pNtpSetCfg->sympassive = data[index++];;
+
+        for(i = 1;i < 9;i++)
+        {
+            pSlotList->pNtpSetCfg->current_key[i].key_valid = data[index++];
+            pSlotList->pNtpSetCfg->current_key[i].key_length = data[index++];
+            memcpy(pSlotList->pNtpSetCfg->current_key[i].key,buf+index,20);
+            index += 20;
+
+        }
+
+        if(memcmp(pSlotList->pNtpSetCfg,&m_ntpset_cfg,sizeof(struct NtpSetCfg)) != 0)
+            set_success = TRUE;
+    
+        msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_ACK,NULL,iOffset);
+    }
+    else
+    {
+        buf[iOffset++] = 0x00;
+        buf[iOffset++] = 0x01;/**盘类型不匹配  */
+        msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_NAK,buf,iOffset);
+    }
+
+    /**下发指令生效  */
+    if(set_success)
+    {
+        memcpy(pSlotList->pNtpSetCfg,&m_ntpset_cfg,sizeof(struct NtpSetCfg));
+        Save_NtpParm_ToFile(pSlotList->pNtpSetCfg,ntpConfig);
+        stop_ntp_daemon();
+        usleep(20000);
+        start_ntp_daemon();
+    }
+}
+
+
+void handle_set_ntp_md5_enable(struct root_data *pRootData,struct Head_Frame *pHeadFrame,char *data)
+{
+    char buf[500];
+    int iOffset = 0;
+    int index = 0;
+    int i;
+    char set_success = FALSE;;
+    
+    struct NtpSetCfg m_ntpset_cfg;
+    
+    memset(buf,0,sizeof(buf));
+    
+    int dIndex = pHeadFrame->daddr;
+    struct SlotList *pSlotList = &pRootData->slot_list[dIndex];
+    if(pHeadFrame->pad_type == pSlotList->slot_type)
+    {
+       
+        memcpy(&m_ntpset_cfg,pSlotList->pNtpSetCfg,sizeof(struct NtpSetCfg));
+
+        pSlotList->pNtpSetCfg->broadcast_key_num = data[index++];
+        pSlotList->pNtpSetCfg->multicast_key_num = data[index++];
+        pSlotList->pNtpSetCfg->md5_flag = data[index++];
+        pSlotList->pNtpSetCfg->sympassive = data[index++];
+
+        if(memcmp(pSlotList->pNtpSetCfg,&m_ntpset_cfg,sizeof(struct NtpSetCfg)) != 0)
+            set_success = TRUE;
+    
+        msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_ACK,NULL,iOffset);
+    }
+    else
+    {
+        buf[iOffset++] = 0x00;
+        buf[iOffset++] = 0x01;/**盘类型不匹配  */
+        msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_NAK,buf,iOffset);
+    }
+
+    /**下发指令生效  */
+    if(set_success)
+    {
+        memcpy(pSlotList->pNtpSetCfg,&m_ntpset_cfg,sizeof(struct NtpSetCfg));
+        Save_NtpParm_ToFile(pSlotList->pNtpSetCfg,ntpConfig);
+        stop_ntp_daemon();
+        usleep(20000);
+        start_ntp_daemon();
+    }
+}
+
+
+void handle_set_ntp_blacklist(struct root_data *pRootData,struct Head_Frame *pHeadFrame,char *data)
+{
+    char buf[500];
+    int iOffset = 0;
+    int index = 0;
+    int i;
+    char set_success = FALSE;;
+    
+    struct NtpSetCfg m_ntpset_cfg;
+    
+    memset(buf,0,sizeof(buf));
+    
+    int dIndex = pHeadFrame->daddr;
+    struct SlotList *pSlotList = &pRootData->slot_list[dIndex];
+    if(pHeadFrame->pad_type == pSlotList->slot_type)
+    {
+       
+        memcpy(&m_ntpset_cfg,pSlotList->pNtpSetCfg,sizeof(struct NtpSetCfg));
+
+        pSlotList->pNtpSetCfg->blacklist = data[index++];
+        
+        for(i=0;i<16;i++)
+        {
+            
+            pSlotList->pNtpSetCfg->blacklist_flag[i] = data[index++];
+            
+            pSlotList->pNtpSetCfg->blacklist_ip[i] = *(int *)(buf+index);
+            index += 4;
+            
+            pSlotList->pNtpSetCfg->blacklist_mask[i] = *(int *)(buf+index);
+            index += 4;
+        }
+
+        if(memcmp(pSlotList->pNtpSetCfg,&m_ntpset_cfg,sizeof(struct NtpSetCfg)) != 0)
+            set_success = TRUE;
+    
+        msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_ACK,NULL,iOffset);
+    }
+    else
+    {
+        buf[iOffset++] = 0x00;
+        buf[iOffset++] = 0x01;/**盘类型不匹配  */
+        msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_NAK,buf,iOffset);
+    }
+
+    /**下发指令生效  */
+    if(set_success)
+    {
+        memcpy(pSlotList->pNtpSetCfg,&m_ntpset_cfg,sizeof(struct NtpSetCfg));
+        Save_NtpParm_ToFile(pSlotList->pNtpSetCfg,ntpConfig);
+        stop_ntp_daemon();
+        usleep(20000);
+        start_ntp_daemon();
+    }
+}
+
+
+
+void handle_set_ntp_whitelist(struct root_data *pRootData,struct Head_Frame *pHeadFrame,char *data)
+{
+    char buf[500];
+    int iOffset = 0;
+    int index = 0;
+    int i;
+    char set_success = FALSE;;
+    
+    struct NtpSetCfg m_ntpset_cfg;
+    
+    memset(buf,0,sizeof(buf));
+    
+    int dIndex = pHeadFrame->daddr;
+    struct SlotList *pSlotList = &pRootData->slot_list[dIndex];
+    if(pHeadFrame->pad_type == pSlotList->slot_type)
+    {
+       
+        memcpy(&m_ntpset_cfg,pSlotList->pNtpSetCfg,sizeof(struct NtpSetCfg));
+
+        pSlotList->pNtpSetCfg->whitelist = data[index++];
+        
+        for(i=0;i<16;i++)
+        {
+            
+            pSlotList->pNtpSetCfg->whitelist_flag[i] = data[index++];
+            
+            pSlotList->pNtpSetCfg->whitelist_ip[i] = *(int *)(buf+index);
+            index += 4;
+            
+            pSlotList->pNtpSetCfg->whitelist_mask[i] = *(int *)(buf+index);
+            index += 4;
+        }
+
+        if(memcmp(pSlotList->pNtpSetCfg,&m_ntpset_cfg,sizeof(struct NtpSetCfg)) != 0)
+            set_success = TRUE;
+    
+        msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_ACK,NULL,iOffset);
+    }
+    else
+    {
+        buf[iOffset++] = 0x00;
+        buf[iOffset++] = 0x01;/**盘类型不匹配  */
+        msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_NAK,buf,iOffset);
+    }
+
+    /**下发指令生效  */
+    if(set_success)
+    {
+        memcpy(pSlotList->pNtpSetCfg,&m_ntpset_cfg,sizeof(struct NtpSetCfg));
+        Save_NtpParm_ToFile(pSlotList->pNtpSetCfg,ntpConfig);
+        stop_ntp_daemon();
+        usleep(20000);
+        start_ntp_daemon();
+    }
+}
+
+
+void handle_data_sysreset(struct root_data *pRootData,struct Head_Frame *pHeadFrame)
+{
+    char buf[100];
+    int iOffset = 0;
+
+    memset(buf,0,sizeof(buf));
+
+    if(pHeadFrame->daddr != ENUM_SLOT_COR_ADDR)
+    {
+        buf[iOffset++] = 0x00;
+        buf[iOffset++] = 0x01;/**盘类型不匹配  */
+        msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_NAK,buf,iOffset);
+        return;
+    }    
+    msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_ACK,NULL,iOffset);
+
+    reset_sys_daemon();
+}
 
 void process_pc_ctl_req(struct root_data *pRootData,struct Head_Frame *pHeadFrame,char *buf)
 {
     int iOffset = 0;
     
     short cmd_type = buf[HEAD_FRAME_LENGTH]<<8+buf[HEAD_FRAME_LENGTH+1];
-
 
     switch(cmd_type)
     {
@@ -2621,10 +3286,20 @@ void process_pc_ctl_req(struct root_data *pRootData,struct Head_Frame *pHeadFram
 
         handle_req_dev_infor(pRootData,pHeadFrame);
         break;
-     case CMD_NET_WORK_ADDRESS:
+     case CMD_NET_WORK_CTL:
 
-        handle_req_network(pRootData,pHeadFrame);
+        handle_req_network_ctl(pRootData,pHeadFrame);
         break;
+
+     case CMD_NET_WORK_PTP:
+
+        handle_req_network_ptp(pRootData,pHeadFrame);
+        break;
+     case CMD_NET_WORK_NTP:
+
+        handle_req_network_ntp(pRootData,pHeadFrame);
+        break;
+
      case CMD_VERSION_INFROMATION:
 
         handle_req_version(pRootData,pHeadFrame);
@@ -2652,12 +3327,20 @@ void process_pc_ctl_req(struct root_data *pRootData,struct Head_Frame *pHeadFram
         break;
              
      case CMD_NTP_CFG_NORMAL:
+        handle_req_ntp_normal(pRootData,pHeadFrame);
+        break;
+     case CMD_NTP_CFG_MD5_ENABLE:
+        handle_req_ntp_md5_enable(pRootData,pHeadFrame);
         break;
      case CMD_NTP_CFG_BLACKLIST:
+        handle_req_ntp_whitlelist(pRootData,pHeadFrame);
         break;
      case CMD_NTP_CFG_WHITELSIT:
+        handle_req_ntp_blacklist(pRootData,pHeadFrame);
         break;
-       
+     default:
+        handle_no_cmd_error(pRootData,pHeadFrame);
+        break;
     }
 
 }
@@ -2667,34 +3350,65 @@ void process_pc_ctl_set(struct root_data *pRootData,struct Head_Frame *pHeadFram
     int iOffset = 0;
 
     short cmd_type = buf[HEAD_FRAME_LENGTH]<<8+buf[HEAD_FRAME_LENGTH+1];
-
+    char *data = buf + sizeof(struct Head_Frame);
+    
     switch(cmd_type)
     {
+    case CMD_NET_WORK_CTL:
+       handle_set_network_ctl(pRootData,pHeadFrame,data);
+       break;
+    case CMD_NET_WORK_PTP:
+       handle_set_network_ptp(pRootData,pHeadFrame,data);
+       break;
+    case CMD_NET_WORK_NTP:
+       handle_set_network_ntp(pRootData,pHeadFrame,data);
+       break;
 
     case CMD_SYS_SET:
+       handle_set_system_setting(pRootData,pHeadFrame,data);
        break;
     case CMD_PTP_CFG_ALL:
+       handle_set_ptp_all(pRootData,pHeadFrame,data);
        break;
-    case CMD_PTP_CFG_NORMAL:
-       break;
-    case CMD_PTP_CFG_SLAVE:
-       break;
-    case CMD_PTP_CFG_MASTER:
-       break;
-
     case CMD_NTP_CFG_NORMAL:
+       handle_set_ntp_normal(pRootData,pHeadFrame,data);
        break;
     case CMD_NTP_CFG_MD5_ENABLE:
-       break;
-    case CMD_NTP_CFG_MD5_KEY:
+       handle_set_ntp_md5_enable(pRootData,pHeadFrame,data);
        break;
     case CMD_NTP_CFG_BLACKLIST:
+       handle_set_ntp_blacklist(pRootData,pHeadFrame,data);
        break;
     case CMD_NTP_CFG_WHITELSIT:
-       break;       
+       handle_set_ntp_whitelist(pRootData,pHeadFrame,data);
+       break;
+    default:
+       handle_no_cmd_error(pRootData,pHeadFrame);
+       break;
     }
 
 }
+
+void process_pc_data(struct root_data *pRootData,struct Head_Frame *pHeadFrame,char *buf)
+{
+    int iOffset = 0;
+
+    short cmd_type = buf[HEAD_FRAME_LENGTH]<<8+buf[HEAD_FRAME_LENGTH+1];
+    char *data = buf + sizeof(struct Head_Frame);
+    
+    switch(cmd_type)
+    {
+    case CMD_RESET_SYS:
+       handle_data_sysreset(pRootData,pHeadFrame);
+       break;
+
+    default:
+        handle_no_cmd_error(pRootData,pHeadFrame);
+        break;
+    }
+
+}
+
 
 void handle_pc_ctl_message(struct root_data *pRootData,char *buf,int len)
 {
@@ -2714,6 +3428,7 @@ void handle_pc_ctl_message(struct root_data *pRootData,char *buf,int len)
         case CTL_WORD_ACK:
             break;
         case CTL_WORD_DATA:
+            process_pc_data(pRootData,&msgHead,buf);
             break;
         case CTL_WORD_SET:
             process_pc_ctl_set(pRootData,&msgHead,buf);
