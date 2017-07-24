@@ -52,23 +52,16 @@
 
 struct clock_alarm_data
 {
-    /** 本地时钟 */
-    Uint8 alarmRb10M;      /**铷钟10MHz检波告警  */
-    Uint8 alarmVcxo25M;     /**VCXO 25MHz检波告警 */
-    Uint8 alarmVcxo24_576M; /**VCXO24.576MHz检波告警  */
-    Uint8 alarmVcxo25MPoe;  /**VCX0 25MHz（POE）检波告警  */
-    Uint8 alarm25MPll;      /**25MHz锁相环失锁告警  */
-    Uint8 alarm24_576MPll;  /**24.576MHz锁相环失锁告警  */
-    Uint8 alarm25MPoePll;   /*25MHz（POE）锁相环失锁告警*  */
-
     /**输入信号 */
-    Uint8 alarmBd1pps;      /**BD接收机1PPS检波告  */
+    Uint8 alarmBd1pps;      /**BD接收机1PPS检波告警*/
+    Uint8 alarmPtp;
+    Uint8 alarmVcxo100M;     /**vcxo 100M告警 */
+    Uint8 alarmRb10M;      /**铷钟10 M 告警 */
+    Uint8 alarmXo10M;       /**XO 10M告警*/
+    Uint8 vcxoLock;
+    Uint8 alarmDisk;
+    Uint8 alarmSatellite;  /**卫星信号丢失  1告警，0 不告警*/
     
-    Uint8 alarmBdTod;       /**BD接收机串口报文检波告警  */
-    Uint8 alarmRef10M;      /**参考检波告警  */
-    Uint8 ref10Mor2M;       /**1:10M    2,2M   3,告警*/
-    
-    Uint8 alarmSatellite;  /**卫星信号出问题  1告警，0 不告警*/
 };
 
 struct collect_data

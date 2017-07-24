@@ -1046,7 +1046,7 @@ void ClockStateProcess(struct clock_info *pClockInfo)
     printf("runtime=%d ref_type=%d workStatus= %d\r\n",pClockInfo->run_times,pClockInfo->ref_type,pClockInfo->workStatus);
     /**参考源1pps，1pps和10m无收入告警，等待4分钟，等待小铷钟稳定  */
     /*选择参考源 1PPS输入不告警*/
-    if((pClockInfo->ref_type == REF_10MHZ)&&(pAlarmData->alarmRef10M==FALSE)&&(pClockInfo->run_times==RUN_TIME))
+    if((pClockInfo->ref_type == REF_PTP)&&(pAlarmData->alarmPtp==FALSE)&&(pClockInfo->run_times==RUN_TIME))
     {
          pClockInfo->lockCounter=0;
          send_clock_data(pClockInfo,-1250000);
@@ -1057,7 +1057,7 @@ void ClockStateProcess(struct clock_info *pClockInfo)
          pClockInfo->data_1Hz.start_flag = 1;
          pClockInfo->syn_enable = TRUE;
          
-         printf("--------ref10Mhz _1Hz_set center\r\n");
+         printf("--------ref_ptp _1Hz_set center\r\n");
 
     }
     else if((pClockInfo->ref_type == REF_SATLITE)&&(pAlarmData->alarmBd1pps==FALSE)&&(pClockInfo->run_times==RUN_TIME))
@@ -1081,9 +1081,9 @@ void ClockStateProcess(struct clock_info *pClockInfo)
         tmp_ref = pClockInfo->ref_type;
     }
 
-    if(pClockInfo->ref_type == REF_10MHZ)
+    if(pClockInfo->ref_type == REF_PTP)
     {
-        if(pAlarmData->alarmRef10M == FALSE)
+        if(pAlarmData->alarmPtp == FALSE)
             ref_status = 1;   
         else 
             ref_status = 0;
@@ -1119,8 +1119,8 @@ void ClockHandleProcess(struct clock_info *pClockInfo)
            
     }
     else if((pClockInfo->data_1Hz.getdata_flag==1)
-        &&(pAlarmData->alarmRef10M ==FALSE)
-        &&(pClockInfo->ref_type==REF_10MHZ)&&(pClockInfo->run_times>RUN_TIME))
+        &&(pAlarmData->alarmPtp==FALSE)
+        &&(pClockInfo->ref_type== REF_PTP)&&(pClockInfo->run_times>RUN_TIME))
     {
         pClockInfo->data_1Hz.getdata_flag=0;
         

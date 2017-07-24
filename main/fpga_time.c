@@ -1,6 +1,6 @@
 #include "fpga_time.h"
 #include <sys/mman.h>
-
+#include "main.h"
 
 #define PHY_BASEADD             0x40600000      /*控制部分基地址*/
 
@@ -181,12 +181,12 @@ void Control_LedRun(Boolean val)
     *(Uint8*)(BASE_ADDR + LED_RUN) = val;
 }
 
-void Control_LedAlarm(Boolean val)
+void Control_LedAlarm(char val)
 {
     *(Uint8*)(BASE_ADDR + LED_ALARM) = val;
 }
 
-void Control_LedSatStatus(Boolean val)
+void Control_LedSatStatus(char val)
 {
     *(Uint8*)(BASE_ADDR + LED_SAT_STATUS) = val;
 }
@@ -232,131 +232,64 @@ void SetSysTime(TimeInternal * pTime)
 
 }
 
-#if 0
-void CollectAlarm(UartDevice *pUartDevice)
+
+void CollectAlarm(struct root_data *pRootData)
 {
-    PadAlarm *pPadAlarm = &pUartDevice->padAlarm;
+    struct clock_alarm_data *pAlarmData = &pRootData->clock_info.alarmData;
     
     char val = *(Uint8*)(BASE_ADDR+0x05);
-    if(val&0x02)
-        pUartDevice->diskAlarm = TRUE;
+    if(val&0x01)
+        pAlarmData->alarmDisk= TRUE;
     else
-        pUartDevice->diskAlarm = FALSE;
-
+        pAlarmData->alarmDisk = FALSE;
     
-    val = *(Uint8*)(BASE_ADDR+0x06);
+    val = *(Uint8*)(BASE_ADDR+0x08);
 
     /**1号槽位 RCU告警  */
     if(val&0x01)
-        pPadAlarm->slot_1_RcuAlarm = TRUE;
+        pAlarmData->alarmBd1pps = TRUE;
     else 
-        pPadAlarm->slot_1_RcuAlarm = FALSE;
+        pAlarmData->alarmBd1pps = FALSE;
 
-     /**2号槽位RCU告警  */
-    if(val&0x02)
-        pPadAlarm->slot_2_RcuAlarm = TRUE;
-    else
-        pPadAlarm->slot_2_RcuAlarm = FALSE;
-
-    /**1号槽位RCU 主备 告警*/
-    if(val&0x04)
-        pPadAlarm->slot_1_Master_Backup = TRUE;
-    else
-        pPadAlarm->slot_1_Master_Backup = FALSE;
-
-    /**2号槽位RCU 主备 告警*/
-    if(val&0x08)
-        pPadAlarm->slot_2_Master_Backup = TRUE;
-    else
-        pPadAlarm->slot_2_Master_Backup = FALSE;
-
-    /**读取0x07  */
-    val = *(Uint8*)(BASE_ADDR+0x07);
-
+  
+    /**读取0x08  */
+    val = *(Uint8*)(BASE_ADDR+0x09);
 
     /**1号槽位100m 检波告警 ，1，告警，0，不告警*/
     if(val&0x01)
-            pPadAlarm->slot_1_100Alarm = TRUE;
+            pAlarmData->alarmVcxo100M = TRUE;
         else 
-            pPadAlarm->slot_1_100Alarm = FALSE;
+            pAlarmData->alarmVcxo100M = FALSE;
     
      /**2号槽位100m 检波告警 ，1，告警，0，不告警*/
     if(val&0x02)
-        pPadAlarm->slot_2_100Alarm = TRUE;
+        pAlarmData->alarmRb10M = TRUE;
     else
-        pPadAlarm->slot_2_100Alarm = FALSE;
+        pAlarmData->alarmRb10M = FALSE;
 
 
     /**1号槽位1pps检波告警，1，告警，0，不告警  */
-    if(val&0x10)
-        pPadAlarm->slot_1_1ppsAlarm = TRUE;
-    else
-        pPadAlarm->slot_1_1ppsAlarm = FALSE;
-
-    /**2号槽位1pps检波告警，1，告警，0，不告警  */
-    if(val&0x20)
-        pPadAlarm->slot_2_1ppsAlarm = TRUE;
-    else
-        pPadAlarm->slot_2_1ppsAlarm = FALSE;
-
-    /**1号槽位tod检波告警，1，告警，0，不告警  */
-    if(val&0x40)
-        pPadAlarm->slot_1_TodAlarm = TRUE;
-    else
-        pPadAlarm->slot_1_TodAlarm = FALSE;
-    
-    /**2号槽位tod检波告警，1，告警，0，不告警  */
-    if(val&0x80)
-        pPadAlarm->slot_2_TodAlarm = TRUE;
-    else
-        pPadAlarm->slot_2_TodAlarm = FALSE;
-
-
-    /**读取0x08  */
-    val = *(Uint8*)(BASE_ADDR+0x08);
-
-    /**主用100m 告警  */
-    if(val&0x01)
-        pPadAlarm->master100Alarm = TRUE;
-    else
-        pPadAlarm->master100Alarm = FALSE;
-    
-    /**主用1pps 告警  */
-    if(val&0x02)
-        pPadAlarm->master1ppsTodAlarm = TRUE;
-    else
-        pPadAlarm->master1ppsTodAlarm = FALSE;
-    
-    /**两路都是主用告警  */
     if(val&0x04)
-        pPadAlarm->twoMasterAlarm = TRUE;
+        pAlarmData->alarmXo10M = TRUE;
     else
-        pPadAlarm->twoMasterAlarm = FALSE;
-    
-    /**两路都是备用告警  */
-    if(val&0x08)
-        pPadAlarm->twoBackupAlarm = TRUE;
-    else
-        pPadAlarm->twoBackupAlarm = FALSE;
+        pAlarmData->alarmXo10M = FALSE;
 
+    /**读取0x0A  */
+    val = *(Uint8*)(BASE_ADDR+0x0a);
 
-    /**读取0x09  */
-    val = *(Uint8*)(BASE_ADDR+0x09);
-    
-    /**1号槽位tod crc告警  1，告警，0，不告警*/
     if(val&0x01)
-        pPadAlarm->slot_1_TodCrcAlarm = TRUE;
+        pAlarmData->vcxoLock= TRUE;
     else
-        pPadAlarm->slot_1_TodCrcAlarm = FALSE;
-    
-    /**2号槽位tod crc告警  1，告警，0，不告警*/
-    if(val&0x02)
-        pPadAlarm->slot_2_TodCrcAlarm = TRUE;
+        pAlarmData->vcxoLock= FALSE;
+
+    if(pRootData->satellite_data.antenna != 2 || pAlarmData->alarmBd1pps == TRUE)
+        pAlarmData->alarmSatellite = TRUE;
     else
-        pPadAlarm->slot_2_TodCrcAlarm = FALSE;
+        pAlarmData->alarmSatellite = FALSE;
+       
 
 
 }
-#endif
+
 
 

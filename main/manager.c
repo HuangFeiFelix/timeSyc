@@ -3253,6 +3253,42 @@ void handle_set_ntp_whitelist(struct root_data *pRootData,struct Head_Frame *pHe
     }
 }
 
+void inssue_pps_data(struct root_data *pRootData)
+{
+    char buf[100];
+    int iOffset = 0;
+    unsigned int index = 0;
+    struct clock_info *pClockInfo = &pRootData->clock_info;
+    struct clock_alarm_data *pClockAlarm = &pClockInfo->alarmData;
+    
+    memset(buf,0,sizeof(buf));
+
+    buf[iOffset++] = '$';
+    buf[iOffset++] = '<';
+    buf[iOffset++] = 0x00;
+    buf[iOffset++] = 0xff;
+    *(int *)(buf + iOffset) = flip32(index);
+    iOffset += 4;
+
+    buf[iOffset++] = CTL_WORD_DATA;
+    buf[iOffset++] = 'A';
+    *(int *)(buf + iOffset) = flip32(28);
+    iOffset += 4;
+    
+    buf[iOffset++] = pClockInfo->ref_type;
+    buf[iOffset++] = pClockInfo->workStatus;
+    buf[iOffset++] = pClockAlarm->alarmSatellite;
+    buf[iOffset++] = pClockAlarm->alarmPtp;
+     *(int *)(buf + iOffset) = flip32(4);
+    iOffset += 4;
+
+    memcpy(buf+iOffset,pRootData->current_time,strlen(pRootData->current_time));
+    iOffset += strlen(pRootData->current_time);
+
+         
+    AddData_ToSendList(pRootData,ENUM_PC_CTL,buf,iOffset);
+   
+}
 
 void handle_data_sysreset(struct root_data *pRootData,struct Head_Frame *pHeadFrame)
 {

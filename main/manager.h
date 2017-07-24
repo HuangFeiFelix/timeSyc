@@ -128,5 +128,6 @@ struct CmdNtpWhitelist
 extern void handle_discovery_message(struct root_data *pRootData,char *buf,int len);
 
 
+extern void inssu_pps_data(struct root_data *pRootData);
 
 #endif

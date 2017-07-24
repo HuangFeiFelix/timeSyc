@@ -162,17 +162,19 @@ void InitDev(struct root_data *pRootData)
 #endif
 
 
-#if 0
+
     /**接收机串口设备 通信id=2  */
     pRootData->dev[ENUM_GPS].com_attr.com_port = ENUM_GPS;  //串口1
     pRootData->dev[ENUM_GPS].com_attr.baud_rate = 9600;
     init_add_dev(&pRootData->dev[ENUM_GPS],&pRootData->dev_head,COMM_DEVICE,ENUM_GPS);
     
+#if 0
     //钟控串口，控制钟控
     pRootData->dev[ENUM_RB].com_attr.com_port = ENUM_RB;   
     pRootData->dev[ENUM_RB].com_attr.baud_rate = 9600;
     init_add_dev(&pRootData->dev[ENUM_RB],&pRootData->dev_head,COMM_DEVICE,ENUM_RB);
 #endif
+
 
 #if 0
    pRootData->dev[ENUM_PC_DISCOVER].net_attr.sin_port = pRootData->comm_port;  //
@@ -196,10 +198,6 @@ void InitDev(struct root_data *pRootData)
     init_add_dev(&pRootData->dev[ENUM_PTP_DEV],&pRootData->dev_head,INIT_DEVICE,ENUM_PTP_DEV);
     
  
-    //网络设备初始化,用于探针
-    pRootData->dev[ENUM_PROBE].net_attr.sin_port = 9977;
-    pRootData->dev[ENUM_PROBE].net_attr.ip = inet_addr("192.168.15.127");
-    init_add_dev(&pRootData->dev[ENUM_PROBE],&pRootData->dev_head,UDP_DEVICE,ENUM_PROBE);
     #endif
     /**本地PTP   */
     pRootData->dev[ENUM_IPC_PTP].net_attr.sin_port = 9990;
@@ -433,7 +431,7 @@ void MaintainCoreTime(struct root_data *pRoot,TimeInternal *ptptTime)
         
         Time += 1;/**+1 表示当前秒数  */
     }
-    else if(pClockInfo->ref_type == REF_10MHZ)
+    else if(pClockInfo->ref_type == REF_PTP)
     {
         Time= ptptTime->seconds;
     }
@@ -530,6 +528,17 @@ void update_lcd_display(struct root_data *pRootData,struct tm* t_tm)
 }
 
 
+void display_alarm_information(struct clock_alarm_data *pClockAlarm)
+{
+   
+    printf("alarmBd1pps=%d alarmPtp=%d alarmVcxo100M=%d\n"
+        ,pClockAlarm->alarmBd1pps,pClockAlarm->alarmPtp,pClockAlarm->alarmVcxo100M);
+    printf("alarmRb10M=%d alarmXo10M=%d vcxoLock=%d\n"
+        ,pClockAlarm->alarmRb10M,pClockAlarm->alarmXo10M,pClockAlarm->vcxoLock);
+    printf("alarmDisk=%d alarmSatellite=%d\n"
+        ,pClockAlarm->alarmDisk,pClockAlarm->alarmSatellite);
+}
+
 void *ThreadUsuallyProcess(void *arg)
 {
     time_t current_time;
@@ -540,6 +549,7 @@ void *ThreadUsuallyProcess(void *arg)
     static Uint16 nTimeCnt = 0;
     struct root_data *pRootData = g_RootData;
     struct clock_info *pClockInfo = &pRootData->clock_info;
+    struct clock_alarm_data *pClockAlarm = &pClockInfo->alarmData;
 
     while(1)
     {
@@ -553,21 +563,35 @@ void *ThreadUsuallyProcess(void *arg)
             printf("fgpa system time:sec=%d,nao=%d \n",timeTmp.seconds,timeTmp.nanoseconds);
             current_time = timeTmp.seconds;
             tm = gmtime(&current_time);
-            printf("fgpatime:%d/%d/%d %d:%d:%d\n",tm->tm_year+1900,tm->tm_mon+1,tm->tm_mday,tm->tm_hour,tm->tm_min,tm->tm_sec);
-          
-            
-            Display_SatelliteData(&pRootData->satellite_data);
 
             
-            
+            memset(pRootData->current_time,0,sizeof(pRootData->current_time));
+            sprintf(pRootData->current_time,"%d-%d-%d %02d:%02d:%02d\n",tm->tm_year+1900,tm->tm_mon+1,tm->tm_mday,tm->tm_hour,tm->tm_min,tm->tm_sec);
+            printf("%s\n",pRootData->current_time);
+          
+
             //ClockStateProcess(pClockInfo);
             
             /**核心时间维护  */
             //MaintainCoreTime(pRootData,&timeTmp);
-                       
-             
+
+            inssue_pps_data(pRootData);
+            CollectAlarm(pRootData);
+            Display_SatelliteData(&pRootData->satellite_data);
+            display_alarm_information(pClockAlarm);
             /**LED  处理*/
             Control_LedRun(nTimeCnt%2);
+
+            if(pClockAlarm->alarmPtp == 1 || pClockAlarm->alarmDisk == 1)
+                Control_LedAlarm(0x02);
+            else
+                Control_LedAlarm(0x00);
+
+            if(pClockAlarm->alarmSatellite == 1)
+                Control_LedSatStatus(0x02);
+            else
+                Control_LedSatStatus(0x00);
+            
             nTimeCnt++;
             printf("========================1PPS End ============================\n\n\n");
             pRootData->flag_usuallyRoutine = FALSE;

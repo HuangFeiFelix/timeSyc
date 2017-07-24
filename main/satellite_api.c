@@ -436,6 +436,7 @@ char SatelliteHandle(struct Satellite_Data *p_satellite_data,char *str)
         ret = Zda(p_satellite_data,str); 
         if(!ret)
             p_satellite_data->time++;
+
     }
     else if(NULL != strstr(temp,"$GPGGA"))
     {

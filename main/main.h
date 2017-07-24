@@ -150,7 +150,8 @@ struct root_data{
         struct NetInfor ptp_port;
         struct NetInfor ntp_port;
         
-
+        char current_time[30];
+        
         
 		pthread_attr_t pattr;	//线程属性
 		pthread_t p_usual;		//日常事务处理

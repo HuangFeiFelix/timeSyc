@@ -4,25 +4,6 @@
 #include <time.h>
 #include "common.h"
 
-struct Manual_sat_data
-{
-    char manual_enable;  /**人工设置使能1，开，0，关*/
-    char location_state;  /**1,进入位置保持，0退出位置保持 */
-    char relocation;     /**1,重定位 0，不变*/
-    char eastorwest;     /**E,西经，W，东经*/
-    char northorsouth;   /**N,北纬，S，南纬度*/
-    Uint32 refSetTime;  /**设置参考源时间  */
-    Uint32 makeup_val;  //馈线时延补偿值
-    short longitude_d;
-    short longitude_f;
-    short longitude_m;
-    short latitude_d;
-    short latitude_f;
-    short latitude_m;
-    int   height;   
-
-};
-
 
 struct Satellite_Data
 {
@@ -51,18 +32,8 @@ struct Satellite_Data
     short latitude_d;
     short latitude_f;
     short latitude_m;
-    int   height;   
-
+    int   height;    
     
-    float clock_tmperature;      /**钟温度单位0.01  */
-    float battery_tmperature;      /**电池温度单位0.01  */
-    float device_tmperature;      /**仪表内部空气温度单位0.01  */
-    
-    Uint16 batteryMah;
-    Uint8 batteryPercenty;
-    
-    
-    struct Manual_sat_data manual_sat_data;
 };
 
 char Gga(struct Satellite_Data *p_satellite_data,char *str);
