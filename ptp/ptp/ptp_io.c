@@ -36,8 +36,8 @@
 #include "ptp.h"
 
 
-#define NETWORK_ENV     "/etc/ptp/network.conf"
-#define PTP_CONFIG_FILE "/etc/ptp/ptp.conf"
+#define NETWORK_ENV     "/mnt/network.conf"
+#define PTP_CONFIG_FILE "/mnt/ptp.conf"
 
 #define CONFIG_FILE_SIZE 8096
 #define LINE_LENGTH      200

@@ -20,7 +20,7 @@ char *ntpConfig = "/mnt/ntp.cfg";
 char *md5Config = "/mnt/md5";
     
 #define PATH_PTP_DAEMON "/mnt/ptp"
-#define PATH_NTP_DAEMON "/mnt/ntpd"
+#define PATH_NTP_DAEMON "/mnt/ntp/ntpd"
 
 void AddData_ToSendList(struct root_data *pRoot,char devType,void *buf,short len)
 {
