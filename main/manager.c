@@ -140,7 +140,10 @@ void msgUpPack_ptp_all(char *data,struct PtpSetCfg *pPtpSetcfg)
     pPtpSetcfg->grandmasterPriority1 = data[iOffset++];
     pPtpSetcfg->grandmasterPriority2 = data[iOffset++];
     pPtpSetcfg->validServerNum = data[iOffset++];
-    pPtpSetcfg->UnicastDuration = data[iOffset++];
+
+    pPtpSetcfg->UnicastDuration = flip32(*(Uint32 *)(data+iOffset));
+    iOffset += 4;
+    
     pPtpSetcfg->currentUtcOffset = data[iOffset++];
     
 
@@ -2433,7 +2436,9 @@ void packmsg_ptp_all(struct PtpSetCfg *pPtpSetcfg,char *buf,int *len)
     buf[iOffset++] = pPtpSetcfg->grandmasterPriority1;
     buf[iOffset++] = pPtpSetcfg->grandmasterPriority2;
     buf[iOffset++] = pPtpSetcfg->validServerNum;
-    buf[iOffset++] = pPtpSetcfg->UnicastDuration;
+    *(Uint32 *)(buf+iOffset)= flip32(pPtpSetcfg->UnicastDuration);
+    iOffset += 4;
+    
     buf[iOffset++] = pPtpSetcfg->currentUtcOffset;
 
     for(i = 0;i < 10;i++)
@@ -2492,7 +2497,9 @@ void packmsg_ptp_slave(struct PtpSetCfg *pPtpSetcfg,char *buf,int *len)
     buf[iOffset++] = pPtpSetcfg->logMinPdelayReqInterval;
     buf[iOffset++] = pPtpSetcfg->UniNegotiationEnable;
     buf[iOffset++] = pPtpSetcfg->validServerNum;
-    buf[iOffset++] = pPtpSetcfg->UnicastDuration;
+    *(Uint32 *)(buf+iOffset)= flip32(pPtpSetcfg->UnicastDuration);
+    iOffset += 4;
+
     buf[iOffset++] = pPtpSetcfg->currentUtcOffset;
 
     for(i = 0;i < 10;i++)
