@@ -291,13 +291,13 @@ void HandleWarnningState(struct root_data *pRootData,Uint16 screen_id, Uint16 co
 {
     printf("HandleWarnningState\n");
     
-
     switch(control_id)
     {
         case 21:
             pRootData->lcd_sreen_id = MAIN_SCREEN_ID;
             
             HandleLcdEvent = HandleMainSreenState;
+            SetTextValue(MAIN_SCREEN_ID,4,pRootData->current_time);
             break;
 
         default:
@@ -318,6 +318,7 @@ void HandleSettingState(struct root_data *pRootData,Uint16 screen_id, Uint16 con
             pRootData->lcd_sreen_id = MAIN_SCREEN_ID;
             
             HandleLcdEvent = HandleMainSreenState;
+            SetTextValue(MAIN_SCREEN_ID,4,pRootData->current_time);
             break;
 
         default:
@@ -338,6 +339,7 @@ void HandleClockStatusState(struct root_data *pRootData,Uint16 screen_id, Uint16
             pRootData->lcd_sreen_id = MAIN_SCREEN_ID;
             
             HandleLcdEvent = HandleMainSreenState;
+            SetTextValue(MAIN_SCREEN_ID,4,pRootData->current_time);
             break;
 
         default:
@@ -348,11 +350,14 @@ void HandleClockStatusState(struct root_data *pRootData,Uint16 screen_id, Uint16
 
 }
 
+
+
 void HandleMainSreenState(struct root_data *pRootData,Uint16 screen_id, Uint16 control_id,unsigned char *data)
 {
 
         printf("HandleMainSreenState\n");
-        SetTextValue(MAIN_SCREEN_ID,4,"12345");
+        
+        
         switch(control_id)
         {
             case 12:
@@ -363,6 +368,8 @@ void HandleMainSreenState(struct root_data *pRootData,Uint16 screen_id, Uint16 c
             case 13:
                 pRootData->lcd_sreen_id = PARAM_SETING_SCREEN_ID;
                 HandleLcdEvent = HandleSettingState;
+
+                
                 break;
             case 14:
                 pRootData->lcd_sreen_id = WARN_SCREEN_ID;

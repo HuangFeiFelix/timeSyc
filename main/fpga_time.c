@@ -237,14 +237,9 @@ void CollectAlarm(struct root_data *pRootData)
 {
     struct clock_alarm_data *pAlarmData = &pRootData->clock_info.alarmData;
     
-    char val = *(Uint8*)(BASE_ADDR+0x05);
-    if(val&0x01)
-        pAlarmData->alarmDisk= TRUE;
-    else
-        pAlarmData->alarmDisk = FALSE;
+    char val;
     
     val = *(Uint8*)(BASE_ADDR+0x08);
-
     /**1ºÅ²ÛÎ» RCU¸æ¾¯  */
     if(val&0x01)
         pAlarmData->alarmBd1pps = TRUE;
@@ -286,7 +281,11 @@ void CollectAlarm(struct root_data *pRootData)
         pAlarmData->alarmSatellite = TRUE;
     else
         pAlarmData->alarmSatellite = FALSE;
-       
+        
+    if(pAlarmData->alarmVcxo100M == TRUE || pAlarmData->vcxoLock == TRUE)
+        pAlarmData->alarmDisk= TRUE;
+    else
+        pAlarmData->alarmDisk = FALSE;
 
 
 }

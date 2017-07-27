@@ -87,5 +87,7 @@ void NotifyWriteFlash(Uint8 status);
 
 void NotifyReadRTC(Uint8 year,Uint8 month,Uint8 week,Uint8 day,Uint8 hour,Uint8 minute,Uint8 second);
 
+extern void update_lcd_display(struct root_data *pRootData);
+
 
 #endif

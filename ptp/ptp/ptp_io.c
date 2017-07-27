@@ -3310,7 +3310,7 @@ Uint8 Init_ptpClock(PtpClock *pPtpClock,int index)
     memset(netInterface,0,sizeof(netInterface));
 
     
-    sprintf(filename,"%s","/mnt/ptp.cfg");
+    sprintf(filename,"%s","/mnt/ptp.conf");
     memcpy(pPtpClock->ptpFileName,filename,strlen(filename));
     sprintf(netInterface,"%s%d","eth",index);
     

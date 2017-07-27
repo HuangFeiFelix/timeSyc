@@ -1163,8 +1163,8 @@ void SetRouteToEnv(char *network_cfg,struct NetInfor *infopt)
 
 void SetNetworkToEnv(struct NetInfor *infopt)
 {
-    SetMacAddress(infopt->ifaceName,infopt->mac);
-    sleep(1);
+    //SetMacAddress(infopt->ifaceName,infopt->mac);
+    //sleep(1);
 
     SetIpAddress(infopt->ifaceName,infopt->ip);
     SetMaskAddress(infopt->ifaceName,infopt->mask);

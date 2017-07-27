@@ -15,9 +15,9 @@ int comm_sin_port;
 char *ctlEthConfig = "/mnt/network_ctl.cfg";
 char *ptpEthConfig = "/mnt/network_ptp.cfg";
 char *ntpEthConfig = "/mnt/network_ntp.cfg";
-char *ptpConfig = "/mnt/ptp.cfg";
-char *ntpConfig = "/mnt/ntp.cfg";
-char *md5Config = "/mnt/md5";
+char *ptpConfig = "/mnt/ptp.conf";
+char *ntpConfig = "/mnt/ntp/ntp.conf";
+char *md5Config = "/mnt/ntp/keys";
     
 #define PATH_PTP_DAEMON "/mnt/ptp"
 #define PATH_NTP_DAEMON "/mnt/ntp/ntpd"
@@ -30,7 +30,7 @@ void AddData_ToSendList(struct root_data *pRoot,char devType,void *buf,short len
 
 void start_ptp_daemon()
 {
-    system(PATH_PTP_DAEMON);
+    system("/mnt/ptp &");
 }
 
 
@@ -42,16 +42,19 @@ void stop_ptp_daemon()
 
 void start_ntp_daemon()
 {
+    system("/mnt/ntp/ntpd -c /mnt/ntp/ntp.conf");
 
 }
 
 void stop_ntp_daemon()
 {
+    system("pkill ntp");
 
 }
 
 void reset_sys_daemon()
 {
+    system("reboot");
 
 }
 
@@ -183,7 +186,7 @@ void InitDev(struct root_data *pRootData)
 #endif
    
    pRootData->dev[ENUM_PC_CTL].net_attr.sin_port = comm_sin_port;//
-   pRootData->dev[ENUM_PC_CTL].net_attr.ip = inet_addr("127.0.0.1");
+   pRootData->dev[ENUM_PC_CTL].net_attr.ip = inet_addr("192.168.2.20");
    init_add_dev(&pRootData->dev[ENUM_PC_CTL],&pRootData->dev_head,UDP_DEVICE,ENUM_PC_CTL);
 
    #if 0 
@@ -337,13 +340,14 @@ void *DataSend_Thread(void *arg) {
                 
                 if(p_dev->type == UDP_DEVICE)
                 {
+                    int sockfd = socket(AF_INET,SOCK_DGRAM,0);
                     struct sockaddr_in addr;
                     addr.sin_family = AF_INET;
 	                addr.sin_port = htons(p_dev->net_attr.sin_port);
                     addr.sin_addr.s_addr = p_dev->net_attr.ip;
                     len = p_data_list->send_lev.len;
                     
-                    sendto(p_dev->fd,p_data_list->send_lev.data,len,0,(struct sockaddr *)&addr,sizeof(struct sockaddr_in));
+                    sendto(sockfd,p_data_list->send_lev.data,len,0,(struct sockaddr *)&addr,sizeof(struct sockaddr_in));
 
                     del_data(p_data_list, &p_dev->data_head[1],p_dev);
                 }
@@ -507,15 +511,43 @@ void MaintainCoreTime(struct root_data *pRoot,TimeInternal *ptptTime)
             
 }
 
-void update_lcd_display(struct root_data *pRootData,struct tm* t_tm)
+void display_alarm_to_lcd(struct root_data *pRootData)
 {
+    struct clock_info *pClockInfo = &pRootData->clock_info;
+    struct clock_alarm_data *pClockAlarm = &pClockInfo->alarmData;
+    if(pClockAlarm->alarmSatellite = TRUE)
+        SetTextValue(MAIN_SCREEN_ID,4,"YES");
+    else
+        SetTextValue(MAIN_SCREEN_ID,4,"NO");
+
+    if(pClockAlarm->alarmPtp == TRUE)
+        SetTextValue(MAIN_SCREEN_ID,5,"YES");
+    else
+        SetTextValue(MAIN_SCREEN_ID,5,"NO");
+
+    if(pClockAlarm->alarmVcxo100M == TRUE || pClockAlarm->alarmRb10M == TRUE || pClockAlarm->vcxoLock == 0)
+        SetTextValue(MAIN_SCREEN_ID,6,"YES");
+    else
+        SetTextValue(MAIN_SCREEN_ID,6,"NO");
+
+}
+
+
+
+void update_lcd_display(struct root_data *pRootData)
+{
+
     switch(pRootData->lcd_sreen_id)
     {
+        
         case MAIN_SCREEN_ID:
+            SetTextValue(MAIN_SCREEN_ID,4,pRootData->current_time);
             break;
         case CLOCK_STATUS_SCREEN_ID:
             break;
         case WARN_SCREEN_ID:
+            display_alarm_to_lcd(pRootData);
+
             break;
 
         case ETH_CTL_SCREEN_ID:       
@@ -525,7 +557,9 @@ void update_lcd_display(struct root_data *pRootData,struct tm* t_tm)
         default:
             break;
     }
+    
 }
+
 
 
 void display_alarm_information(struct clock_alarm_data *pClockAlarm)
@@ -564,11 +598,11 @@ void *ThreadUsuallyProcess(void *arg)
             current_time = timeTmp.seconds;
             tm = gmtime(&current_time);
 
-            
             memset(pRootData->current_time,0,sizeof(pRootData->current_time));
             sprintf(pRootData->current_time,"%d-%d-%d %02d:%02d:%02d\n",tm->tm_year+1900,tm->tm_mon+1,tm->tm_mday,tm->tm_hour,tm->tm_min,tm->tm_sec);
             printf("%s\n",pRootData->current_time);
           
+            update_lcd_display(pRootData);
 
             //ClockStateProcess(pClockInfo);
             
@@ -657,6 +691,14 @@ int daemonize(void)
     }
 }
 
+void IntExit(int a)
+{
+    system("pkill ptp");
+    system("pkill ntpd");
+    exit(-1);
+}
+
+
 int main(int argc,char *argv[])
 {
     int ret,err;
@@ -697,13 +739,20 @@ int main(int argc,char *argv[])
                 exit(0);
         }
     }
+    InitNetInforAll(g_RootData);
 
     Init_FpgaCore();
     Init_Thread_Attr(&g_RootData->pattr);
     Init_PpsDev("/dev/ptp_dev");
     InitDev(g_RootData);
-    InitSlotList(g_RootData);
-    
+    InitSlotList(g_RootData);    
+    signal(SIGINT, IntExit);
+
+
+    start_ntp_daemon();
+    start_ptp_daemon();
+
+    usleep(100000);
 
     /** 创建日常处理线程 */
 	err = pthread_create(&g_RootData->p_usual,&g_RootData->pattr,(void *)ThreadUsuallyProcess,(void *)g_RootData);	

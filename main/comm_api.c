@@ -241,7 +241,6 @@ void add_uart_lcd(struct uart_buf *pUart, unsigned char data)
     }
 
     last_data = data;
-    printf("%x----%d---\n",data,pUart->cur);
 
 }
 

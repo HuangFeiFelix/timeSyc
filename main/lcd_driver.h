@@ -3,7 +3,7 @@
 
 #include "common.h"
 
-#define CMD_MAX_SIZE 20        /*!<单条指令大小，根据需要调整，尽量设置大一些*/
+#define CMD_MAX_SIZE 50        /*!<单条指令大小，根据需要调整，尽量设置大一些*/
 
 
 /*! 
