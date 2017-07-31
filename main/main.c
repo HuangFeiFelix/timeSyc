@@ -11,6 +11,8 @@ struct root_data *g_RootData;
 #define COMM_MODIFY_SEC         0x85
 
 int comm_sin_port;
+char comm_ip_address[20];
+
 
 char *ctlEthConfig = "/mnt/network_ctl.cfg";
 char *ptpEthConfig = "/mnt/network_ptp.cfg";
@@ -18,6 +20,9 @@ char *ntpEthConfig = "/mnt/network_ntp.cfg";
 char *ptpConfig = "/mnt/ptp.conf";
 char *ntpConfig = "/mnt/ntp/ntp.conf";
 char *md5Config = "/mnt/ntp/keys";
+char *commIpaddressCfg = "/mnt/comm_ip_address.cfg";
+
+
     
 #define PATH_PTP_DAEMON "/mnt/ptp"
 #define PATH_NTP_DAEMON "/mnt/ntp/ntpd"
@@ -145,6 +150,9 @@ void InitNetInforAll(struct root_data *pRootData)
     Load_NetWorkParam_FromFile(ctlEthConfig,&pRootData->comm_port);
     Load_NetWorkParam_FromFile(ntpEthConfig,&pRootData->ntp_port);
     Load_NetWorkParam_FromFile(ptpEthConfig,&pRootData->ptp_port);
+
+    memset(comm_ip_address,0,sizeof(comm_ip_address));
+    Load_comm_ip_address(commIpaddressCfg,comm_ip_address);
     
 }
 
@@ -186,7 +194,7 @@ void InitDev(struct root_data *pRootData)
 #endif
    
    pRootData->dev[ENUM_PC_CTL].net_attr.sin_port = comm_sin_port;//
-   pRootData->dev[ENUM_PC_CTL].net_attr.ip = inet_addr("192.168.2.20");
+   pRootData->dev[ENUM_PC_CTL].net_attr.ip = inet_addr(comm_ip_address);
    init_add_dev(&pRootData->dev[ENUM_PC_CTL],&pRootData->dev_head,UDP_DEVICE,ENUM_PC_CTL);
 
    #if 0 
@@ -340,14 +348,8 @@ void *DataSend_Thread(void *arg) {
                 
                 if(p_dev->type == UDP_DEVICE)
                 {
-                    int sockfd = socket(AF_INET,SOCK_DGRAM,0);
-                    struct sockaddr_in addr;
-                    addr.sin_family = AF_INET;
-	                addr.sin_port = htons(p_dev->net_attr.sin_port);
-                    addr.sin_addr.s_addr = p_dev->net_attr.ip;
-                    len = p_data_list->send_lev.len;
-                    
-                    sendto(sockfd,p_data_list->send_lev.data,len,0,(struct sockaddr *)&addr,sizeof(struct sockaddr_in));
+
+                    sendto(p_dev->fd,p_data_list->send_lev.data,len,0,(struct sockaddr *)&p_dev->dest_addr,sizeof(struct sockaddr_in));
 
                     del_data(p_data_list, &p_dev->data_head[1],p_dev);
                 }
@@ -607,7 +609,7 @@ void *ThreadUsuallyProcess(void *arg)
             //ClockStateProcess(pClockInfo);
             
             /**核心时间维护  */
-            //MaintainCoreTime(pRootData,&timeTmp);
+            MaintainCoreTime(pRootData,&timeTmp);
 
             inssue_pps_data(pRootData);
             CollectAlarm(pRootData);

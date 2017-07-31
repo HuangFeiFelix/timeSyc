@@ -1236,6 +1236,42 @@ void SaveNetParamToFile(char *network_cfg,struct NetInfor *infopt)
     fclose(network_fd);
 
 }
+int Load_comm_ip_address(char *network_cfg,char *ip_address)
+{
+    Uint8 line_str[50];
+    
+    Uint8 tile[10];
+    Uint8 *pIndex;
+    Uint8 *pStr = line_str;
+    struct in_addr temsock;
+
+    int i;
+    
+    memset(line_str,0,sizeof(line_str));
+    memset(tile,0,sizeof(tile));
+    
+    FILE *net_work_fd = fopen(network_cfg,"r");
+    if(net_work_fd == NULL)
+    {
+        printf("can not find ip_address.conf file\n");
+        memcpy(ip_address,"127.0.0.1",strlen("127.0.0.1"));
+        return -1;
+    }
+    
+    fgets(line_str,sizeof(line_str),net_work_fd);
+    pIndex = strchr(line_str,':');
+    memcpy(tile,line_str,pIndex-pStr);
+
+    pIndex++;
+
+    if(strcmp("IP",tile) == 0)
+    {
+        memcpy(ip_address,pIndex,strlen(pIndex));
+    }
+
+
+    fclose(net_work_fd);
+}
 
 int Load_NetWorkParam_FromFile(char *network_cfg,struct NetInfor *infopt)
 {
@@ -3267,6 +3303,13 @@ void inssue_pps_data(struct root_data *pRootData)
     unsigned int index = 0;
     struct clock_info *pClockInfo = &pRootData->clock_info;
     struct clock_alarm_data *pClockAlarm = &pClockInfo->alarmData;
+
+    int sockfd = socket(AF_INET,SOCK_DGRAM,0);
+    struct sockaddr_in addr;
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(20171);
+    addr.sin_addr.s_addr = pRootData->dev[ENUM_PC_CTL].net_attr.ip;
+
     
     memset(buf,0,sizeof(buf));
 
@@ -3292,8 +3335,10 @@ void inssue_pps_data(struct root_data *pRootData)
     memcpy(buf+iOffset,pRootData->current_time,strlen(pRootData->current_time));
     iOffset += strlen(pRootData->current_time);
 
-         
-    AddData_ToSendList(pRootData,ENUM_PC_CTL,buf,iOffset);
+    sendto(sockfd,buf,iOffset,0,(struct sockaddr *)&addr,sizeof(struct sockaddr_in));
+
+    close(sockfd);
+    //AddData_ToSendList(pRootData,ENUM_PC_CTL,buf,iOffset);
    
 }
 
