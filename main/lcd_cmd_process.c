@@ -1,5 +1,6 @@
 #include "lcd_driver.h"
 #include "lcd_cmd_process.h"
+#include "clock_rb.h"
 
 static Uint16 current_screen_id = 0;//当前画面ID
 static Sint32 test_value = 0;//测试值
@@ -307,6 +308,76 @@ void HandleWarnningState(struct root_data *pRootData,Uint16 screen_id, Uint16 co
 
 }
 
+void HandleCtlEthState(struct root_data *pRootData,Uint16 screen_id, Uint16 control_id,unsigned char *data)
+{
+    struct clock_info *pClockInfo = &pRootData->clock_info;
+
+    switch(control_id)
+    {
+        case 19:
+            pRootData->lcd_sreen_id = MAIN_SCREEN_ID;
+            
+            HandleLcdEvent = HandleMainSreenState;
+            SetTextValue(MAIN_SCREEN_ID,4,pRootData->current_time);
+
+            
+            break;
+        case 21:
+            pRootData->lcd_sreen_id = PARAM_SETING_SCREEN_ID;
+            HandleLcdEvent = HandleSettingState;
+            
+            if(pClockInfo->ref_type == 0)
+            {
+                SetButtonValue(PARAM_SETING_SCREEN_ID,0x0a,0x01);
+                SetButtonValue(PARAM_SETING_SCREEN_ID,0x0ba,0x001);
+            
+            }
+            else
+            {
+                SetButtonValue(PARAM_SETING_SCREEN_ID,0x0b,0x01);
+                SetButtonValue(PARAM_SETING_SCREEN_ID,0x0a,0x00);
+            
+            }
+
+        case 0x04:
+            
+            break;
+        case 0x07:
+            
+            break;
+        default:
+            HandleLcdEvent = HandleCtlEthState;
+            break;
+    }
+
+
+
+}
+void HandlePtpEthState(struct root_data *pRootData,Uint16 screen_id, Uint16 control_id,unsigned char *data)
+{
+
+}
+void HandleNtpEthState(struct root_data *pRootData,Uint16 screen_id, Uint16 control_id,unsigned char *data)
+{
+
+}
+
+void lcdDisplayEnternet(struct NetInfor *net,Uint16 screen_id)
+{
+    struct sockaddr_in temsock;
+    char data[20];
+
+    temsock.sin_addr.s_addr = net->ip;
+    SetTextValue(screen_id,4,inet_ntoa(temsock.sin_addr));
+    temsock.sin_addr.s_addr = net->gwip;
+    SetTextValue(screen_id,7,inet_ntoa(temsock.sin_addr));
+
+    memset(data,0,sizeof(data));
+    sprintf(data,"%02x:%02x:%02x:%02x:%02x:%02x",net->mac[0],net->mac[1],net->mac[2]
+                            ,net->mac[3],net->mac[4],net->mac[5]);
+    SetTextValue(screen_id,10,data);
+}
+
 void HandleSettingState(struct root_data *pRootData,Uint16 screen_id, Uint16 control_id,unsigned char *data)
 {
     printf("HandleSettingState\n");
@@ -320,7 +391,22 @@ void HandleSettingState(struct root_data *pRootData,Uint16 screen_id, Uint16 con
             HandleLcdEvent = HandleMainSreenState;
             SetTextValue(MAIN_SCREEN_ID,4,pRootData->current_time);
             break;
-
+        case 7:
+            pRootData->lcd_sreen_id = ETH_CTL_SCREEN_ID;
+            lcdDisplayEnternet(&pRootData->comm_port,ETH_CTL_SCREEN_ID);
+            HandleLcdEvent = HandleCtlEthState;
+            break;
+        case 12:
+            pRootData->lcd_sreen_id = ETH_PTP_SCREEN_ID;
+            lcdDisplayEnternet(&pRootData->ptp_port,ETH_PTP_SCREEN_ID);
+            HandleLcdEvent = HandlePtpEthState;
+            break;
+        case 15:
+            pRootData->lcd_sreen_id = ETH_NTP_SCREEN_ID;
+            lcdDisplayEnternet(&pRootData->ntp_port,ETH_NTP_SCREEN_ID);
+            HandleLcdEvent = HandleNtpEthState;
+            break;
+            
         default:
             HandleLcdEvent = HandleSettingState;
             break;
@@ -351,12 +437,11 @@ void HandleClockStatusState(struct root_data *pRootData,Uint16 screen_id, Uint16
 }
 
 
-
 void HandleMainSreenState(struct root_data *pRootData,Uint16 screen_id, Uint16 control_id,unsigned char *data)
 {
 
         printf("HandleMainSreenState\n");
-        
+        struct clock_info *pClockInfo = &pRootData->clock_info;
         
         switch(control_id)
         {
@@ -367,8 +452,22 @@ void HandleMainSreenState(struct root_data *pRootData,Uint16 screen_id, Uint16 c
                 break;
             case 13:
                 pRootData->lcd_sreen_id = PARAM_SETING_SCREEN_ID;
+                
                 HandleLcdEvent = HandleSettingState;
+                
+                if(pClockInfo->ref_type == 0)
+                {
+                    SetButtonValue(PARAM_SETING_SCREEN_ID,0x0a,0x01);
+                    SetButtonValue(PARAM_SETING_SCREEN_ID,0x0ba,0x001);
 
+                }
+                else
+                {
+                    SetButtonValue(PARAM_SETING_SCREEN_ID,0x0b,0x01);
+                    SetButtonValue(PARAM_SETING_SCREEN_ID,0x0a,0x00);
+
+                }
+                
                 
                 break;
             case 14:

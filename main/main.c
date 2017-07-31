@@ -163,7 +163,7 @@ void InitDev(struct root_data *pRootData)
     /**初始化UI 设备 ,UI设备通过串口通信id =0*/
 #if 1
     pRootData->dev[ENUM_LCD].com_attr.com_port = ENUM_LCD;  //串口1
-    pRootData->dev[ENUM_LCD].com_attr.baud_rate = 115200;
+    pRootData->dev[ENUM_LCD].com_attr.baud_rate = 9600;
     init_add_dev(&pRootData->dev[ENUM_LCD],&pRootData->dev_head,COMM_DEVICE,ENUM_LCD);
 #endif
 #if 0
@@ -609,7 +609,7 @@ void *ThreadUsuallyProcess(void *arg)
             //ClockStateProcess(pClockInfo);
             
             /**核心时间维护  */
-            MaintainCoreTime(pRootData,&timeTmp);
+            //MaintainCoreTime(pRootData,&timeTmp);
 
             inssue_pps_data(pRootData);
             CollectAlarm(pRootData);
@@ -751,8 +751,8 @@ int main(int argc,char *argv[])
     signal(SIGINT, IntExit);
 
 
-    start_ntp_daemon();
-    start_ptp_daemon();
+    //start_ntp_daemon();
+    //start_ptp_daemon();
 
     usleep(100000);
 
