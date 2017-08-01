@@ -198,8 +198,8 @@ int msgPackFrameToSend(struct root_data *pRootData,struct Head_Frame *iHead,shor
     iOffset = 0;
     
     msgPackHead(&s,iHead->daddr,iHead->saddr,iHead->index,msgType,iHead->pad_type,msglen);
-    memcpy(buf+iOffset,&s,HEAD_FRAME_LENGTH);
-    iOffset += HEAD_FRAME_LENGTH);
+    memcpy(buf+iOffset,&s,sizeof(struct Head_Frame));
+    iOffset += sizeof(struct Head_Frame);
 
     if(sendMsg != NULL)
     {
@@ -1169,7 +1169,7 @@ void SetNetworkToEnv(struct NetInfor *infopt)
     SetIpAddress(infopt->ifaceName,infopt->ip);
     SetMaskAddress(infopt->ifaceName,infopt->mask);
 
-    AddGateWay(infopt->ifaceName,infopt->gwip);
+    //AddGateWay(infopt->ifaceName,infopt->gwip);
 
 }
 
@@ -3335,7 +3335,7 @@ void inssue_pps_data(struct root_data *pRootData)
     buf[iOffset++] = pClockInfo->workStatus;
     buf[iOffset++] = pClockAlarm->alarmSatellite;
     buf[iOffset++] = pClockAlarm->alarmPtp;
-     *(int *)(buf + iOffset) = flip32(pClockInfo.data_1Hz.phase_offset);
+     *(int *)(buf + iOffset) = flip32(4);
     iOffset += 4;
 
     memcpy(buf+iOffset,pRootData->current_time,strlen(pRootData->current_time));
@@ -3374,7 +3374,7 @@ void process_pc_ctl_req(struct root_data *pRootData,struct Head_Frame *pHeadFram
 {
     int iOffset = 0;
     
-    short cmd_type = buf[HEAD_FRAME_LENGTH]<<8+buf[HEAD_FRAME_LENGTH+1];
+    short cmd_type = buf[HEAD_FRAME_LENGTH]<<8 | buf[HEAD_FRAME_LENGTH+1];
 
     switch(cmd_type)
     {
@@ -3516,6 +3516,7 @@ void handle_pc_ctl_message(struct root_data *pRootData,char *buf,int len)
 
     msgUpPackHead(buf,&msgHead);
 
+    
     switch(msgHead.ctype)
     {
         case CTL_WORD_REQ:

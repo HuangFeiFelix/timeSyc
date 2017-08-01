@@ -141,14 +141,14 @@
 
 #define  _BTN_ETHNTP_BUTTON1                                                  21
 
-#define  _TXT_DIS__ETHNTP_TEXT_DISPLAY1                                        7
-
-#define  _TXT_DIS__ETHNTP_TEXT_DISPLAY2                                       10
-
-#define  _TXT_DIS__ETHNTP_TEXT_DISPLAY3                                       13
-
 //画面ethNTP中图片Image3使用的图片
 #define  _IMG_ETHNTP_IMAGE3                                                    0
 
 #define  _BTN_ETHNTP_BUTTON3                                                  19
+
+#define  _TXT_DIS__ETHNTP_TEXT_DISPLAY1                                        7
+
+#define  _TXT_DIS__ETHNTP_TEXT_DISPLAY2                                       10
+
+#define  _TXT_DIS__ETHNTP_TEXT_DISPLAY3                                       12
 

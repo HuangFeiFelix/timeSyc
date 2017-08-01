@@ -349,8 +349,9 @@ void *DataSend_Thread(void *arg) {
                 if(p_dev->type == UDP_DEVICE)
                 {
 
-                    sendto(p_dev->fd,p_data_list->send_lev.data,len,0,(struct sockaddr *)&p_dev->dest_addr,sizeof(struct sockaddr_in));
-
+                    len = p_data_list->send_lev.len;
+                    count = sendto(p_dev->fd,p_data_list->send_lev.data,len,0,(struct sockaddr *)&p_dev->dest_addr,sizeof(struct sockaddr_in));
+                    
                     del_data(p_data_list, &p_dev->data_head[1],p_dev);
                 }
                 else if(p_dev->type == TCP_DEVICE)
@@ -601,7 +602,7 @@ void *ThreadUsuallyProcess(void *arg)
             tm = gmtime(&current_time);
 
             memset(pRootData->current_time,0,sizeof(pRootData->current_time));
-            sprintf(pRootData->current_time,"%d-%d-%d %02d:%02d:%02d\n",tm->tm_year+1900,tm->tm_mon+1,tm->tm_mday,tm->tm_hour,tm->tm_min,tm->tm_sec);
+            sprintf(pRootData->current_time,"%d-%d-%d %02d:%02d:%02d",tm->tm_year+1900,tm->tm_mon+1,tm->tm_mday,tm->tm_hour,tm->tm_min,tm->tm_sec);
             printf("%s\n",pRootData->current_time);
           
             update_lcd_display(pRootData);
@@ -750,9 +751,8 @@ int main(int argc,char *argv[])
     InitSlotList(g_RootData);    
     signal(SIGINT, IntExit);
 
-
-    //start_ntp_daemon();
-    //start_ptp_daemon();
+    start_ntp_daemon();
+    start_ptp_daemon();
 
     usleep(100000);
 
