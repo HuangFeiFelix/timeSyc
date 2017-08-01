@@ -308,10 +308,29 @@ void HandleWarnningState(struct root_data *pRootData,Uint16 screen_id, Uint16 co
 
 }
 
+void SetParamSettingScreen(int ref_type)
+{
+    if(ref_type == 0)
+    {
+        SetButtonValue(PARAM_SETING_SCREEN_ID,0x0a,0x01);
+        SetButtonValue(PARAM_SETING_SCREEN_ID,0x0ba,0x001);
+    
+    }
+    else
+    {
+        SetButtonValue(PARAM_SETING_SCREEN_ID,0x0b,0x01);
+        SetButtonValue(PARAM_SETING_SCREEN_ID,0x0a,0x00);
+    
+    }
+
+}
+
 void HandleCtlEthState(struct root_data *pRootData,Uint16 screen_id, Uint16 control_id,unsigned char *data)
 {
     struct clock_info *pClockInfo = &pRootData->clock_info;
-
+    int ip;
+    int mask;
+    
     switch(control_id)
     {
         case 19:
@@ -326,33 +345,21 @@ void HandleCtlEthState(struct root_data *pRootData,Uint16 screen_id, Uint16 cont
             pRootData->lcd_sreen_id = PARAM_SETING_SCREEN_ID;
             HandleLcdEvent = HandleSettingState;
             
-            if(pClockInfo->ref_type == 0)
-            {
-                SetButtonValue(PARAM_SETING_SCREEN_ID,0x0a,0x01);
-                SetButtonValue(PARAM_SETING_SCREEN_ID,0x0ba,0x001);
-            
-            }
-            else
-            {
-                SetButtonValue(PARAM_SETING_SCREEN_ID,0x0b,0x01);
-                SetButtonValue(PARAM_SETING_SCREEN_ID,0x0a,0x00);
-            
-            }
+            SetParamSettingScreen(pClockInfo->ref_type);
 
         case 0x04:
-            
+            //ip = inet_addr(data);
             break;
         case 0x07:
-            
+            //mask = inet_addr(data);
             break;
         default:
             HandleLcdEvent = HandleCtlEthState;
             break;
     }
 
-
-
 }
+
 void HandlePtpEthState(struct root_data *pRootData,Uint16 screen_id, Uint16 control_id,unsigned char *data)
 {
 
@@ -361,6 +368,7 @@ void HandleNtpEthState(struct root_data *pRootData,Uint16 screen_id, Uint16 cont
 {
 
 }
+
 
 void lcdDisplayEnternet(struct NetInfor *net,Uint16 screen_id)
 {
@@ -377,6 +385,7 @@ void lcdDisplayEnternet(struct NetInfor *net,Uint16 screen_id)
                             ,net->mac[3],net->mac[4],net->mac[5]);
     SetTextValue(screen_id,10,data);
 }
+
 
 void HandleSettingState(struct root_data *pRootData,Uint16 screen_id, Uint16 control_id,unsigned char *data)
 {
@@ -455,19 +464,8 @@ void HandleMainSreenState(struct root_data *pRootData,Uint16 screen_id, Uint16 c
                 
                 HandleLcdEvent = HandleSettingState;
                 
-                if(pClockInfo->ref_type == 0)
-                {
-                    SetButtonValue(PARAM_SETING_SCREEN_ID,0x0a,0x01);
-                    SetButtonValue(PARAM_SETING_SCREEN_ID,0x0ba,0x001);
-
-                }
-                else
-                {
-                    SetButtonValue(PARAM_SETING_SCREEN_ID,0x0b,0x01);
-                    SetButtonValue(PARAM_SETING_SCREEN_ID,0x0a,0x00);
-
-                }
-                
+                SetParamSettingScreen(pClockInfo->ref_type);
+  
                 
                 break;
             case 14:

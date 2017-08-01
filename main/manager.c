@@ -198,8 +198,8 @@ int msgPackFrameToSend(struct root_data *pRootData,struct Head_Frame *iHead,shor
     iOffset = 0;
     
     msgPackHead(&s,iHead->daddr,iHead->saddr,iHead->index,msgType,iHead->pad_type,msglen);
-    memcpy(buf+iOffset,&s,sizeof(struct Head_Frame));
-    iOffset += sizeof(struct Head_Frame);
+    memcpy(buf+iOffset,&s,HEAD_FRAME_LENGTH);
+    iOffset += HEAD_FRAME_LENGTH);
 
     if(sendMsg != NULL)
     {
@@ -3300,7 +3300,8 @@ void inssue_pps_data(struct root_data *pRootData)
 {
     char buf[100];
     int iOffset = 0;
-    unsigned int index = 0;
+    unsigned short index = 0;
+    
     struct clock_info *pClockInfo = &pRootData->clock_info;
     struct clock_alarm_data *pClockAlarm = &pClockInfo->alarmData;
 
@@ -3317,23 +3318,31 @@ void inssue_pps_data(struct root_data *pRootData)
     buf[iOffset++] = '<';
     buf[iOffset++] = 0x00;
     buf[iOffset++] = 0xff;
-    *(int *)(buf + iOffset) = flip32(index);
-    iOffset += 4;
+    *(unsigned short *)(buf + iOffset) = flip16(index);
+    iOffset += 2;
+    index++;
 
     buf[iOffset++] = CTL_WORD_DATA;
     buf[iOffset++] = 'A';
-    *(int *)(buf + iOffset) = flip32(28);
+    *(int *)(buf + iOffset) = flip32(30);
     iOffset += 4;
+
+    /**cmd type  */
+    buf[iOffset++] = 0;
+    buf[iOffset++] = 0;
     
     buf[iOffset++] = pClockInfo->ref_type;
     buf[iOffset++] = pClockInfo->workStatus;
     buf[iOffset++] = pClockAlarm->alarmSatellite;
     buf[iOffset++] = pClockAlarm->alarmPtp;
-     *(int *)(buf + iOffset) = flip32(4);
+     *(int *)(buf + iOffset) = flip32(pClockInfo.data_1Hz.phase_offset);
     iOffset += 4;
 
     memcpy(buf+iOffset,pRootData->current_time,strlen(pRootData->current_time));
     iOffset += strlen(pRootData->current_time);
+
+    buf[iOffset++] = 0x0d;
+    buf[iOffset++] = 0x0a;
 
     sendto(sockfd,buf,iOffset,0,(struct sockaddr *)&addr,sizeof(struct sockaddr_in));
 
