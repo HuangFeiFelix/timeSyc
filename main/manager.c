@@ -188,6 +188,37 @@ int msgPackFrame(char *buf,struct Head_Frame *iHead,void *sendMsg,int msglen)
     return iOffset;
 }
 
+int msgPackRespFrameToSend(struct root_data *pRootData,struct Head_Frame *iHead,short msgType,void *sendMsg,int msglen,short subcmd)
+{
+    int iOffset;
+    struct Head_Frame s;
+    char buf[1024];
+
+    memset(buf,0,sizeof(buf));
+    iOffset = 0;
+    
+    msgPackHead(&s,iHead->daddr,iHead->saddr,iHead->index,msgType,iHead->pad_type,msglen);
+    memcpy(buf+iOffset,&s,sizeof(struct Head_Frame));
+    iOffset += sizeof(struct Head_Frame);
+
+    buf[iOffset++] = (subcmd>>8)& 0xff;
+    buf[iOffset++] = subcmd & 0xff;
+    
+    if(sendMsg != NULL)
+    {
+        memcpy(buf+iOffset,sendMsg,msglen);
+        iOffset += msglen;
+    }
+
+    buf[iOffset++] = 0x0d;
+    buf[iOffset++] = 0x0a;
+
+    AddData_ToSendList(pRootData,ENUM_PC_CTL,buf,iOffset);
+
+    return iOffset;
+}
+
+
 int msgPackFrameToSend(struct root_data *pRootData,struct Head_Frame *iHead,short msgType,void *sendMsg,int msglen)
 {
     int iOffset;
@@ -2278,8 +2309,7 @@ void handle_req_dev_infor(struct root_data *pRootData,struct Head_Frame *pHeadFr
     buf[iOffset++] = 4;
     buf[iOffset++] = pRootData->slot_list[4].slot_type;
 
-
-    msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_DATA,buf,iOffset);
+    msgPackRespFrameToSend(pRootData,pHeadFrame,CTL_WORD_DATA,buf,iOffset,CMD_DEV_INFORMATION);
 }
 
 void handle_req_version(struct root_data *pRootData,struct Head_Frame *pHeadFrame)
@@ -2302,7 +2332,7 @@ void handle_req_version(struct root_data *pRootData,struct Head_Frame *pHeadFram
     memcpy(&buf[iOffset],FPGA_VERSION,4);
     iOffset += 4;
 
-    msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_DATA,buf,iOffset);
+    msgPackRespFrameToSend(pRootData,pHeadFrame,CTL_WORD_DATA,buf,iOffset,CMD_VERSION_INFROMATION);
 
 }
 
@@ -2330,7 +2360,7 @@ void handle_req_network_ctl(struct root_data *pRootData,struct Head_Frame *pHead
     memcpy(buf+iOffset,pRootData->comm_port.mac,6);
     iOffset += 6;
     
-     msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_DATA,buf,iOffset);
+    msgPackRespFrameToSend(pRootData,pHeadFrame,CTL_WORD_DATA,buf,iOffset,CMD_NET_WORK_CTL);
 }
 
 void handle_req_network_ptp(struct root_data *pRootData,struct Head_Frame *pHeadFrame)
@@ -2356,7 +2386,7 @@ void handle_req_network_ptp(struct root_data *pRootData,struct Head_Frame *pHead
     memcpy(buf+iOffset,pRootData->ptp_port.mac,6);
     iOffset += 6;
     
-     msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_DATA,buf,iOffset);
+    msgPackRespFrameToSend(pRootData,pHeadFrame,CTL_WORD_DATA,buf,iOffset,CMD_NET_WORK_PTP);
 }
 
 void handle_req_network_ntp(struct root_data *pRootData,struct Head_Frame *pHeadFrame)
@@ -2382,7 +2412,7 @@ void handle_req_network_ntp(struct root_data *pRootData,struct Head_Frame *pHead
     memcpy(buf+iOffset,pRootData->ntp_port.mac,6);
     iOffset += 6;
     
-     msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_DATA,buf,iOffset);
+    msgPackRespFrameToSend(pRootData,pHeadFrame,CTL_WORD_DATA,buf,iOffset,CMD_NET_WORK_NTP);
 }
 
 void handle_req_gps_status(struct root_data *pRootData,struct Head_Frame *pHeadFrame)
@@ -2424,7 +2454,7 @@ void handle_req_gps_status(struct root_data *pRootData,struct Head_Frame *pHeadF
     buf[iOffset++] = (pSatellite->latitude_m>>16)&0xff;
     buf[iOffset++] = (pSatellite->latitude_m)&0xff;
            
-    msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_DATA,buf,iOffset);
+    msgPackRespFrameToSend(pRootData,pHeadFrame,CTL_WORD_DATA,buf,iOffset,CMD_GPS_STATUS);
 }
 
 void handle_req_system_setting(struct root_data *pRootData,struct Head_Frame *pHeadFrame)
@@ -2449,7 +2479,7 @@ void handle_req_system_setting(struct root_data *pRootData,struct Head_Frame *pH
     buf[iOffset++] = 0;
     buf[iOffset++] = 0;
     
-    msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_DATA,buf,iOffset);
+    msgPackRespFrameToSend(pRootData,pHeadFrame,CTL_WORD_DATA,buf,iOffset,CMD_SYS_SET);
 }
 
 void packmsg_ptp_all(struct PtpSetCfg *pPtpSetcfg,char *buf,int *len)
@@ -2517,7 +2547,7 @@ void packmsg_ptp_master(struct PtpSetCfg *pPtpSetcfg,char *buf,int *len)
     buf[iOffset++] = pPtpSetcfg->logAnnounceInterval;
     buf[iOffset++] = pPtpSetcfg->grandmasterPriority1;
     buf[iOffset++] = pPtpSetcfg->grandmasterPriority2;
-    buf[iOffset++] = pPtpSetcfg->validServerNum;
+    //buf[iOffset++] = pPtpSetcfg->validServerNum;
     buf[iOffset++] = pPtpSetcfg->currentUtcOffset;
     
     *len = iOffset;
@@ -2661,7 +2691,7 @@ void handle_req_ptp_all(struct root_data *pRootData,struct Head_Frame *pHeadFram
     if(pHeadFrame->pad_type == pSlotList->slot_type)
     {
         packmsg_ptp_all(pSlotList->pPtpSetcfg,buf,&iOffset);
-        msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_DATA,buf,iOffset);
+        msgPackRespFrameToSend(pRootData,pHeadFrame,CTL_WORD_DATA,buf,iOffset,CMD_PTP_CFG_ALL);
     }
     else
     {
@@ -2686,7 +2716,7 @@ void handle_req_ptp_normal(struct root_data *pRootData,struct Head_Frame *pHeadF
     if(pHeadFrame->pad_type == pSlotList->slot_type)
     {
         packmsg_ptp_nomal(pSlotList->pPtpSetcfg,buf,&iOffset);
-        msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_DATA,buf,iOffset);
+        msgPackRespFrameToSend(pRootData,pHeadFrame,CTL_WORD_DATA,buf,iOffset,CMD_PTP_CFG_NORMAL);
     }
     else
     {
@@ -2709,7 +2739,7 @@ void handle_req_ptp_master(struct root_data *pRootData,struct Head_Frame *pHeadF
     if(pHeadFrame->pad_type == pSlotList->slot_type)
     {
         packmsg_ptp_master(pSlotList->pPtpSetcfg,buf,&iOffset);
-        msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_DATA,buf,iOffset);
+        msgPackRespFrameToSend(pRootData,pHeadFrame,CTL_WORD_DATA,buf,iOffset,CMD_PTP_CFG_MASTER);
     }
     else
     {
@@ -2733,7 +2763,7 @@ void handle_req_ptp_slave(struct root_data *pRootData,struct Head_Frame *pHeadFr
     if(pHeadFrame->pad_type == pSlotList->slot_type)
     {
         packmsg_ptp_slave(pSlotList->pPtpSetcfg,buf,&iOffset);
-        msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_DATA,buf,iOffset);
+        msgPackRespFrameToSend(pRootData,pHeadFrame,CTL_WORD_DATA,buf,iOffset,CMD_PTP_CFG_SLAVE);
     }
     else
     {
@@ -2757,7 +2787,7 @@ void handle_req_ntp_normal(struct root_data *pRootData,struct Head_Frame *pHeadF
     if(pHeadFrame->pad_type == pSlotList->slot_type)
     {
         packmsg_ntp_normal(pSlotList->pNtpSetCfg,buf,&iOffset);
-        msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_DATA,buf,iOffset);
+        msgPackRespFrameToSend(pRootData,pHeadFrame,CTL_WORD_DATA,buf,iOffset,CMD_NTP_CFG_NORMAL);
     }
     else
     {
@@ -2782,7 +2812,7 @@ void handle_req_ntp_md5_enable(struct root_data *pRootData,struct Head_Frame *pH
     if(pHeadFrame->pad_type == pSlotList->slot_type)
     {
         packmsg_ntp_md5_enable(pSlotList->pNtpSetCfg,buf,&iOffset);
-        msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_DATA,buf,iOffset);
+        msgPackRespFrameToSend(pRootData,pHeadFrame,CTL_WORD_DATA,buf,iOffset,CMD_NTP_CFG_MD5_ENABLE);
     }
     else
     {
@@ -2806,7 +2836,7 @@ void handle_req_ntp_blacklist(struct root_data *pRootData,struct Head_Frame *pHe
     if(pHeadFrame->pad_type == pSlotList->slot_type)
     {
         packmsg_ntp_blacklist(pSlotList->pNtpSetCfg,buf,&iOffset);
-        msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_DATA,buf,iOffset);
+        msgPackRespFrameToSend(pRootData,pHeadFrame,CTL_WORD_DATA,buf,iOffset,CMD_NTP_CFG_BLACKLIST);
     }
     else
     {
@@ -2830,7 +2860,7 @@ void handle_req_ntp_whitlelist(struct root_data *pRootData,struct Head_Frame *pH
     if(pHeadFrame->pad_type == pSlotList->slot_type)
     {
         packmsg_ntp_whitlelist(pSlotList->pNtpSetCfg,buf,&iOffset);
-        msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_DATA,buf,iOffset);
+        msgPackRespFrameToSend(pRootData,pHeadFrame,CTL_WORD_DATA,buf,iOffset,CMD_NTP_CFG_WHITELSIT);
     }
     else
     {
@@ -3099,7 +3129,7 @@ void handle_set_ntp_normal(struct root_data *pRootData,struct Head_Frame *pHeadF
 
         pSlotList->pNtpSetCfg->freq_m = data[index++];;
         pSlotList->pNtpSetCfg->md5_flag = data[index++];;
-        pSlotList->pNtpSetCfg->sympassive = data[index++];;
+        //pSlotList->pNtpSetCfg->sympassive = data[index++];;
 
         for(i = 1;i < 9;i++)
         {
@@ -3156,7 +3186,7 @@ void handle_set_ntp_md5_enable(struct root_data *pRootData,struct Head_Frame *pH
         pSlotList->pNtpSetCfg->broadcast_key_num = data[index++];
         pSlotList->pNtpSetCfg->multicast_key_num = data[index++];
         pSlotList->pNtpSetCfg->md5_flag = data[index++];
-        pSlotList->pNtpSetCfg->sympassive = data[index++];
+        //pSlotList->pNtpSetCfg->sympassive = data[index++];
 
         if(memcmp(pSlotList->pNtpSetCfg,&m_ntpset_cfg,sizeof(struct NtpSetCfg)) != 0)
             set_success = TRUE;
@@ -3338,8 +3368,8 @@ void inssue_pps_data(struct root_data *pRootData)
      *(int *)(buf + iOffset) = flip32(4);
     iOffset += 4;
 
-    memcpy(buf+iOffset,pRootData->current_time,strlen(pRootData->current_time));
-    iOffset += strlen(pRootData->current_time);
+    memcpy(buf+iOffset,pRootData->current_time,20);
+    iOffset += 20;
 
     buf[iOffset++] = 0x0d;
     buf[iOffset++] = 0x0a;
@@ -3446,7 +3476,7 @@ void process_pc_ctl_set(struct root_data *pRootData,struct Head_Frame *pHeadFram
 {
     int iOffset = 0;
 
-    short cmd_type = buf[HEAD_FRAME_LENGTH]<<8+buf[HEAD_FRAME_LENGTH+1];
+    short cmd_type = buf[HEAD_FRAME_LENGTH]<<8 | buf[HEAD_FRAME_LENGTH+1];
     char *data = buf + sizeof(struct Head_Frame);
     
     switch(cmd_type)
@@ -3490,7 +3520,7 @@ void process_pc_data(struct root_data *pRootData,struct Head_Frame *pHeadFrame,c
 {
     int iOffset = 0;
 
-    short cmd_type = buf[HEAD_FRAME_LENGTH]<<8+buf[HEAD_FRAME_LENGTH+1];
+    short cmd_type = buf[HEAD_FRAME_LENGTH]<<8 | buf[HEAD_FRAME_LENGTH+1];
     char *data = buf + sizeof(struct Head_Frame);
     
     switch(cmd_type)
