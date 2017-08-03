@@ -430,7 +430,7 @@ char SatelliteHandle(struct Satellite_Data *p_satellite_data,char *str)
     
     memcpy(temp,str,strlen(str));
 
-    if(NULL != strstr(temp,"$GPZDA"))
+    if(NULL != strstr(temp,"$GBZDA"))
     {
         /**获得时间  */
         ret = Zda(p_satellite_data,str); 
@@ -438,7 +438,7 @@ char SatelliteHandle(struct Satellite_Data *p_satellite_data,char *str)
             p_satellite_data->time++;
 
     }
-    else if(NULL != strstr(temp,"$GPGGA"))
+    else if(NULL != strstr(temp,"$GBGGA"))
     {
         /**获得  位置*/
         Gga(p_satellite_data,str);    

@@ -244,8 +244,34 @@ void add_uart_lcd(struct uart_buf *pUart, unsigned char data)
 
 }
 
-
 void add_uart_ui(struct uart_buf *pUart, char data)
+{
+    static char last_data = 0;
+
+	if ((data == '$') && (pUart->flags == 0x00))
+	{
+		pUart->flags = 0x01;
+		pUart->cur = 0;
+	}
+    else if (data == 0x0a && last_data == 0x0d)
+	{
+		pUart->flags = 0x10;
+		pUart->buf[pUart->cur++] = data;
+		pUart->buf[pUart->cur++] = '\0';
+  	}
+    
+	if (pUart->flags == 0x01)
+	{
+		pUart->buf[pUart->cur++] = data;
+        //printf("cur %x\n",pUart->buf[pUart->cur-1]);
+    }
+
+    last_data = data;
+    //printf("%x----%d---\n",data,pUart->cur);
+
+}
+
+void add_uart_gps(struct uart_buf *pUart, char data)
 {
     static char last_data = 0;
 
@@ -614,6 +640,26 @@ int recv_ui_com_data(struct device *p_dev, struct dev_head *dev_head)
 	return TRUE;
 }
 
+int recv_gps_com_data(struct device *p_dev, struct dev_head *dev_head)
+{
+	char buf,*p_buf = p_dev->com_attr.uart_buf.buf;
+	int fd = p_dev->fd, len = 0;
+	if (FD_ISSET(fd,&dev_head->tmp_set) > 0)
+	{
+		if ((len = read(fd, &buf, UART_LEN)) > 0)
+
+			add_uart_gps(&p_dev->com_attr.uart_buf, buf);
+	}
+	if (p_dev->com_attr.uart_buf.flags == 0x10)
+	{
+
+		add_recv(p_buf, fd,p_dev->com_attr.uart_buf.cur, p_dev);
+		p_dev->com_attr.uart_buf.flags = 0x00;
+	}
+	return TRUE;
+}
+
+
 int recv_lcd_com_data(struct device *p_dev, struct dev_head *dev_head)
 {
 	char buf;
@@ -628,7 +674,7 @@ int recv_lcd_com_data(struct device *p_dev, struct dev_head *dev_head)
 	if (p_dev->com_attr.uart_buf.flags == 0x10)
 	{
 
-		add_recv(p_buf, fd,p_dev->com_attr.uart_buf.cur, p_dev);
+		add_recv(p_buf, fd,p_dev->com_attr.uart_buf.cur-2, p_dev);
 		p_dev->com_attr.uart_buf.flags = 0x00;
 	}
 
@@ -709,7 +755,7 @@ int recv_data(struct device *p_dev, struct dev_head *dev_head)
                         p_dev->recv_data = recv_lcd_com_data;
                         break;
                     case ENUM_GPS:
-                        p_dev->recv_data = recv_ui_com_data;
+                        p_dev->recv_data = recv_gps_com_data;
                         break;
                     case ENUM_RB:
                         p_dev->recv_data = recv_rb_com_data;

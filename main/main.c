@@ -256,7 +256,7 @@ void *DataHandle_Thread(void *arg)
                          ProcessLcdMessage(pRootData,p_data_list->recv_lev.data,p_data_list->recv_lev.len);
                         break;
     				case ENUM_GPS:
-                        //printf("dev_id=  %d,com1:receive:%s",p_dev->dev_id,p_data_list->recv_lev.data);
+                        printf("dev_id=  %d,com1:receive:%s",p_dev->dev_id,p_data_list->recv_lev.data);
                         SatelliteHandle(&pRootData->satellite_data,p_data_list->recv_lev.data);
     					break;
     				case ENUM_RB:
@@ -358,6 +358,16 @@ void *DataSend_Thread(void *arg) {
                 {
                     len = p_data_list->send_lev.len;
                     count = send(p_dev->fd, p_data_list->send_lev.data, len,0);
+                    
+                    del_data(p_data_list, &p_dev->data_head[1], p_dev);
+
+                }
+                else if(p_dev->type == COMM_DEVICE)
+                {
+                    len = p_data_list->send_lev.len;
+                    printf("send =%d %x \n",len,p_data_list->send_lev.data[0]);
+                    
+                    count = write(p_dev->fd, p_data_list->send_lev.data, len);
                     
                     del_data(p_data_list, &p_dev->data_head[1], p_dev);
 
@@ -702,6 +712,83 @@ void IntExit(int a)
 }
 
 
+void set_gsp_module1(struct root_data *pRootData)
+{
+    char buf[100];
+    int iOffset = 0;
+    int i;
+    unsigned char CK_A;
+    unsigned char CK_B;
+    
+    memset(buf,0,sizeof(buf));
+
+    buf[iOffset++] = 0xb5;
+    buf[iOffset++] = 0x62;
+    buf[iOffset++] = 0x06;
+    buf[iOffset++] = 0x13;
+    
+    buf[iOffset++] = 4;
+    buf[iOffset++] = 0;
+    
+    buf[iOffset++] = 0;
+    buf[iOffset++] = 0;
+    buf[iOffset++] = 0;
+    buf[iOffset++] = 0;
+    
+    for(i = 2;i<10;i++)
+    {
+        CK_A = CK_A + buf[i];
+        CK_B = CK_B + CK_A;
+    }
+    buf[iOffset++] = CK_A;
+    buf[iOffset++] = CK_B;
+    AddData_ToSendList(pRootData,ENUM_GPS,buf,iOffset);    
+}
+
+
+void set_gsp_module(struct root_data *pRootData)
+{
+    char buf[100];
+    int iOffset = 0;
+    int i;
+    char CK_A;
+    char CK_B;
+    
+    memset(buf,0,sizeof(buf));
+
+    buf[iOffset++] = 0xb5;
+    buf[iOffset++] = 0x62;
+    buf[iOffset++] = 0x06;
+    buf[iOffset++] = 0x17;
+    
+    buf[iOffset++] = 0;
+    buf[iOffset++] = 20;
+    
+    buf[iOffset++] = 0;
+    buf[iOffset++] = 0x40;
+    buf[iOffset++] = 0;
+    buf[iOffset++] = 0;
+    
+    iOffset += 4;
+    
+    buf[iOffset++] = 0;
+    buf[iOffset++] = 1;
+    buf[iOffset++] = 1;
+    buf[iOffset++] = 1;
+    buf[iOffset++] = 0;
+    buf[iOffset++] = 0;
+    iOffset += 6;
+
+    for(i = 2;i<24+2;i++)
+    {
+        CK_A = CK_A + buf[i];
+        CK_B = CK_B + CK_A;
+    }
+    buf[iOffset++] = CK_A;
+    buf[iOffset++] = CK_B;
+    AddData_ToSendList(pRootData,ENUM_GPS,buf,iOffset);    
+}
+
 int main(int argc,char *argv[])
 {
     int ret,err;
@@ -751,8 +838,10 @@ int main(int argc,char *argv[])
     InitSlotList(g_RootData);    
     signal(SIGINT, IntExit);
 
-    start_ntp_daemon();
-    start_ptp_daemon();
+    //start_ntp_daemon();
+    //start_ptp_daemon();
+
+
 
     usleep(100000);
 
@@ -801,6 +890,9 @@ int main(int argc,char *argv[])
 		printf("datahandle_pthread error!\n");
 		return FALSE;
 	}
+
+
+    set_gsp_module1(g_RootData);
 
     pthread_join(g_RootData->p_usual,NULL);
     pthread_join(g_RootData->p_recv,NULL);

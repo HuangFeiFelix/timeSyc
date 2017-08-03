@@ -1,5 +1,5 @@
 #include "manager.h"
-
+#include "log.h"
 
 #define CTL_WORD_DISCOVERY  0x10
 #define CTL_WORD_RESPONSE   0x11
@@ -125,7 +125,7 @@ void msgUpPack_ptp_all(char *data,struct PtpSetCfg *pPtpSetcfg)
     int i;
     int iOffset = 0;
     
-    pPtpSetcfg->clockType = data[iOffset++];
+    //pPtpSetcfg->clockType = data[iOffset++];
     pPtpSetcfg->domainNumber = data[iOffset++];
     pPtpSetcfg->domainFilterSwitch = data[iOffset++];
     pPtpSetcfg->protoType = data[iOffset++];
@@ -2597,7 +2597,7 @@ void packmsg_ntp_normal(struct NtpSetCfg *pNtpSetCfg,char *buf,int *len)
     
     buf[iOffset++] = pNtpSetCfg->freq_m;
     buf[iOffset++] = pNtpSetCfg->md5_flag;
-    buf[iOffset++] = pNtpSetCfg->sympassive;
+    //buf[iOffset++] = pNtpSetCfg->sympassive;
 
 
     for(i=1;i<9;i++)
@@ -2622,7 +2622,7 @@ void packmsg_ntp_md5_enable(struct NtpSetCfg *pNtpSetCfg,char *buf,int *len)
     buf[iOffset++] = pNtpSetCfg->broadcast_key_num;
     buf[iOffset++] = pNtpSetCfg->multicast_key_num;
     buf[iOffset++] = pNtpSetCfg->md5_flag;
-    buf[iOffset++] = pNtpSetCfg->sympassive;
+    //buf[iOffset++] = pNtpSetCfg->sympassive;
 
 
     *len = iOffset;
@@ -2947,7 +2947,6 @@ void handle_set_network_ptp(struct root_data *pRootData,struct Head_Frame *pHead
 
     memcpy(&m_network_ctl,&pRootData->ptp_port,sizeof(struct NetInfor));
 
-    
     m_network_ctl.ip = ntohl(*(int*)(data+index));
     index += 4;
     m_network_ctl.mask = ntohl(*(int*)(data+index));
@@ -3060,7 +3059,8 @@ void handle_set_system_setting(struct root_data *pRootData,struct Head_Frame *pH
     }
 
     struct clock_info *pClockInfo = &pRootData->clock_info;
-    pClockInfo->ref_type = buf[0];
+    pClockInfo->ref_type = data[0];
+    debug_level = data[1];
 
     msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_ACK,NULL,iOffset);
 }
@@ -3218,6 +3218,7 @@ void handle_set_ntp_blacklist(struct root_data *pRootData,struct Head_Frame *pHe
     int iOffset = 0;
     int index = 0;
     int i;
+    int num = 0;
     char set_success = FALSE;;
     
     struct NtpSetCfg m_ntpset_cfg;
@@ -3232,8 +3233,9 @@ void handle_set_ntp_blacklist(struct root_data *pRootData,struct Head_Frame *pHe
         memcpy(&m_ntpset_cfg,pSlotList->pNtpSetCfg,sizeof(struct NtpSetCfg));
 
         pSlotList->pNtpSetCfg->blacklist = data[index++];
+        num = data[index++];
         
-        for(i=0;i<16;i++)
+        for(i=0;i<num;i++)
         {
             
             pSlotList->pNtpSetCfg->blacklist_flag[i] = data[index++];
@@ -3277,6 +3279,7 @@ void handle_set_ntp_whitelist(struct root_data *pRootData,struct Head_Frame *pHe
     int index = 0;
     int i;
     char set_success = FALSE;;
+    int num = 0;
     
     struct NtpSetCfg m_ntpset_cfg;
     
@@ -3290,8 +3293,9 @@ void handle_set_ntp_whitelist(struct root_data *pRootData,struct Head_Frame *pHe
         memcpy(&m_ntpset_cfg,pSlotList->pNtpSetCfg,sizeof(struct NtpSetCfg));
 
         pSlotList->pNtpSetCfg->whitelist = data[index++];
+        num = data[index++];
         
-        for(i=0;i<16;i++)
+        for(i=0;i<num;i++)
         {
             
             pSlotList->pNtpSetCfg->whitelist_flag[i] = data[index++];
@@ -3377,7 +3381,6 @@ void inssue_pps_data(struct root_data *pRootData)
     sendto(sockfd,buf,iOffset,0,(struct sockaddr *)&addr,sizeof(struct sockaddr_in));
 
     close(sockfd);
-    //AddData_ToSendList(pRootData,ENUM_PC_CTL,buf,iOffset);
    
 }
 
@@ -3477,7 +3480,7 @@ void process_pc_ctl_set(struct root_data *pRootData,struct Head_Frame *pHeadFram
     int iOffset = 0;
 
     short cmd_type = buf[HEAD_FRAME_LENGTH]<<8 | buf[HEAD_FRAME_LENGTH+1];
-    char *data = buf + sizeof(struct Head_Frame);
+    char *data = buf + sizeof(struct Head_Frame) + 2;
     
     switch(cmd_type)
     {
