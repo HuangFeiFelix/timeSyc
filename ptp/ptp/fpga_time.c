@@ -256,7 +256,7 @@ void GetFpgaRecvMessageTime(PtpClock *pPtpClock,MsgHeader *pMsgHeader,TimeIntern
     {
         pTime->seconds = pPtpClock->CurentTime.seconds;
         pTime->seconds = pTime->seconds & 0xffffff00;
-        pTime->seconds = pTime->seconds + pMsgHeader->reserved1;
+        pTime->seconds = pTime->seconds | pMsgHeader->reserved1;
         
         pTime->nanoseconds = pMsgHeader->reserved2 & 0x3fffffff;
         

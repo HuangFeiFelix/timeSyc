@@ -2475,7 +2475,7 @@ void handle_req_system_setting(struct root_data *pRootData,struct Head_Frame *pH
     struct clock_info *pClockInfo = &pRootData->clock_info;
 
     buf[iOffset++] = pClockInfo->ref_type;
-    buf[iOffset++] = 0;
+    buf[iOffset++] = debug_level;
     buf[iOffset++] = 0;
     buf[iOffset++] = 0;
     
@@ -2635,16 +2635,17 @@ void packmsg_ntp_blacklist(struct NtpSetCfg *pNtpSetCfg,char *buf,int *len)
     int iOffset = *len;
     
     buf[iOffset++] = pNtpSetCfg->blacklist;
+    buf[iOffset++] = 15;
 
     for(i=0;i<16;i++)
     {
         
         buf[iOffset++] = pNtpSetCfg->blacklist_flag[i];
         
-        *(int *)(buf+iOffset) = pNtpSetCfg->blacklist_ip[i];
+        *(int *)(buf+iOffset) = htonl(pNtpSetCfg->blacklist_ip[i]);
         iOffset += 4;
         
-        *(int *)(buf+iOffset) = pNtpSetCfg->blacklist_mask[i];
+        *(int *)(buf+iOffset) = htonl(pNtpSetCfg->blacklist_mask[i]);
         iOffset += 4;
     }
 
@@ -2659,16 +2660,17 @@ void packmsg_ntp_whitlelist(struct NtpSetCfg *pNtpSetCfg,char *buf,int *len)
     int iOffset = *len;
     
     buf[iOffset++] = pNtpSetCfg->whitelist;
+    buf[iOffset++] = 15;
 
     for(i=0;i<16;i++)
     {
         
         buf[iOffset++] = pNtpSetCfg->whitelist_flag[i];
         
-        *(int *)(buf+iOffset) = pNtpSetCfg->whitelist_ip[i];
+        *(int *)(buf+iOffset) = htonl(pNtpSetCfg->whitelist_ip[i]);
         iOffset += 4;
         
-        *(int *)(buf+iOffset) = pNtpSetCfg->whitelist_mask[i];
+        *(int *)(buf+iOffset) = htonl(pNtpSetCfg->whitelist_mask[i]);
         iOffset += 4;
     }
 
@@ -3010,7 +3012,7 @@ void handle_set_network_ntp(struct root_data *pRootData,struct Head_Frame *pHead
     if(memcmp(&m_network_ctl,&pRootData->ntp_port,sizeof(struct NetInfor)) != 0)
     {
         memcpy(&pRootData->ntp_port,&m_network_ctl,sizeof(struct NetInfor));
-        SaveNetParamToFile(ptpEthConfig,&pRootData->ntp_port);
+        SaveNetParamToFile(ntpEthConfig,&pRootData->ntp_port);
         usleep(2000);
         SetCmdNetworkToEnv(&pRootData->ntp_port);
         usleep(2000);
@@ -3123,19 +3125,19 @@ void handle_set_ntp_normal(struct root_data *pRootData,struct Head_Frame *pHeadF
        
         memcpy(&m_ntpset_cfg,pSlotList->pNtpSetCfg,sizeof(struct NtpSetCfg));
 
-        pSlotList->pNtpSetCfg->broadcast = data[index++];
-        pSlotList->pNtpSetCfg->freq_b = data[index++];;
-        pSlotList->pNtpSetCfg->multicast = data[index++];;
+        m_ntpset_cfg.broadcast = data[index++];
+        m_ntpset_cfg.freq_b = data[index++];;
+        m_ntpset_cfg.multicast = data[index++];;
 
-        pSlotList->pNtpSetCfg->freq_m = data[index++];;
-        pSlotList->pNtpSetCfg->md5_flag = data[index++];;
+        m_ntpset_cfg.freq_m = data[index++];;
+        m_ntpset_cfg.md5_flag = data[index++];;
         //pSlotList->pNtpSetCfg->sympassive = data[index++];;
 
         for(i = 1;i < 9;i++)
         {
-            pSlotList->pNtpSetCfg->current_key[i].key_valid = data[index++];
-            pSlotList->pNtpSetCfg->current_key[i].key_length = data[index++];
-            memcpy(pSlotList->pNtpSetCfg->current_key[i].key,buf+index,20);
+            m_ntpset_cfg.current_key[i].key_valid = data[index++];
+            m_ntpset_cfg.current_key[i].key_length = data[index++];
+            memcpy(m_ntpset_cfg.current_key[i].key,buf+index,20);
             index += 20;
 
         }
@@ -3183,9 +3185,9 @@ void handle_set_ntp_md5_enable(struct root_data *pRootData,struct Head_Frame *pH
        
         memcpy(&m_ntpset_cfg,pSlotList->pNtpSetCfg,sizeof(struct NtpSetCfg));
 
-        pSlotList->pNtpSetCfg->broadcast_key_num = data[index++];
-        pSlotList->pNtpSetCfg->multicast_key_num = data[index++];
-        pSlotList->pNtpSetCfg->md5_flag = data[index++];
+        m_ntpset_cfg.broadcast_key_num = data[index++];
+        m_ntpset_cfg.multicast_key_num = data[index++];
+        m_ntpset_cfg.md5_flag = data[index++];
         //pSlotList->pNtpSetCfg->sympassive = data[index++];
 
         if(memcmp(pSlotList->pNtpSetCfg,&m_ntpset_cfg,sizeof(struct NtpSetCfg)) != 0)
@@ -3232,18 +3234,18 @@ void handle_set_ntp_blacklist(struct root_data *pRootData,struct Head_Frame *pHe
        
         memcpy(&m_ntpset_cfg,pSlotList->pNtpSetCfg,sizeof(struct NtpSetCfg));
 
-        pSlotList->pNtpSetCfg->blacklist = data[index++];
+        m_ntpset_cfg.blacklist = data[index++];
         num = data[index++];
         
         for(i=0;i<num;i++)
         {
             
-            pSlotList->pNtpSetCfg->blacklist_flag[i] = data[index++];
+            m_ntpset_cfg.blacklist_flag[i] = data[index++];
             
-            pSlotList->pNtpSetCfg->blacklist_ip[i] = *(int *)(buf+index);
+            m_ntpset_cfg.blacklist_ip[i] = htonl(*(int *)(buf+index));
             index += 4;
             
-            pSlotList->pNtpSetCfg->blacklist_mask[i] = *(int *)(buf+index);
+            m_ntpset_cfg.blacklist_mask[i] = htonl(*(int *)(buf+index));
             index += 4;
         }
 
@@ -3292,18 +3294,18 @@ void handle_set_ntp_whitelist(struct root_data *pRootData,struct Head_Frame *pHe
        
         memcpy(&m_ntpset_cfg,pSlotList->pNtpSetCfg,sizeof(struct NtpSetCfg));
 
-        pSlotList->pNtpSetCfg->whitelist = data[index++];
+        m_ntpset_cfg.whitelist = data[index++];
         num = data[index++];
         
         for(i=0;i<num;i++)
         {
             
-            pSlotList->pNtpSetCfg->whitelist_flag[i] = data[index++];
+            m_ntpset_cfg.whitelist_flag[i] = data[index++];
             
-            pSlotList->pNtpSetCfg->whitelist_ip[i] = *(int *)(buf+index);
+            m_ntpset_cfg.whitelist_ip[i] = htonl(*(int *)(buf+index));
             index += 4;
             
-            pSlotList->pNtpSetCfg->whitelist_mask[i] = *(int *)(buf+index);
+            m_ntpset_cfg.whitelist_mask[i] = htonl(*(int *)(buf+index));
             index += 4;
         }
 
@@ -3463,10 +3465,10 @@ void process_pc_ctl_req(struct root_data *pRootData,struct Head_Frame *pHeadFram
         handle_req_ntp_md5_enable(pRootData,pHeadFrame);
         break;
      case CMD_NTP_CFG_BLACKLIST:
-        handle_req_ntp_whitlelist(pRootData,pHeadFrame);
+        handle_req_ntp_blacklist(pRootData,pHeadFrame);
         break;
      case CMD_NTP_CFG_WHITELSIT:
-        handle_req_ntp_blacklist(pRootData,pHeadFrame);
+        handle_req_ntp_whitlelist(pRootData,pHeadFrame);
         break;
      default:
         handle_no_cmd_error(pRootData,pHeadFrame);

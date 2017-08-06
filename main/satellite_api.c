@@ -103,7 +103,9 @@ char Gga(struct Satellite_Data *p_satellite_data,char *str)
             memset(tmp_str,0,sizeof(tmp_str));
             memcpy(tmp_str, str + matchptr[8].rm_so,
                     matchptr[8].rm_eo - matchptr[8].rm_so);
-            p_satellite_data->satellite_position = atoi(tmp_str);  
+            p_satellite_data->satellite_use = atoi(tmp_str);  
+            p_satellite_data->satellite_see = atoi(tmp_str);  
+            p_satellite_data->satellite_position = atoi(tmp_str)+1;
 
 
             memset(tmp_str,0,sizeof(tmp_str));
@@ -212,15 +214,24 @@ char Rmc(struct Satellite_Data *p_satellite_data,char *str)
 	int cflags = REG_EXTENDED;
 	const size_t nmatch = 15;
 	regmatch_t matchptr[15];
-    //  printf("rmc str :%s\n",str);    //$NVRMC,013423.00,A,3039.4582,N,10405.0352,E                         ,0.035,     27.500,070515,0.000,,500*3A
-    const char *pattern ="^\\$(\\w+),(\\w+.\\w+),(\\w+),(\\w+.\\w+),(\\w+),(\\w+.\\w+),(\\w+),(\\w+.\\w+),(\\w+.\\w+),(\\w+),(\\w+.\\w+),,(\\w+)";
+    //printf("rmc str :%s\n",str);    //$NVRMC,013423.00,A,3039.4582,N,10405.0352,E                         ,0.035,     27.500,070515,,,500*3A
+    const char *pattern ="^\\$(\\w+),(\\w+.\\w+),(\\w+),(\\w+.\\w+)";
     regcomp(&reg, pattern, cflags);       
     if ((status = regexec(&reg, str, nmatch, matchptr, 0)) == 0)
 	{
+        //printf("rmc str :%s\n",str);
+
+       
         memset(tmp_str,'\0',sizeof(tmp_str));
-        memcpy(p_satellite_data->satellite_mode, str + matchptr[12].rm_so,
-    	matchptr[12].rm_eo - matchptr[12].rm_so);
-        printf("rmc:%s\n",p_satellite_data->satellite_mode);
+        memcpy(p_satellite_data->satellite_mode, str + matchptr[3].rm_so,
+    	matchptr[3].rm_eo - matchptr[3].rm_so);
+
+        if(p_satellite_data->satellite_mode[0] ==  'V')
+            p_satellite_data->time_enable = FALSE;
+        else if(p_satellite_data->satellite_mode[0] ==  'A')
+            p_satellite_data->time_enable = TRUE;
+        
+        //printf("rmc:%s\n",p_satellite_data->satellite_mode);
         regfree(&reg);
     	return 1;
     }
@@ -315,10 +326,12 @@ char BdGpt(struct Satellite_Data *p_satellite_data,char *str)
         else
             p_satellite_data->leap_enable = FALSE;
 
+#if 0
         if((tmp_str[1]&0x07) == 0x04)
             p_satellite_data->time_enable = 0;
         else if((tmp_str[1]&0x07) == 0x05)
             p_satellite_data->time_enable = 1;
+#endif
 
         /**天线状态  */
         memset(tmp_str,0,sizeof(tmp_str));
@@ -403,6 +416,41 @@ char BdVer(struct Satellite_Data *p_satellite_data,char *str)
 
 }
 
+char Pubx(struct Satellite_Data *p_satellite_data,char *str)
+{
+    int status;
+    regex_t reg;
+    char tmp_str[32];
+    int cflags = REG_EXTENDED;
+    const size_t nmatch = 15;
+    regmatch_t matchptr[15];
+
+    /** $BDGPT,<1>,<2>, <3>,<4>,<5>,<6>,<7>,<8>,<9>,<10>,<11>*HH<CR><LF>*/
+    const char *pattern ="^\\$(\\w+),(\\w+),(\\w+.\\w+),(\\w+),(\\w+.\\w+),(\\w+),(\\w+)";
+    regcomp(&reg, pattern, cflags);
+    if ((status = regexec(&reg, str, nmatch, matchptr, 0)) == 0)
+	{
+        memset(tmp_str,0,sizeof(tmp_str));
+        memcpy(tmp_str, str + matchptr[7].rm_so,
+        matchptr[7].rm_eo - matchptr[7].rm_so);
+        if(tmp_str[2] == 'D')
+            p_satellite_data->gps_utc_leaps = 18;
+        else
+            p_satellite_data->gps_utc_leaps = atoi(tmp_str);
+        
+        regfree(&reg);
+		return 1;
+    }
+    else
+    {
+        regfree(&reg);
+        return 0;
+
+    }
+
+}
+
+
 char BdGsa(struct Satellite_Data *p_satellite_data,char *str)
 {
 
@@ -443,7 +491,7 @@ char SatelliteHandle(struct Satellite_Data *p_satellite_data,char *str)
         /**获得  位置*/
         Gga(p_satellite_data,str);    
     }
-    else if(NULL != strstr(temp,"$GPRMC"))
+    else if(NULL != strstr(temp,"$GBRMC"))
     {
         /**卫星运行模式  */
         Rmc(p_satellite_data,str);   
@@ -452,7 +500,7 @@ char SatelliteHandle(struct Satellite_Data *p_satellite_data,char *str)
     {
         Gsv(p_satellite_data,str);
     }
-    else if(NULL != strstr(temp,"$BDGPT"))
+    else if(NULL != strstr(temp,"$GPGPT"))
     {
         /**闰秒数，闰秒使能，天线状态  */
         BdGpt(p_satellite_data,str);
@@ -474,6 +522,10 @@ char SatelliteHandle(struct Satellite_Data *p_satellite_data,char *str)
     else if(NULL != strstr(temp,"$GPGSA"))
     {
         BdGsa(p_satellite_data,str);
+    }
+    else if(NULL != strstr(temp,"$PUBX"))
+    {
+        Pubx(p_satellite_data,str);
     }
     else
     {

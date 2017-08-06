@@ -4,11 +4,14 @@
 #include "manager.h"
 #include "fpga_time.h"
 #include "lcd_cmd_process.h"
+#include "clock_rb.h"
 
 struct root_data *g_RootData;
-#define COMM_GET_SEC            0x83
-#define COMM_SET_SEC            0x84
-#define COMM_MODIFY_SEC         0x85
+
+#define COMM_GET_SEC    3
+#define COMM_SET_SEC    4
+#define COMM_MODIFY_SEC 5
+
 
 int comm_sin_port;
 char comm_ip_address[20];
@@ -179,7 +182,7 @@ void InitDev(struct root_data *pRootData)
     pRootData->dev[ENUM_GPS].com_attr.baud_rate = 9600;
     init_add_dev(&pRootData->dev[ENUM_GPS],&pRootData->dev_head,COMM_DEVICE,ENUM_GPS);
     
-#if 0
+#if 1
     //钟控串口，控制钟控
     pRootData->dev[ENUM_RB].com_attr.com_port = ENUM_RB;   
     pRootData->dev[ENUM_RB].com_attr.baud_rate = 9600;
@@ -221,6 +224,8 @@ void InitDev(struct root_data *pRootData)
 
 }
 
+
+
 void *DataHandle_Thread(void *arg)
 {
 
@@ -256,7 +261,7 @@ void *DataHandle_Thread(void *arg)
                          ProcessLcdMessage(pRootData,p_data_list->recv_lev.data,p_data_list->recv_lev.len);
                         break;
     				case ENUM_GPS:
-                        printf("dev_id=  %d,com1:receive:%s",p_dev->dev_id,p_data_list->recv_lev.data);
+                        //printf("dev_id=  %d,com1:receive:%s",p_dev->dev_id,p_data_list->recv_lev.data);
                         SatelliteHandle(&pRootData->satellite_data,p_data_list->recv_lev.data);
     					break;
     				case ENUM_RB:
@@ -365,7 +370,7 @@ void *DataSend_Thread(void *arg) {
                 else if(p_dev->type == COMM_DEVICE)
                 {
                     len = p_data_list->send_lev.len;
-                    printf("send =%d %x \n",len,p_data_list->send_lev.data[0]);
+                    //printf("send =%d %x \n",len,p_data_list->send_lev.data[0]);
                     
                     count = write(p_dev->fd, p_data_list->send_lev.data, len);
                     
@@ -391,9 +396,31 @@ void *DataSend_Thread(void *arg) {
 
 static void Pps_Signal_Handle(int signum)
 {
-    /**非实时性要求处理  */
-    g_RootData->flag_usuallyRoutine = TRUE;
+
+    struct root_data *pRootData = g_RootData;
+    struct clock_info *pClock_info = &pRootData->clock_info;
+    struct collect_data *p_collect_data = &pClock_info->data_1Hz;
+    struct clock_alarm_data *pClockAlarm = &pClock_info->alarmData;
+    int phaseOffset = 0;
+    int ph;
     
+    if(pClock_info->ref_type == REF_SATLITE 
+        && pClockAlarm->alarmBd1pps == 0 
+        && pClockAlarm->alarmSatellite == 0
+        && pClock_info->run_times > RUN_TIME)
+    {
+        phaseOffset = Get_Pps_Rb_PhaseOffset();
+            
+        phaseOffset = phaseOffset * 4;
+        ph = Kalman_Filter(phaseOffset,1);
+        printf("readPhase=%d collect_phase=%d, count=%d\n",phaseOffset,ph,p_collect_data->ph_number_counter);
+        collect_phase(&pClock_info->data_1Hz,0,ph);
+        
+
+    }
+
+     /**非实时性要求处理  */
+    g_RootData->flag_usuallyRoutine = TRUE;
 }
 
 
@@ -436,7 +463,7 @@ void MaintainCoreTime(struct root_data *pRoot,TimeInternal *ptptTime)
     Uint32 fpga_ntp_second_from_1970 =0;
     struct Satellite_Data *pSateData = &pRoot->satellite_data;       
 
-    int fd = pRoot->dev[ENUM_LOCAL_DEV].fd;
+    int fd = pRoot->dev_fd;
 
     if((pClockInfo->ref_type ==  REF_SATLITE))
     {
@@ -468,7 +495,6 @@ void MaintainCoreTime(struct root_data *pRoot,TimeInternal *ptptTime)
         previousBusSec = Time;
         return;
     }
-
     previousBusSec = Time;
 
     /**时间连续10s 都不相同  */
@@ -480,7 +506,7 @@ void MaintainCoreTime(struct root_data *pRoot,TimeInternal *ptptTime)
         {
             printf("=========setFpgaTime==%d===\n",Time);
             /**写下一秒的值fgpa 内部处理  */
-            //SetFpgaTime(Time);
+            SetFpgaTime(Time);
             secErrorCnt = 0;
         }
     }
@@ -617,10 +643,10 @@ void *ThreadUsuallyProcess(void *arg)
           
             update_lcd_display(pRootData);
 
-            //ClockStateProcess(pClockInfo);
+            ClockStateProcess(pClockInfo);
             
             /**核心时间维护  */
-            //MaintainCoreTime(pRootData,&timeTmp);
+            MaintainCoreTime(pRootData,&timeTmp);
 
             inssue_pps_data(pRootData);
             CollectAlarm(pRootData);
@@ -646,7 +672,7 @@ void *ThreadUsuallyProcess(void *arg)
 
         /**测试上报  */
        
-        //ClockHandleProcess(pClockInfo);
+        ClockHandleProcess(pClockInfo);
 
         usleep(10);
     }
@@ -789,6 +815,8 @@ void set_gsp_module(struct root_data *pRootData)
     AddData_ToSendList(pRootData,ENUM_GPS,buf,iOffset);    
 }
 
+
+
 int main(int argc,char *argv[])
 {
     int ret,err;
@@ -796,7 +824,6 @@ int main(int argc,char *argv[])
     pthread_t Id_ThreadUsually;
     int c;
     int val;
-
     
     g_RootData = (struct root_data *)malloc(sizeof(struct root_data));
 	if(!g_RootData)
@@ -830,7 +857,7 @@ int main(int argc,char *argv[])
         }
     }
     InitNetInforAll(g_RootData);
-
+    Init_RbClockCenter(&g_RootData->clock_info);
     Init_FpgaCore();
     Init_Thread_Attr(&g_RootData->pattr);
     Init_PpsDev("/dev/ptp_dev");
@@ -891,8 +918,6 @@ int main(int argc,char *argv[])
 		return FALSE;
 	}
 
-
-    set_gsp_module1(g_RootData);
 
     pthread_join(g_RootData->p_usual,NULL);
     pthread_join(g_RootData->p_recv,NULL);

@@ -51,7 +51,7 @@
 
 void Init_I2c(SfpCtl *pSfpCtl)
 {
-    int i2cFd = open("/dev/i2c-0",O_CREAT | O_RDWR);
+    int i2cFd = open("/dev/i2c-1",O_CREAT | O_RDWR);
     if(i2cFd < 0)
         printf("open i2c error\n");
 
@@ -203,6 +203,7 @@ void AutoEthxPhy(SfpCtl *pSfpCtl,short portNum)
 
                 break;
             case MEDIA_1000FX:
+            case 0x01:
                 val = ReadPagePhy(pSfpCtl,portNum,18,20);
                 printf("read port %d phy addr: 18_20 addr value : 0x%x MEDIA_1000FX\n\n", portNum,val);
                 val = 0x02;
@@ -950,14 +951,14 @@ void *ThreadUsuallyProcess(void *p)
 
         if(pUartDevice->pps_routine_flag)
         {
-            printf("========================1PPS Start ============================\n");
+            //printf("========================1PPS Start ============================\n");
              /**处理其他  */
             nTimeCnt++;
 
 
             /**获取当前运行时间  */
             GetFpgaRuningTime(&timeTmp);
-            printf("fgpa Running time:sec=%d,nao=%d \n",timeTmp.seconds,timeTmp.nanoseconds);
+            //printf("fgpa Running time:sec=%d,nao=%d \n",timeTmp.seconds,timeTmp.nanoseconds);
 #if 0
 
             GetFpgaPpsTime(&timeTmp);
@@ -971,7 +972,7 @@ void *ThreadUsuallyProcess(void *p)
             
             current_time = timeTmp.seconds;
             tm = gmtime(&current_time);
-            printf("fgpatime:%d/%d/%d %d:%d:%d\n",tm->tm_year+1900,tm->tm_mon+1,tm->tm_mday,tm->tm_hour,tm->tm_min,tm->tm_sec);
+            //printf("fgpatime:%d/%d/%d %d:%d:%d\n",tm->tm_year+1900,tm->tm_mon+1,tm->tm_mday,tm->tm_hour,tm->tm_min,tm->tm_sec);
 
             /**核心时间维护  */
 #if 0
@@ -1002,7 +1003,7 @@ void *ThreadUsuallyProcess(void *p)
 
             pUartDevice->pps_routine_flag = FALSE;
         
-            printf("========================1PPS End ============================\n\n\n");
+            //printf("========================1PPS End ============================\n\n\n");
         }
         
        

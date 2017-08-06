@@ -3,7 +3,7 @@
 
 
 #include "common.h"
-
+extern void SetRbClockAlign_Once();
 
 extern void GetFpgaRuningTime(TimeInternal *pTime);
 

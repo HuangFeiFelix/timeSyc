@@ -245,25 +245,22 @@ void CollectAlarm(struct root_data *pRootData)
         pAlarmData->alarmBd1pps = TRUE;
     else 
         pAlarmData->alarmBd1pps = FALSE;
-
   
     /**读取0x08  */
     val = *(Uint8*)(BASE_ADDR+0x09);
 
-    /**1号槽位100m 检波告警 ，1，告警，0，不告警*/
+    /**1号槽位10m 检波告警 ，1，告警，0，不告警*/
     if(val&0x01)
             pAlarmData->alarmVcxo100M = TRUE;
         else 
             pAlarmData->alarmVcxo100M = FALSE;
     
-     /**2号槽位100m 检波告警 ，1，告警，0，不告警*/
+     /**2号槽位10m 检波告警 ，1，告警，0，不告警*/
     if(val&0x02)
         pAlarmData->alarmRb10M = TRUE;
     else
         pAlarmData->alarmRb10M = FALSE;
-
-
-    /**1号槽位1pps检波告警，1，告警，0，不告警  */
+   
     if(val&0x04)
         pAlarmData->alarmXo10M = TRUE;
     else
@@ -277,18 +274,28 @@ void CollectAlarm(struct root_data *pRootData)
     else
         pAlarmData->vcxoLock= FALSE;
 
-    if(pRootData->satellite_data.antenna != 2 || pAlarmData->alarmBd1pps == TRUE)
+    if(pAlarmData->alarmBd1pps == TRUE)
         pAlarmData->alarmSatellite = TRUE;
     else
         pAlarmData->alarmSatellite = FALSE;
-        
-    if(pAlarmData->alarmVcxo100M == TRUE || pAlarmData->vcxoLock == TRUE)
-        pAlarmData->alarmDisk= TRUE;
+       
+    if(pAlarmData->alarmBd1pps == 1 || pAlarmData->alarmRb10M == 1)
+        pAlarmData->alarmDisk = TRUE;
     else
         pAlarmData->alarmDisk = FALSE;
-
-
 }
 
+void SetRbClockAlign_Once()
+{
+    *(Uint8*)(BASE_ADDR + 0xe9) = 0x01;
+}
+
+int Get_Pps_Rb_PhaseOffset()
+{   
+    int offset;
+    
+    
+    offset = *(Uint32*)(BASE_ADDR + 0x10);
+}
 
 

@@ -25,6 +25,9 @@
 #include "common.h"
 
 
+#define RUN_TIME 30
+
+
 #define MAX  50
 #define FREE 0x0
 #define FAST 0x1
@@ -35,6 +38,19 @@
 #define REF_10MHZ   1
 #define REF_2KHz    2
 #define REF_PTP     3
+
+#define RB_CENTER_VALUE  10000
+#define GpsFastG1 20  //二20   30X 1015 
+#define GpsLockG1 10   //二6   6 1014
+#define GpsLockG2 4   //二4
+#define GpsLockG3 1024//10//
+#define XoAdjust_exp_8 800000.0		//800000.0
+#define XoAdjust_exp_9 50000.0	   // 50000.0
+#define GpsFastConstraint 10000
+#define GpsLockConstraint 550 //二350.0		//1016g
+#define GpsAccConstraint 60000
+
+
 
 #define E1FastKaSmall 30
 #define E1FastKaMiddle 40  //<1exp(-9)
@@ -69,21 +85,21 @@ struct collect_data
 
    char uPdOverFlow;  /*连续N次溢出 调相0.4S*/
    char Over_100us;   /*连续N次大于100us,提前结果本次采集*/
-   float  ph_max;             /*最大值*/
-   float  ph_min;             /*最小值*/
+   int  ph_max;             /*最大值*/
+   int  ph_min;             /*最小值*/
 
    int ph_number;          /*每组记数个数  */
    int queue_number;       /*组数          */
 
-   float phase_offset;      /**本次相位偏差  */
-   float  add_ph;             /*累计鉴相值*/ 
+   int phase_offset;      /**本次相位偏差  */
+   int  add_ph;             /*累计鉴相值*/ 
    int  ph_number_counter;  /*当前鉴相数据总个数*/
    int  queue_number_counter;  /*当前鉴相数据队列个数*/
 
-   float  phase_array[MAX] ; /*鉴相数据收集数组*/
+   int  phase_array[MAX] ; /*鉴相数据收集数组*/
 
-   float  lAvgPhase;       /*平均鉴相数据*/
-   float  set_lAvgPhase;   /*预想的平均鉴相数据*/
+   int  lAvgPhase;       /*平均鉴相数据*/
+   int  set_lAvgPhase;   /*预想的平均鉴相数据*/
 
    char  getdata_flag;      /* 采集到一组数据*/
    
@@ -98,7 +114,7 @@ struct clock_info
    char      workStatus;  /*工作状态:free 、fast 、lock、hold*/
    char      ref_type;          /*参考输入：0:卫星1pps ，1: ptp）*/
    char      clock_mode;        /*时钟模式0，内部，1，外部*/
-   float     lPhasePrevious; /*上一次平均鉴相数据*/
+   int     lPhasePrevious; /*上一次平均鉴相数据*/
 
    char      modify_flag;
    char      modify_cnt;
@@ -106,13 +122,13 @@ struct clock_info
    char      bInitialClear;  /*记录上一次，是否有调相操作0:无调相  1：有调相*/
    char      adjflag;       /*是否调整标志*/
 
-   float     lDetDdsAdj;     /*计算调节值*/ 
-   float     IDetPhase;		 /*偏差值*/
-   float     PrelDetPhase;	 /*上一次的偏差值*/
-   float     PrelDetDdsAdj;	 //上一次晶体钟调整值
+   int     lDetDdsAdj;     /*计算调节值*/ 
+   int     IDetPhase;		 /*偏差值*/
+   int     PrelDetPhase;	 /*上一次的偏差值*/
+   int     PrelDetDdsAdj;	 //上一次晶体钟调整值
    
-   float     lAccPhaseAll;	 /*偏差差累加值*/
-   float     OffsetAll;	     /*偏差差累加值*/
+   int     lAccPhaseAll;	 /*偏差差累加值*/
+   int     OffsetAll;	     /*偏差差累加值*/
 
    int       center;          /**add by hf , 调整值  */
 
@@ -155,8 +171,9 @@ extern void gps_status_handle(struct clock_info *p_clock_info);
 
 extern void ClockStateProcess(struct clock_info *pClockInfo);
 extern void ClockHandleProcess(struct clock_info *pClockInfo);
+extern void Init_RbClockCenter(struct clock_info *pClock_info);
 
-extern void collect_phase(struct collect_data *p_collect_data,int delay,float ph);
+extern void collect_phase(struct collect_data *p_collect_data,int delay,int ph);
 
 #endif /* RB_H_ */
 
