@@ -40,7 +40,7 @@
 #define REF_PTP     3
 
 #define RB_CENTER_VALUE  10000
-#define GpsFastG1 20  //二20   30X 1015 
+#define GpsFastG1 15  //二20   30X 1015 
 #define GpsLockG1 10   //二6   6 1014
 #define GpsLockG2 4   //二4
 #define GpsLockG3 1024//10//

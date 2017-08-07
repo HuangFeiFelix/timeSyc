@@ -410,7 +410,7 @@ static void Pps_Signal_Handle(int signum)
         && pClock_info->run_times > RUN_TIME)
     {
         phaseOffset = Get_Pps_Rb_PhaseOffset();
-            
+
         phaseOffset = phaseOffset * 4;
         ph = Kalman_Filter(phaseOffset,1);
         printf("readPhase=%d collect_phase=%d, count=%d\n",phaseOffset,ph,p_collect_data->ph_number_counter);

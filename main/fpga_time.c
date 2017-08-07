@@ -296,6 +296,10 @@ int Get_Pps_Rb_PhaseOffset()
     
     
     offset = *(Uint32*)(BASE_ADDR + 0x10);
+    if(offset&0x80000000)
+        offset = (-1)* offset;
+    return offset;
+    
 }
 
 

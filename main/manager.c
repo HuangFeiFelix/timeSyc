@@ -197,7 +197,7 @@ int msgPackRespFrameToSend(struct root_data *pRootData,struct Head_Frame *iHead,
     memset(buf,0,sizeof(buf));
     iOffset = 0;
     
-    msgPackHead(&s,iHead->daddr,iHead->saddr,iHead->index,msgType,iHead->pad_type,msglen);
+    msgPackHead(&s,iHead->daddr,iHead->saddr,iHead->index,msgType,iHead->pad_type,msglen+2);
     memcpy(buf+iOffset,&s,sizeof(struct Head_Frame));
     iOffset += sizeof(struct Head_Frame);
 
@@ -2502,11 +2502,10 @@ void packmsg_ptp_all(struct PtpSetCfg *pPtpSetcfg,char *buf,int *len)
     buf[iOffset++] = pPtpSetcfg->grandmasterPriority1;
     buf[iOffset++] = pPtpSetcfg->grandmasterPriority2;
     buf[iOffset++] = pPtpSetcfg->validServerNum;
+    buf[iOffset++] = pPtpSetcfg->currentUtcOffset;
     *(Uint32 *)(buf+iOffset)= flip32(pPtpSetcfg->UnicastDuration);
     iOffset += 4;
     
-    buf[iOffset++] = pPtpSetcfg->currentUtcOffset;
-
     for(i = 0;i < 10;i++)
     {
        *(Uint32 *)(buf+iOffset) = pPtpSetcfg->serverList[i].serverIp;
@@ -2563,10 +2562,9 @@ void packmsg_ptp_slave(struct PtpSetCfg *pPtpSetcfg,char *buf,int *len)
     buf[iOffset++] = pPtpSetcfg->logMinPdelayReqInterval;
     buf[iOffset++] = pPtpSetcfg->UniNegotiationEnable;
     buf[iOffset++] = pPtpSetcfg->validServerNum;
+
     *(Uint32 *)(buf+iOffset)= flip32(pPtpSetcfg->UnicastDuration);
     iOffset += 4;
-
-    buf[iOffset++] = pPtpSetcfg->currentUtcOffset;
 
     for(i = 0;i < 10;i++)
     {
