@@ -869,7 +869,6 @@ int main(int argc,char *argv[])
     //start_ptp_daemon();
 
 
-
     usleep(100000);
 
     /** 创建日常处理线程 */

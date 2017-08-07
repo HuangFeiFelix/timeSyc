@@ -105,7 +105,9 @@ struct NtpSetCfg
     Uint8     sympassive;                   // flag
 	Uint8     blacklist;                    // flag
 	Uint8     whitelist;                    // flag
-    
+
+    Uint8     blacklist_num;
+    Uint8     whitelist_num;
 	Uint8     blacklist_flag[16];           //黑名单标识列表
 	Uint8     whitelist_flag[16];           //白名单标识列表
 	Uint32    blacklist_ip[16];             //黑名单ip地址列表

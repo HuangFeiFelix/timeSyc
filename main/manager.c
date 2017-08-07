@@ -2635,7 +2635,7 @@ void packmsg_ntp_blacklist(struct NtpSetCfg *pNtpSetCfg,char *buf,int *len)
     int iOffset = *len;
     
     buf[iOffset++] = pNtpSetCfg->blacklist;
-    buf[iOffset++] = 15;
+    buf[iOffset++] = pNtpSetCfg->blacklist_num;
 
     for(i=0;i<16;i++)
     {
@@ -2660,7 +2660,7 @@ void packmsg_ntp_whitlelist(struct NtpSetCfg *pNtpSetCfg,char *buf,int *len)
     int iOffset = *len;
     
     buf[iOffset++] = pNtpSetCfg->whitelist;
-    buf[iOffset++] = 15;
+    buf[iOffset++] = pNtpSetCfg->whitelist_num;
 
     for(i=0;i<16;i++)
     {
@@ -3235,9 +3235,9 @@ void handle_set_ntp_blacklist(struct root_data *pRootData,struct Head_Frame *pHe
         memcpy(&m_ntpset_cfg,pSlotList->pNtpSetCfg,sizeof(struct NtpSetCfg));
 
         m_ntpset_cfg.blacklist = data[index++];
-        num = data[index++];
+        m_ntpset_cfg.blacklist_num = data[index++];
         
-        for(i=0;i<num;i++)
+        for(i=0;i<m_ntpset_cfg.blacklist_num;i++)
         {
             
             m_ntpset_cfg.blacklist_flag[i] = data[index++];
@@ -3295,9 +3295,9 @@ void handle_set_ntp_whitelist(struct root_data *pRootData,struct Head_Frame *pHe
         memcpy(&m_ntpset_cfg,pSlotList->pNtpSetCfg,sizeof(struct NtpSetCfg));
 
         m_ntpset_cfg.whitelist = data[index++];
-        num = data[index++];
+        m_ntpset_cfg.whitelist_num = data[index++];
         
-        for(i=0;i<num;i++)
+        for(i=0;i<m_ntpset_cfg.whitelist_num;i++)
         {
             
             m_ntpset_cfg.whitelist_flag[i] = data[index++];
