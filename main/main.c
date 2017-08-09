@@ -414,7 +414,7 @@ static void Pps_Signal_Handle(int signum)
         phaseOffset = phaseOffset * 4;
         ph = Kalman_Filter(phaseOffset,1);
         printf("readPhase=%d collect_phase=%d, count=%d\n",phaseOffset,ph,p_collect_data->ph_number_counter);
-        collect_phase(&pClock_info->data_1Hz,0,ph);
+        collect_phase(&pClock_info->data_1Hz,0,phaseOffset);
         
 
     }

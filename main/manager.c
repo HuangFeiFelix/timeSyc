@@ -3135,7 +3135,7 @@ void handle_set_ntp_normal(struct root_data *pRootData,struct Head_Frame *pHeadF
         {
             m_ntpset_cfg.current_key[i].key_valid = data[index++];
             m_ntpset_cfg.current_key[i].key_length = data[index++];
-            memcpy(m_ntpset_cfg.current_key[i].key,buf+index,20);
+            memcpy(m_ntpset_cfg.current_key[i].key,data+index,20);
             index += 20;
 
         }
@@ -3240,10 +3240,10 @@ void handle_set_ntp_blacklist(struct root_data *pRootData,struct Head_Frame *pHe
             
             m_ntpset_cfg.blacklist_flag[i] = data[index++];
             
-            m_ntpset_cfg.blacklist_ip[i] = htonl(*(int *)(buf+index));
+            m_ntpset_cfg.blacklist_ip[i] = htonl(*(int *)(data+index));
             index += 4;
             
-            m_ntpset_cfg.blacklist_mask[i] = htonl(*(int *)(buf+index));
+            m_ntpset_cfg.blacklist_mask[i] = htonl(*(int *)(data+index));
             index += 4;
         }
 
@@ -3300,10 +3300,10 @@ void handle_set_ntp_whitelist(struct root_data *pRootData,struct Head_Frame *pHe
             
             m_ntpset_cfg.whitelist_flag[i] = data[index++];
             
-            m_ntpset_cfg.whitelist_ip[i] = htonl(*(int *)(buf+index));
+            m_ntpset_cfg.whitelist_ip[i] = htonl(*(int *)(data+index));
             index += 4;
             
-            m_ntpset_cfg.whitelist_mask[i] = htonl(*(int *)(buf+index));
+            m_ntpset_cfg.whitelist_mask[i] = htonl(*(int *)(data+index));
             index += 4;
         }
 

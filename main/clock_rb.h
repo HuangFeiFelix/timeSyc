@@ -25,7 +25,7 @@
 #include "common.h"
 
 
-#define RUN_TIME 30
+#define RUN_TIME 300
 
 
 #define MAX  50
@@ -40,15 +40,15 @@
 #define REF_PTP     3
 
 #define RB_CENTER_VALUE  10000
-#define GpsFastG1 15  //二20   30X 1015 
-#define GpsLockG1 10   //二6   6 1014
+#define GpsFastG1 2  //二20   30X 1015 
+#define GpsLockG1 1   //二6   6 1014
 #define GpsLockG2 4   //二4
 #define GpsLockG3 1024//10//
 #define XoAdjust_exp_8 800000.0		//800000.0
 #define XoAdjust_exp_9 50000.0	   // 50000.0
-#define GpsFastConstraint 10000
-#define GpsLockConstraint 550 //二350.0		//1016g
-#define GpsAccConstraint 60000
+#define GpsFastConstraint 10000.0
+#define GpsLockConstraint 550.0 //二350.0		//1016g
+#define GpsAccConstraint 60000.0
 
 
 
@@ -98,7 +98,7 @@ struct collect_data
 
    int  phase_array[MAX] ; /*鉴相数据收集数组*/
 
-   int  lAvgPhase;       /*平均鉴相数据*/
+   float  lAvgPhase;       /*平均鉴相数据*/
    int  set_lAvgPhase;   /*预想的平均鉴相数据*/
 
    char  getdata_flag;      /* 采集到一组数据*/
@@ -114,7 +114,7 @@ struct clock_info
    char      workStatus;  /*工作状态:free 、fast 、lock、hold*/
    char      ref_type;          /*参考输入：0:卫星1pps ，1: ptp）*/
    char      clock_mode;        /*时钟模式0，内部，1，外部*/
-   int     lPhasePrevious; /*上一次平均鉴相数据*/
+   float     lPhasePrevious; /*上一次平均鉴相数据*/
 
    char      modify_flag;
    char      modify_cnt;
@@ -122,12 +122,12 @@ struct clock_info
    char      bInitialClear;  /*记录上一次，是否有调相操作0:无调相  1：有调相*/
    char      adjflag;       /*是否调整标志*/
 
-   int     lDetDdsAdj;     /*计算调节值*/ 
-   int     IDetPhase;		 /*偏差值*/
+   float     lDetDdsAdj;     /*计算调节值*/ 
+   float     IDetPhase;		 /*偏差值*/
    int     PrelDetPhase;	 /*上一次的偏差值*/
    int     PrelDetDdsAdj;	 //上一次晶体钟调整值
    
-   int     lAccPhaseAll;	 /*偏差差累加值*/
+   float     lAccPhaseAll;	 /*偏差差累加值*/
    int     OffsetAll;	     /*偏差差累加值*/
 
    int       center;          /**add by hf , 调整值  */
