@@ -236,6 +236,7 @@ void SetSysTime(TimeInternal * pTime)
 void CollectAlarm(struct root_data *pRootData)
 {
     struct clock_alarm_data *pAlarmData = &pRootData->clock_info.alarmData;
+    struct Satellite_Data *pSatellite_data = &pRootData->satellite_data;
     
     char val;
     
@@ -274,10 +275,10 @@ void CollectAlarm(struct root_data *pRootData)
     else
         pAlarmData->vcxoLock= FALSE;
 
-    if(pAlarmData->alarmBd1pps == TRUE)
-        pAlarmData->alarmSatellite = TRUE;
-    else
+    if(pSatellite_data->time_enable == TRUE)
         pAlarmData->alarmSatellite = FALSE;
+    else
+        pAlarmData->alarmSatellite = TRUE;
        
     if(pAlarmData->alarmBd1pps == 1 || pAlarmData->alarmRb10M == 1)
         pAlarmData->alarmDisk = TRUE;
@@ -287,6 +288,7 @@ void CollectAlarm(struct root_data *pRootData)
 
 void SetRbClockAlign_Once()
 {
+    printf("--------SetRbClockAlign_Once\r\n");
     *(Uint8*)(BASE_ADDR + 0xe9) = 0x01;
 }
 

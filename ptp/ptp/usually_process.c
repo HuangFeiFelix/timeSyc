@@ -998,7 +998,7 @@ void *ThreadUsuallyProcess(void *p)
             msgPackAlarmChangeCommand(pUartDevice,nTimeCnt);
 #endif
 
-            if(nTimeCnt % 4 == 0)
+            if(nTimeCnt % 7 == 0)
                 AutoAdjust_Sfp(&pUartDevice->sfpCtl,0);
 
             pUartDevice->pps_routine_flag = FALSE;

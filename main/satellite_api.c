@@ -105,7 +105,7 @@ char Gga(struct Satellite_Data *p_satellite_data,char *str)
                     matchptr[8].rm_eo - matchptr[8].rm_so);
             p_satellite_data->satellite_use = atoi(tmp_str);  
             p_satellite_data->satellite_see = atoi(tmp_str);  
-            p_satellite_data->satellite_position = atoi(tmp_str)+1;
+            p_satellite_data->satellite_position = atoi(tmp_str);
 
 
             memset(tmp_str,0,sizeof(tmp_str));

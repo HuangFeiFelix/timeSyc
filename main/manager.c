@@ -45,16 +45,6 @@
 #define TOTAL_KEY_NO  8
 #define ENTER_CHAR 0x0a
 
-#define	LEAP_NOWARNING	0x0	/* normal, no leap second warning */
-#define	LEAP_ADDSECOND	0x1	/* last minute of day has 61 seconds */
-#define	LEAP_DELSECOND	0x2	/* last minute of day has 59 seconds */
-#define	LEAP_NOTINSYNC	0x3	/* overload, clock is free running */
-
-#define STRATUM_0_PRESION -20
-#define STRATUM_1_PRESION -20
-#define STRATUM_2_PRESION -18
-#define STRATUM_3_PRESION -15
-
 
 /* 限制所有ip访问 */
 #define RESTRICT_ALL "restrict default nomodify notrap noquery ignore"
@@ -126,6 +116,9 @@ void msgUpPack_ptp_all(char *data,struct PtpSetCfg *pPtpSetcfg)
     int iOffset = 0;
     
     //pPtpSetcfg->clockType = data[iOffset++];
+    iOffset++;
+    pPtpSetcfg->clockType = 1;
+    
     pPtpSetcfg->domainNumber = data[iOffset++];
     pPtpSetcfg->domainFilterSwitch = data[iOffset++];
     pPtpSetcfg->protoType = data[iOffset++];
@@ -1195,12 +1188,13 @@ void SetRouteToEnv(char *network_cfg,struct NetInfor *infopt)
 void SetNetworkToEnv(struct NetInfor *infopt)
 {
     //SetMacAddress(infopt->ifaceName,infopt->mac);
-    //sleep(1);
+    //usleep(1000);
 
     SetIpAddress(infopt->ifaceName,infopt->ip);
     SetMaskAddress(infopt->ifaceName,infopt->mask);
 
-    //AddGateWay(infopt->ifaceName,infopt->gwip);
+    if(strcmp(infopt->ifaceName,"eth2") == 0)
+        AddGateWay(infopt->ifaceName,infopt->gwip);
 
 }
 
@@ -1209,8 +1203,8 @@ void SetCmdNetworkToEnv(struct NetInfor *infopt)
     SetIpAddress(infopt->ifaceName,infopt->ip);
     SetMaskAddress(infopt->ifaceName,infopt->mask);
 
-    AddGateWay(infopt->ifaceName,infopt->gwip);
-
+    if(strcmp(infopt->ifaceName,"eth2") == 0)
+        AddGateWay(infopt->ifaceName,infopt->gwip);
 }
 
 void Get_Net_FormSysEvn(struct NetInfor *pNetInfor)
@@ -2924,6 +2918,15 @@ void handle_set_network_ctl(struct root_data *pRootData,struct Head_Frame *pHead
     }
     
     msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_ACK,NULL,iOffset);
+
+    if(memcmp(&m_network_ctl,&pRootData->comm_port,sizeof(struct NetInfor)) != 0)
+    {
+        memcpy(&pRootData->comm_port,&m_network_ctl,sizeof(struct NetInfor));
+        SaveNetParamToFile(ctlEthConfig,&pRootData->comm_port);
+        usleep(2000);
+        SetCmdNetworkToEnv(&pRootData->comm_port);
+    }
+    
 }
 
 void handle_set_network_ptp(struct root_data *pRootData,struct Head_Frame *pHeadFrame,char *data)
@@ -3004,6 +3007,7 @@ void handle_set_network_ntp(struct root_data *pRootData,struct Head_Frame *pHead
     index += 4;
     memcpy(m_network_ctl.mac,data+index,6);
     index += 6;
+
 
     msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_ACK,NULL,iOffset);
     
@@ -3481,7 +3485,7 @@ void process_pc_ctl_set(struct root_data *pRootData,struct Head_Frame *pHeadFram
 
     short cmd_type = buf[HEAD_FRAME_LENGTH]<<8 | buf[HEAD_FRAME_LENGTH+1];
     char *data = buf + sizeof(struct Head_Frame) + 2;
-    
+
     switch(cmd_type)
     {
     case CMD_NET_WORK_CTL:

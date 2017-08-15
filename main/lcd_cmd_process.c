@@ -2,6 +2,7 @@
 #include "lcd_cmd_process.h"
 #include "clock_rb.h"
 
+
 static Uint16 current_screen_id = 0;//当前画面ID
 static Sint32 test_value = 0;//测试值
 static Uint8 update_en = 0;//更新标记
@@ -313,7 +314,7 @@ void SetParamSettingScreen(int ref_type)
     if(ref_type == 0)
     {
         SetButtonValue(PARAM_SETING_SCREEN_ID,0x0a,0x01);
-        SetButtonValue(PARAM_SETING_SCREEN_ID,0x0ba,0x001);
+        SetButtonValue(PARAM_SETING_SCREEN_ID,0x0b,0x00);
     
     }
     else
@@ -328,30 +329,50 @@ void SetParamSettingScreen(int ref_type)
 void HandleCtlEthState(struct root_data *pRootData,Uint16 screen_id, Uint16 control_id,unsigned char *data)
 {
     struct clock_info *pClockInfo = &pRootData->clock_info;
-    int ip;
-    int mask;
+    static int ip = 0;
+    static int mask = 0;
+    static char set_flag = 0;
     
     switch(control_id)
     {
         case 19:
+           
             pRootData->lcd_sreen_id = MAIN_SCREEN_ID;
             
             HandleLcdEvent = HandleMainSreenState;
             SetTextValue(MAIN_SCREEN_ID,4,pRootData->current_time);
 
+            if(set_flag == TRUE)
+            {
+                if((pRootData->comm_port.ip != ip) || (pRootData->comm_port.mask != mask))
+                {
+                    pRootData->comm_port.ip = ip;
+                    pRootData->comm_port.mask = mask;
+
+                    SaveNetParamToFile(ctlEthConfig,&pRootData->comm_port);
+                    usleep(2000);
+                    SetCmdNetworkToEnv(&pRootData->comm_port);
+                }
+                set_flag = FALSE;
+            }
+
             
             break;
         case 21:
+            
             pRootData->lcd_sreen_id = PARAM_SETING_SCREEN_ID;
             HandleLcdEvent = HandleSettingState;
-            
             SetParamSettingScreen(pClockInfo->ref_type);
 
         case 0x04:
-            //ip = inet_addr(data);
+            set_flag = TRUE;
+            ip = inet_addr(data);
+            mask = pRootData->comm_port.mask;
             break;
         case 0x07:
-            //mask = inet_addr(data);
+            mask = inet_addr(data);
+            set_flag = TRUE;
+            
             break;
         default:
             HandleLcdEvent = HandleCtlEthState;
@@ -362,10 +383,158 @@ void HandleCtlEthState(struct root_data *pRootData,Uint16 screen_id, Uint16 cont
 
 void HandlePtpEthState(struct root_data *pRootData,Uint16 screen_id, Uint16 control_id,unsigned char *data)
 {
+    struct clock_info *pClockInfo = &pRootData->clock_info;
+    static int ip = 0;
+    static int mask = 0;
+    static char set_flag = 0;
+
+    switch(control_id)
+    {
+        case 19:
+           
+            pRootData->lcd_sreen_id = MAIN_SCREEN_ID;
+            
+            HandleLcdEvent = HandleMainSreenState;
+            SetTextValue(MAIN_SCREEN_ID,4,pRootData->current_time);
+
+            if(set_flag == TRUE)
+            {
+                if((pRootData->ptp_port.ip != ip) || (pRootData->ptp_port.mask != mask))
+                {
+                    pRootData->ptp_port.ip = ip;
+                    pRootData->ptp_port.mask = mask;
+
+                    SaveNetParamToFile(ptpEthConfig,&pRootData->ptp_port);
+                    usleep(2000);
+                    SetCmdNetworkToEnv(&pRootData->ptp_port);
+                    usleep(2000);
+                    stop_ptp_daemon();
+                    usleep(2000);
+                    start_ptp_daemon();
+                }
+                set_flag = FALSE;
+            }
+    
+            break;
+        case 21:
+            
+            pRootData->lcd_sreen_id = PARAM_SETING_SCREEN_ID;
+            HandleLcdEvent = HandleSettingState;
+            SetParamSettingScreen(pClockInfo->ref_type);
+
+        case 0x04:
+            set_flag = TRUE;
+            ip = inet_addr(data);
+            mask = pRootData->ptp_port.mask;
+            break;
+        case 0x07:
+            mask = inet_addr(data);
+            set_flag = TRUE;
+            
+            break;
+        default:
+            HandleLcdEvent = HandleCtlEthState;
+            break;
+    }
 
 }
+
+
 void HandleNtpEthState(struct root_data *pRootData,Uint16 screen_id, Uint16 control_id,unsigned char *data)
 {
+
+    struct clock_info *pClockInfo = &pRootData->clock_info;
+    static int ip = 0;
+    static int mask = 0;
+    static char set_flag = 0;
+
+    switch(control_id)
+    {
+        case 19:
+           
+            pRootData->lcd_sreen_id = MAIN_SCREEN_ID;
+            
+            HandleLcdEvent = HandleMainSreenState;
+            SetTextValue(MAIN_SCREEN_ID,4,pRootData->current_time);
+
+            if(set_flag == TRUE)
+            {
+                if((pRootData->ntp_port.ip != ip) || (pRootData->ntp_port.mask != mask))
+                {
+                    pRootData->ntp_port.ip = ip;
+                    pRootData->ntp_port.mask = mask;
+
+                    SaveNetParamToFile(ntpEthConfig,&pRootData->ntp_port);
+                    usleep(2000);
+                    SetCmdNetworkToEnv(&pRootData->ntp_port);
+                    usleep(2000);
+                    stop_ntp_daemon();
+                    usleep(2000);
+                    start_ntp_daemon();
+                }
+                set_flag = FALSE;
+            }
+
+            break;
+        case 21:
+            
+            pRootData->lcd_sreen_id = PARAM_SETING_SCREEN_ID;
+            HandleLcdEvent = HandleSettingState;
+            SetParamSettingScreen(pClockInfo->ref_type);
+
+        case 0x04:
+            set_flag = TRUE;
+            ip = inet_addr(data);
+            mask = pRootData->ntp_port.mask;
+            break;
+        case 0x07:
+            mask = inet_addr(data);
+            set_flag = TRUE;
+            
+            break;
+        default:
+            HandleLcdEvent = HandleCtlEthState;
+            break;
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 }
 
@@ -377,7 +546,7 @@ void lcdDisplayEnternet(struct NetInfor *net,Uint16 screen_id)
 
     temsock.sin_addr.s_addr = net->ip;
     SetTextValue(screen_id,4,inet_ntoa(temsock.sin_addr));
-    temsock.sin_addr.s_addr = net->gwip;
+    temsock.sin_addr.s_addr = net->mask;
     SetTextValue(screen_id,7,inet_ntoa(temsock.sin_addr));
 
     memset(data,0,sizeof(data));
@@ -414,6 +583,7 @@ void HandleSettingState(struct root_data *pRootData,Uint16 screen_id, Uint16 con
             pRootData->lcd_sreen_id = ETH_NTP_SCREEN_ID;
             lcdDisplayEnternet(&pRootData->ntp_port,ETH_NTP_SCREEN_ID);
             HandleLcdEvent = HandleNtpEthState;
+            
             break;
             
         default:
@@ -493,7 +663,7 @@ void ProcessLcdMessage(struct root_data *pRootData,char *buf,Uint16 len)
 	Uint16 control_id = PTR2U16(&msg->control_id);//控件ID
 	Uint32 value = PTR2U32(msg->param);             //数值
 
-    printf("%x %x %x %x %x\n",cmd_type,ctrl_msg,control_type,screen_id,value);
+    //printf("%x %x %x %x %x\n",cmd_type,ctrl_msg,control_type,screen_id,value);
 	switch(cmd_type)
 	{		
 	case NOTIFY_TOUCH_PRESS://触摸屏按下

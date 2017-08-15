@@ -491,13 +491,23 @@ int open_com(struct device *p_dev, struct dev_head *dev_head)
 
 int open_int(struct device *p_dev, struct dev_head *dev_head)
 {
-	int fd = -1;
-	fd = open(p_dev->int_attr.path, O_RDWR);
-	if (fd < 0) {
-		perror("open_int error\n");
-		return FALSE;
-	}
-	p_dev->fd = fd;
+    int fd = -1;
+    char opt = 1;;
+    struct sockaddr_in sockaddr;
+    struct net_attr *p_net_attr = &p_dev->net_attr;
+
+    if ((fd = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
+    {
+            perror("socket error\n");
+            return FALSE;
+    }
+    memset(&sockaddr,0,sizeof(sockaddr));
+
+    p_dev->dest_addr.sin_family = AF_INET;
+    p_dev->dest_addr.sin_addr.s_addr = p_dev->net_attr.ip;
+    p_dev->dest_addr.sin_port = htons(p_dev->net_attr.sin_port);;
+
+    p_dev->fd = fd;
 
     
 	return TRUE;
@@ -721,18 +731,22 @@ int recv_rb_com_data(struct device *p_dev, struct dev_head *dev_head)
 
 int recv_int_data(struct device *p_dev, struct dev_head *dev_head)
 {
-	char *p_buf = p_dev->int_attr.buf;
-	int fd = p_dev->fd, len = 0;
-
-	if (FD_ISSET(fd,&dev_head->tmp_set) > 0)
-	{
-		if((len = read(fd,p_buf, 100)) > 0)
-		{   
-			add_recv(p_buf,fd,len, p_dev);
-            
+    char *pBuf = p_dev->net_attr.buf;
+    int fd = p_dev->fd, len = 0;
+       
+    if(FD_ISSET(fd,&dev_head->tmp_set) > 0)
+    {
+        if((len = recvfrom(fd,pBuf,BUFFER_SIZE,0,(struct sockaddr*)&p_dev->dest_addr,&p_dev->sock_len)) > 0)
+        {
+            printf("recv int data\n");
+            add_recv(pBuf,fd,len,p_dev);
         }
-	}
-	return TRUE;
+    }
+
+
+
+
+    return TRUE;
 }
 
 int recv_data(struct device *p_dev, struct dev_head *dev_head)

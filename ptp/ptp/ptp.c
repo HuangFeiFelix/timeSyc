@@ -50,6 +50,18 @@ timer_t timerid_ms,timerid_pps;
 
 UartDevice g_UartDevice;
 
+struct PtpStatus
+{
+    char priority1;
+    char priority2;
+    char timeSource;
+    char utcOffset;
+    char clockClass;
+    char clockAccuracy;
+    char blockOutput;
+    char reserve;
+};
+
 
 static void Pps_Signal_Handle(int signum)
 {
@@ -218,6 +230,68 @@ void *ThreadRecev0(void *p)
         }
     }
 }
+
+void *ThreadRecevPtpStatus(void *p)
+{
+
+    int fd = -1;
+    char opt = 1;
+    PtpClock *pPtpClock = (PtpClock *)&g_ptpClock[0];
+    char rBuf[1500];
+    int len;
+    struct PtpStatus *pPtpStatus;
+    
+    struct sockaddr_in sockaddr;
+    
+    if ((fd = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
+    {
+            perror("socket error\n");
+    }
+    memset(&sockaddr,0,sizeof(sockaddr));
+    
+    sockaddr.sin_family = AF_INET;
+    sockaddr.sin_port = htons(9900);
+    sockaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+    
+    setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (const char*)&opt,sizeof(opt));
+    //setsockopt(fd,SOL_SOCKET,SO_BROADCAST,(const char*)&opt,sizeof(opt));
+    
+    if (0 > bind(fd, (struct sockaddr *)&sockaddr, sizeof(struct sockaddr_in)))
+    {
+        printf("UDP socket bind udp error!\n");
+        close(fd);
+    
+    }
+    
+    pPtpStatus = (struct PtpStatus *)(rBuf);
+    while(1)
+    {
+        
+        len = recvfrom(fd,rBuf,1500,0,NULL,NULL);
+        if(len > 0)
+        {
+            printf("ptp recv status %d\n",pPtpClock->outBlockFlag);
+            if(pPtpStatus->blockOutput == 1)
+            {
+                pPtpClock->outBlockFlag = 1;
+                continue;
+            }
+            else
+                pPtpClock->outBlockFlag = 0;
+
+            
+            pPtpClock->grandmasterPriority1 = pPtpStatus->priority1;
+            pPtpClock->grandmasterPriority2 = pPtpStatus->priority2;
+            pPtpClock->timePropertiesDS.timeSource = pPtpStatus->timeSource;
+            pPtpClock->timePropertiesDS.currentUtcOffset = pPtpStatus->utcOffset;
+            pPtpClock->grandmasterClockQuality.clockClass = pPtpStatus->clockClass;
+            pPtpClock->grandmasterClockQuality.clockAccuracy = pPtpStatus->clockAccuracy;
+            
+        }
+
+    }
+}
+
 
 void *ThreadRecev1(void *p)
 {
@@ -531,20 +605,20 @@ int main(int argc,char *argv[])
 		printf("ThreadRecev error!\n");
 	}
 
-#if 0
-    ret = pthread_create(&Id_ThreadRecv1,&threadAttr,ThreadRecev1,NULL);
+
+    ret = pthread_create(&Id_ThreadRecv1,&threadAttr,ThreadRecevPtpStatus,NULL);
     if(ret == 0)
 	{
-		printf("ThreadRecev success!\n");
+		printf("ThreadRecevPtpStatus success!\n");
 	}
 	else
 	{
-		printf("ThreadRecev error!\n");
+		printf("ThreadRecevPtpStatus error!\n");
 	}
-#endif
+
     
     pthread_join(Id_ThreadRecv0,NULL);
-    //pthread_join(Id_ThreadRecv1,NULL);
+    pthread_join(Id_ThreadRecv1,NULL);
 
 
 }

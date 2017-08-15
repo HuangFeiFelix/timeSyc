@@ -200,27 +200,14 @@ void InitDev(struct root_data *pRootData)
    pRootData->dev[ENUM_PC_CTL].net_attr.ip = inet_addr(comm_ip_address);
    init_add_dev(&pRootData->dev[ENUM_PC_CTL],&pRootData->dev_head,UDP_DEVICE,ENUM_PC_CTL);
 
-   #if 0 
-    /**1pps + tod 测试口  */
-    pRootData->dev[ENUM_PPS_TOD].com_attr.com_port = ENUM_PPS_TOD;   
-    pRootData->dev[ENUM_PPS_TOD].com_attr.baud_rate = 9600;
-    init_add_dev(&pRootData->dev[ENUM_PPS_TOD],&pRootData->dev_head,COMM_DEVICE,ENUM_PPS_TOD);
- 
-    /**中断设备，打开ptp_dev 字符设备驱动  */
-    strcpy(pRootData->dev[ENUM_PTP_DEV].int_attr.path,"/dev/ptp_dev");
-    memset(pRootData->dev[ENUM_PTP_DEV].int_attr.buf,0,sizeof(pRootData->dev[ENUM_PTP_DEV].int_attr.buf));
-    init_add_dev(&pRootData->dev[ENUM_PTP_DEV],&pRootData->dev_head,INIT_DEVICE,ENUM_PTP_DEV);
-    
- 
-    #endif
     /**本地PTP   */
-    pRootData->dev[ENUM_IPC_PTP].net_attr.sin_port = 9990;
+    pRootData->dev[ENUM_IPC_PTP].net_attr.sin_port = 9900;
     pRootData->dev[ENUM_IPC_PTP].net_attr.ip = inet_addr("127.0.0.1");
-    init_add_dev(&pRootData->dev[ENUM_IPC_PTP],&pRootData->dev_head,UDP_DEVICE,ENUM_IPC_PTP);
+    init_add_dev(&pRootData->dev[ENUM_IPC_PTP],&pRootData->dev_head,INIT_DEVICE,ENUM_IPC_PTP);
 
-    pRootData->dev[ENUM_IPC_NTP].net_attr.sin_port = 9991;
+    pRootData->dev[ENUM_IPC_NTP].net_attr.sin_port = 9988;
     pRootData->dev[ENUM_IPC_NTP].net_attr.ip = inet_addr("127.0.0.1");
-    init_add_dev(&pRootData->dev[ENUM_IPC_NTP],&pRootData->dev_head,UDP_DEVICE,ENUM_IPC_NTP);
+    init_add_dev(&pRootData->dev[ENUM_IPC_NTP],&pRootData->dev_head,INIT_DEVICE,ENUM_IPC_NTP);
 
 }
 
@@ -377,6 +364,14 @@ void *DataSend_Thread(void *arg) {
                     del_data(p_data_list, &p_dev->data_head[1], p_dev);
 
                 }
+                else if(p_dev->type == INIT_DEVICE)
+                {
+                    len = p_data_list->send_lev.len;
+                    count = sendto(p_dev->fd,p_data_list->send_lev.data,len,0,(struct sockaddr *)&p_dev->dest_addr,sizeof(struct sockaddr_in));
+                    
+                    del_data(p_data_list, &p_dev->data_head[1],p_dev);
+
+                }
                 else
                 {
                     len = p_data_list->send_lev.len;
@@ -403,19 +398,19 @@ static void Pps_Signal_Handle(int signum)
     struct clock_alarm_data *pClockAlarm = &pClock_info->alarmData;
     int phaseOffset = 0;
     int ph;
+    //static int index = 0;
     
     if(pClock_info->ref_type == REF_SATLITE 
         && pClockAlarm->alarmBd1pps == 0 
         && pClockAlarm->alarmSatellite == 0
         && pClock_info->run_times > RUN_TIME)
     {
-        phaseOffset = Get_Pps_Rb_PhaseOffset();
 
-        phaseOffset = phaseOffset * 4;
-        ph = Kalman_Filter(phaseOffset,1);
-        printf("readPhase=%d collect_phase=%d, count=%d\n",phaseOffset,ph,p_collect_data->ph_number_counter);
-        collect_phase(&pClock_info->data_1Hz,0,phaseOffset);
-        
+            phaseOffset = Get_Pps_Rb_PhaseOffset();
+            phaseOffset = phaseOffset * 4;
+            ph = Kalman_Filter(phaseOffset,1);
+            printf("readPhase=%d collect_phase=%d, count=%d\n",phaseOffset,ph,p_collect_data->ph_number_counter);
+            collect_phase(&pClock_info->data_1Hz,0,phaseOffset);      
 
     }
 
@@ -555,25 +550,85 @@ void display_alarm_to_lcd(struct root_data *pRootData)
     struct clock_info *pClockInfo = &pRootData->clock_info;
     struct clock_alarm_data *pClockAlarm = &pClockInfo->alarmData;
     if(pClockAlarm->alarmSatellite = TRUE)
-        SetTextValue(MAIN_SCREEN_ID,4,"YES");
+        SetTextValue(WARN_SCREEN_ID,4,"YES");
     else
-        SetTextValue(MAIN_SCREEN_ID,4,"NO");
+        SetTextValue(WARN_SCREEN_ID,4,"NO");
 
     if(pClockAlarm->alarmPtp == TRUE)
-        SetTextValue(MAIN_SCREEN_ID,5,"YES");
+        SetTextValue(WARN_SCREEN_ID,5,"YES");
     else
-        SetTextValue(MAIN_SCREEN_ID,5,"NO");
+        SetTextValue(WARN_SCREEN_ID,5,"NO");
 
     if(pClockAlarm->alarmVcxo100M == TRUE || pClockAlarm->alarmRb10M == TRUE || pClockAlarm->vcxoLock == 0)
-        SetTextValue(MAIN_SCREEN_ID,6,"YES");
+        SetTextValue(WARN_SCREEN_ID,6,"YES");
     else
-        SetTextValue(MAIN_SCREEN_ID,6,"NO");
+        SetTextValue(WARN_SCREEN_ID,6,"NO");
 
 }
 
 
+void display_clockstate_to_lcd(struct root_data *pRootData)
+{
+    struct clock_info *pClockInfo = &pRootData->clock_info;
+    struct Satellite_Data *p_satellite_data = &pRootData->satellite_data;
+    char szbuf[50];
 
-void update_lcd_display(struct root_data *pRootData)
+    
+    if(pClockInfo->ref_type == 0)
+        SetTextValue(CLOCK_STATUS_SCREEN_ID,12,"GPS/BD");
+    else
+        SetTextValue(CLOCK_STATUS_SCREEN_ID,12,"PTP");
+
+    switch(pClockInfo->workStatus)
+    {
+        case 0:
+            SetTextValue(CLOCK_STATUS_SCREEN_ID,13,"FREE");
+            break;
+        case 1:
+            SetTextValue(CLOCK_STATUS_SCREEN_ID,13,"FAST");
+            break;
+        case 2:
+            SetTextValue(CLOCK_STATUS_SCREEN_ID,13,"LOCK");
+            break;
+        case 3:
+            SetTextValue(CLOCK_STATUS_SCREEN_ID,13,"HOLD");
+            break;
+        default:
+            SetTextValue(CLOCK_STATUS_SCREEN_ID,13,"ERROR");
+            break;
+    }
+    memset(szbuf,0,sizeof(szbuf));
+    sprintf(szbuf,"%d",pClockInfo->data_1Hz.phase_offset);
+    SetTextValue(CLOCK_STATUS_SCREEN_ID,14,szbuf);
+
+    memset(szbuf,0,sizeof(szbuf));
+    sprintf(szbuf,"%d",p_satellite_data->satellite_see);
+    SetTextValue(CLOCK_STATUS_SCREEN_ID,15,szbuf);
+
+    memset(szbuf,0,sizeof(szbuf));
+    sprintf(szbuf,"%d",p_satellite_data->satellite_use);
+    SetTextValue(CLOCK_STATUS_SCREEN_ID,16,szbuf);
+
+    if(p_satellite_data->time_enable == TRUE)
+        SetTextValue(CLOCK_STATUS_SCREEN_ID,17,"YES");
+    else
+        SetTextValue(CLOCK_STATUS_SCREEN_ID,17,"NO");
+
+    memset(szbuf,0,sizeof(szbuf));
+    sprintf(szbuf,"%d",p_satellite_data->gps_utc_leaps);
+    SetTextValue(CLOCK_STATUS_SCREEN_ID,18,szbuf);
+
+    memset(szbuf,0,sizeof(szbuf));
+    sprintf(szbuf,"%c %d`%d'%d'' %c %d`%d'%d''"
+        ,p_satellite_data->eastorwest,p_satellite_data->longitude_d,p_satellite_data->longitude_f,p_satellite_data->longitude_m
+        ,p_satellite_data->northorsouth,p_satellite_data->latitude_d,p_satellite_data->latitude_f,p_satellite_data->latitude_m);
+    SetTextValue(CLOCK_STATUS_SCREEN_ID,19,szbuf);
+    
+}
+
+
+
+void display_lcd_running_status(struct root_data *pRootData)
 {
 
     switch(pRootData->lcd_sreen_id)
@@ -583,6 +638,7 @@ void update_lcd_display(struct root_data *pRootData)
             SetTextValue(MAIN_SCREEN_ID,4,pRootData->current_time);
             break;
         case CLOCK_STATUS_SCREEN_ID:
+            display_clockstate_to_lcd(pRootData);
             break;
         case WARN_SCREEN_ID:
             display_alarm_to_lcd(pRootData);
@@ -610,6 +666,122 @@ void display_alarm_information(struct clock_alarm_data *pClockAlarm)
         ,pClockAlarm->alarmRb10M,pClockAlarm->alarmXo10M,pClockAlarm->vcxoLock);
     printf("alarmDisk=%d alarmSatellite=%d\n"
         ,pClockAlarm->alarmDisk,pClockAlarm->alarmSatellite);
+}
+
+
+void updatePtpStatusAndNtpStatus(struct root_data *pRootData,Uint16 nTimeCnt)
+{
+    struct clock_info *pClockInfo = &pRootData->clock_info;
+    struct Satellite_Data *pSateData = &pRootData->satellite_data;     
+    struct NtpdStatus mNtpStatus;
+    struct PtpStatus mPtpStatus;
+
+    
+    if(nTimeCnt%6 == 0)
+    {
+        memset(&mNtpStatus,0,sizeof(mNtpStatus));
+        memset(&mPtpStatus,0,sizeof(mPtpStatus));
+        switch(pClockInfo->workStatus)
+        {
+            case 0:
+                memcpy(mNtpStatus.refid,"LOC",strlen("LOC"));
+                mNtpStatus.stratum = 15;
+                mNtpStatus.leap = LEAP_NOWARNING;
+                mNtpStatus.precision = STRATUM_3_PRESION;
+
+                mPtpStatus.blockOutput = 1;
+                break;
+            case 1:
+                if(pClockInfo->ref_type == 0)
+                {
+                    memcpy(mNtpStatus.refid,"BD",strlen("BD"));
+                    mNtpStatus.stratum = 0;
+                    mNtpStatus.leap = LEAP_NOWARNING;
+                    mNtpStatus.precision = STRATUM_2_PRESION;
+
+                    mPtpStatus.blockOutput = 0;
+                    mPtpStatus.priority1 = 127;
+                    mPtpStatus.priority2 = 127;
+                    mPtpStatus.timeSource = 0x20;
+                    mPtpStatus.utcOffset = pSateData->gps_utc_leaps + 19;
+                    mPtpStatus.clockClass = 7;
+                    mPtpStatus.clockAccuracy = 0x21;
+                }
+                else
+                {
+                    memcpy(mNtpStatus.refid,"REF",strlen("REF"));
+                    mNtpStatus.stratum = 0;
+                    mNtpStatus.leap = LEAP_NOWARNING;
+                    mNtpStatus.precision = STRATUM_2_PRESION;
+
+                    mPtpStatus.blockOutput = 0;
+                    mPtpStatus.priority1 = 127;
+                    mPtpStatus.priority2 = 127;
+                    mPtpStatus.timeSource = 0x40;
+                    mPtpStatus.utcOffset = 37;
+                    mPtpStatus.clockClass = 7;
+                    mPtpStatus.clockAccuracy = 0x21;
+
+
+                }
+                break;
+            case 2:
+                if(pClockInfo->ref_type == 0)
+                {
+                    memcpy(mNtpStatus.refid,"BD",strlen("BD"));
+                    mNtpStatus.stratum = 0;
+                    mNtpStatus.leap = LEAP_NOWARNING;
+                    mNtpStatus.precision = STRATUM_1_PRESION;
+
+                    mPtpStatus.blockOutput = 0;
+                    mPtpStatus.priority1 = 0;
+                    mPtpStatus.priority2 = 127;
+                    mPtpStatus.timeSource = 0x20;
+                    mPtpStatus.utcOffset = pSateData->gps_utc_leaps + 19;
+                    mPtpStatus.clockClass = 6;
+                    mPtpStatus.clockAccuracy = 0x20;
+
+                }
+                else
+                {
+                    memcpy(mNtpStatus.refid,"REF",strlen("REF"));
+                    mNtpStatus.stratum = 0;
+                    mNtpStatus.leap = LEAP_NOWARNING;
+                    mNtpStatus.precision = STRATUM_1_PRESION;
+
+                    mPtpStatus.blockOutput = 0;
+                    mPtpStatus.priority1 = 0;
+                    mPtpStatus.priority2 = 127;
+                    mPtpStatus.timeSource = 0x40;
+                    mPtpStatus.utcOffset = pSateData->gps_utc_leaps + 19;
+                    mPtpStatus.clockClass = 6;
+                    mPtpStatus.clockAccuracy = 0x20;
+
+                }   
+                break;
+            case 3:
+                memcpy(mNtpStatus.refid,"LOC",strlen("LOC"));
+                mNtpStatus.stratum = 0;
+                mNtpStatus.leap = LEAP_NOWARNING;
+                mNtpStatus.precision = STRATUM_3_PRESION;
+
+                mPtpStatus.blockOutput = 0;
+                mPtpStatus.priority1 = 127;
+                mPtpStatus.priority2 = 127;
+                mPtpStatus.timeSource = 0xa0;
+                mPtpStatus.utcOffset = pSateData->gps_utc_leaps + 19;
+                mPtpStatus.clockClass = 248;
+                mPtpStatus.clockAccuracy = 0x22;
+                break;
+           default:
+                break;
+        }
+
+        AddData_ToSendList(pRootData,ENUM_IPC_NTP,(void *)&mNtpStatus,sizeof(mNtpStatus));
+        AddData_ToSendList(pRootData,ENUM_IPC_PTP,(void *)&mPtpStatus,sizeof(mPtpStatus));
+
+    }
+     
 }
 
 void *ThreadUsuallyProcess(void *arg)
@@ -641,17 +813,18 @@ void *ThreadUsuallyProcess(void *arg)
             sprintf(pRootData->current_time,"%d-%d-%d %02d:%02d:%02d",tm->tm_year+1900,tm->tm_mon+1,tm->tm_mday,tm->tm_hour,tm->tm_min,tm->tm_sec);
             printf("%s\n",pRootData->current_time);
           
-            update_lcd_display(pRootData);
-
-            ClockStateProcess(pClockInfo);
-            
             /**核心时间维护  */
             MaintainCoreTime(pRootData,&timeTmp);
 
-            inssue_pps_data(pRootData);
             CollectAlarm(pRootData);
             Display_SatelliteData(&pRootData->satellite_data);
             display_alarm_information(pClockAlarm);
+            
+            ClockStateProcess(pClockInfo);
+            
+            display_lcd_running_status(pRootData);     
+            inssue_pps_data(pRootData);
+            
             /**LED  处理*/
             Control_LedRun(nTimeCnt%2);
 
@@ -664,6 +837,8 @@ void *ThreadUsuallyProcess(void *arg)
                 Control_LedSatStatus(0x02);
             else
                 Control_LedSatStatus(0x00);
+
+            updatePtpStatusAndNtpStatus(pRootData,nTimeCnt);             
             
             nTimeCnt++;
             printf("========================1PPS End ============================\n\n\n");
@@ -671,7 +846,6 @@ void *ThreadUsuallyProcess(void *arg)
         }
 
         /**测试上报  */
-       
         ClockHandleProcess(pClockInfo);
 
         usleep(10);
@@ -736,6 +910,38 @@ void IntExit(int a)
     system("pkill ntpd");
     exit(-1);
 }
+
+void Wait_For_EnvConfig()
+{
+	struct timeval timeout;
+	fd_set fs_read;
+    
+    int ret;
+    int wait_cnt = 3;
+
+	/*用来查询设备状态（读，写，异常）的改变，在timeout时间内*/
+
+    printf("\r\nWatting for Env Init finish... :   ");
+    fflush(stdout);
+    
+    while(wait_cnt)
+    {
+        timeout.tv_sec = 1;									
+	    timeout.tv_usec = 0;
+        FD_ZERO(&fs_read);
+        FD_SET(0,&fs_read);
+
+        ret = select(1,&fs_read,NULL,NULL,&timeout);
+
+        printf("\b\b%d ",wait_cnt);
+        fflush(stdout);
+        wait_cnt--;
+
+    }
+
+    printf("\n");
+}
+
 
 
 void set_gsp_module1(struct root_data *pRootData)
@@ -864,12 +1070,11 @@ int main(int argc,char *argv[])
     InitDev(g_RootData);
     InitSlotList(g_RootData);    
     signal(SIGINT, IntExit);
+    
+    Wait_For_EnvConfig();
 
-    //start_ntp_daemon();
-    //start_ptp_daemon();
-
-
-    usleep(100000);
+    start_ntp_daemon();
+    start_ptp_daemon();
 
     /** 创建日常处理线程 */
 	err = pthread_create(&g_RootData->p_usual,&g_RootData->pattr,(void *)ThreadUsuallyProcess,(void *)g_RootData);	

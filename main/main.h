@@ -23,6 +23,16 @@
 #define CLOCK_SETTING_WIDGET_ID     13
 #define CLOCK_WARNNING_WIDGET_ID    14
 
+#define	LEAP_NOWARNING	0x0	/* normal, no leap second warning */
+#define	LEAP_ADDSECOND	0x1	/* last minute of day has 61 seconds */
+#define	LEAP_DELSECOND	0x2	/* last minute of day has 59 seconds */
+#define	LEAP_NOTINSYNC	0x3	/* overload, clock is free running */
+
+#define STRATUM_0_PRESION -20
+#define STRATUM_1_PRESION -20
+#define STRATUM_2_PRESION -18
+#define STRATUM_3_PRESION -15
+
 
 enum
 {
@@ -161,6 +171,28 @@ struct root_data{
 		pthread_t p_send;		//数据发送线程
 		pthread_t p_handle;		//数据处理线程
 };
+
+struct NtpdStatus
+{
+    unsigned char stratum;   //时钟源等级
+    unsigned char leap;      //闰秒
+    signed char precision;   //精度
+    unsigned char refid[5];  //ID
+};
+
+struct PtpStatus
+{
+    char priority1;
+    char priority2;
+    char timeSource;
+    char utcOffset;
+    char clockClass;
+    char clockAccuracy;
+    char blockOutput;
+    char reserve;
+};
+
+
 
 extern struct root_data *g_RootData;
 extern char *ctlEthConfig;
