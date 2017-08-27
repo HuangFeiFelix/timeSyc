@@ -15,6 +15,7 @@ struct root_data *g_RootData;
 
 int comm_sin_port;
 char comm_ip_address[20];
+int RbOrXo = 1; /**0: 铷钟，1:OCXO  */
 
 
 char *ctlEthConfig = "/mnt/network_ctl.cfg";
@@ -30,11 +31,99 @@ char *commIpaddressCfg = "/mnt/comm_ip_address.cfg";
 #define PATH_PTP_DAEMON "/mnt/ptp"
 #define PATH_NTP_DAEMON "/mnt/ntp/ntpd"
 
+int remove_space(char *src,char *out)
+{
+    char *p = src;
+    int i;
+    i = strlen(src);
+
+    
+
+    while(i--)
+    {
+        if(*p == 0x20)
+        {
+            p++;
+        }
+        else
+        {
+            *out = *p;
+            p++;
+            out++;
+        }
+
+
+    }
+
+    
+}
+
+int String2Bytes(unsigned char* szSrc, unsigned char* pDst, int nDstMaxLen)     
+{  
+    int i;
+    if(szSrc == NULL)  
+    {  
+        return 0;  
+    }
+    
+    int iLen = strlen((char *)szSrc);  
+    if (iLen <= 0 || iLen%2 != 0 || pDst == NULL || nDstMaxLen < iLen/2)  
+    {  
+        return 0;  
+    }  
+      
+    iLen /= 2;  
+    //strupr((char *)szSrc);  
+    for (i=0; i< iLen; i++)  
+    {  
+        int iVal = 0;  
+        unsigned char *pSrcTemp = szSrc + i*2;  
+        sscanf((char *)pSrcTemp, "%02x", &iVal);  
+        pDst[i] = (unsigned char)iVal;  
+    }  
+      
+    return iLen;  
+}   
+
+
 void AddData_ToSendList(struct root_data *pRoot,char devType,void *buf,short len)
 {
     add_send(buf,len,&pRoot->dev[devType]);
 }
 
+char setzda[100] = {"B5 62 06 01 08 00 F0 08 00 01 00 00 00 00 08 60"};
+char pubx[100] =   {"B5 62 06 01 08 00 F1 04 00 01 00 00 00 00 05 4C"};
+char bdgps[200] = {"B5 62 06 3E 2C 00 00 00 20 05 00 08 10 00 00 00 01 01 01 01 03 00 00 00 01 01 03 08 10 00 01 00 01 01 05 00 03 00 00 00 01 01 06 08 0E 00 00 00 01 01 FC 01"};
+
+void Init_ublox(struct root_data *pRootData)
+{
+	char txbuf[200];
+    unsigned char txbufBin[200];
+    int txlen;
+
+	memset(txbuf,0,sizeof(txbuf));
+	memset(txbufBin,0,sizeof(txbufBin));
+
+	txlen = remove_space(bdgps,txbuf);
+	txlen = String2Bytes(txbuf,txbufBin,200);
+    AddData_ToSendList(pRootData,ENUM_GPS,txbufBin,txlen);
+
+	memset(txbuf,0,sizeof(txbuf));
+	memset(txbufBin,0,sizeof(txbufBin));
+
+	txlen = remove_space(setzda,txbuf);
+	txlen = String2Bytes(txbuf,txbufBin,200);
+
+	AddData_ToSendList(pRootData,ENUM_GPS,txbufBin,txlen);
+
+	memset(txbuf,0,sizeof(txbuf));
+	memset(txbufBin,0,sizeof(txbufBin));
+	txlen = remove_space(pubx,txbuf);
+	txlen = String2Bytes(txbuf,txbufBin,200);
+
+	AddData_ToSendList(pRootData,ENUM_GPS,txbufBin,txlen);
+
+}
 
 void start_ptp_daemon()
 {
@@ -142,6 +231,11 @@ void InitSlotList(struct root_data *pRootData)
         pRootData->slot_list[i].pPtpStatusCfg = NULL;
     }
 
+    /** =1 使用OCXO */
+    if(RbOrXo == 1)
+    {
+        SetFpgaAddressVal(0x84,0x01);
+    }
 }
 
 void InitNetInforAll(struct root_data *pRootData)
@@ -559,10 +653,22 @@ void display_alarm_to_lcd(struct root_data *pRootData)
     else
         SetTextValue(WARN_SCREEN_ID,5,"NO");
 
-    if(pClockAlarm->alarmVcxo100M == TRUE || pClockAlarm->alarmRb10M == TRUE || pClockAlarm->vcxoLock == 0)
-        SetTextValue(WARN_SCREEN_ID,6,"YES");
+    if(RbOrXo == 1)
+    {
+        if(pClockAlarm->alarmVcxo100M == TRUE || pClockAlarm->alarmXo10M == TRUE || pClockAlarm->vcxoLock == 0)
+            SetTextValue(WARN_SCREEN_ID,6,"YES");
+        else
+            SetTextValue(WARN_SCREEN_ID,6,"NO");
+
+    }
     else
-        SetTextValue(WARN_SCREEN_ID,6,"NO");
+    {
+        if(pClockAlarm->alarmVcxo100M == TRUE || pClockAlarm->alarmRb10M == TRUE || pClockAlarm->vcxoLock == 0)
+            SetTextValue(WARN_SCREEN_ID,6,"YES");
+        else
+            SetTextValue(WARN_SCREEN_ID,6,"NO");
+    }
+
 
 }
 
@@ -807,6 +913,7 @@ void *ThreadUsuallyProcess(void *arg)
             GetFpgaPpsTime(&timeTmp); 
             printf("fgpa system time:sec=%d,nao=%d \n",timeTmp.seconds,timeTmp.nanoseconds);
             current_time = timeTmp.seconds;
+            current_time += 28800;
             tm = gmtime(&current_time);
 
             memset(pRootData->current_time,0,sizeof(pRootData->current_time));
@@ -819,8 +926,17 @@ void *ThreadUsuallyProcess(void *arg)
             CollectAlarm(pRootData);
             Display_SatelliteData(&pRootData->satellite_data);
             display_alarm_information(pClockAlarm);
-            
-            ClockStateProcess(pClockInfo);
+
+            if(RbOrXo == 1)
+            {
+                ClockStateProcess_OCXO(pClockInfo);
+
+            }
+            else
+            {
+                ClockStateProcess(pClockInfo);
+
+            }
             
             display_lcd_running_status(pRootData);     
             inssue_pps_data(pRootData);
@@ -829,14 +945,23 @@ void *ThreadUsuallyProcess(void *arg)
             Control_LedRun(nTimeCnt%2);
 
             if(pClockAlarm->alarmPtp == 1 || pClockAlarm->alarmDisk == 1)
-                Control_LedAlarm(0x02);
+                Control_LedAlarm(0x01);
             else
                 Control_LedAlarm(0x00);
 
             if(pClockAlarm->alarmSatellite == 1)
-                Control_LedSatStatus(0x02);
+                Control_LedLockStatus(0x00);
             else
+                Control_LedLockStatus(0x01);
+
+            if(pClockInfo->workStatus == FREE)
                 Control_LedSatStatus(0x00);
+            else if(pClockInfo->workStatus == HOLD)
+                Control_LedSatStatus(0x10);
+            else
+                Control_LedSatStatus(0x01);
+
+
 
             updatePtpStatusAndNtpStatus(pRootData,nTimeCnt);             
             
@@ -846,7 +971,10 @@ void *ThreadUsuallyProcess(void *arg)
         }
 
         /**测试上报  */
-        ClockHandleProcess(pClockInfo);
+        if(RbOrXo == 1)
+            ClockHandleProcess_OCXO(pClockInfo);
+        else
+            ClockHandleProcess(pClockInfo);
 
         usleep(10);
     }
@@ -1122,6 +1250,7 @@ int main(int argc,char *argv[])
 		return FALSE;
 	}
 
+	Init_ublox(g_RootData);
 
     pthread_join(g_RootData->p_usual,NULL);
     pthread_join(g_RootData->p_recv,NULL);

@@ -39,7 +39,6 @@
 char *rbCenterCfg = "/mnt/rb_center.cfg";
 
 
-
 int Filter(int val) 
 {
   int i;
@@ -555,7 +554,7 @@ void rb_fast_handle(struct clock_info *p_clock_info)
 
         }
     
-        if((p_clock_info->IDetPhase>-200)&&(p_clock_info->IDetPhase<200))  //p_clock_info->lDetDdsAdj
+        if((p_clock_info->IDetPhase>-450)&&(p_clock_info->IDetPhase<450))  //p_clock_info->lDetDdsAdj
         {
 #if 0
 			if((p_clock_info->data_1Hz.lAvgPhase<-1000)||(p_clock_info->data_1Hz.lAvgPhase>1000))  //
@@ -596,8 +595,6 @@ void rb_fast_handle(struct clock_info *p_clock_info)
 void rb_lock_handle(struct clock_info *p_clock_info)
 {   
 
-    float everySecOffset;
-
     p_clock_info->IDetPhase = (p_clock_info->data_1Hz.lAvgPhase-p_clock_info->lPhasePrevious);
     p_clock_info->lAccPhaseAll += p_clock_info->IDetPhase;
     
@@ -625,13 +622,13 @@ void rb_lock_handle(struct clock_info *p_clock_info)
     else
     {
         p_clock_info->lDetDdsAdj=GpsLockG1* p_clock_info->IDetPhase;
-        p_clock_info->lDetDdsAdj+=p_clock_info->data_1Hz.lAvgPhase/GpsLockG2;
+        //p_clock_info->lDetDdsAdj+=p_clock_info->data_1Hz.lAvgPhase/GpsLockG2;
         p_clock_info->lDetDdsAdj+=p_clock_info->lAccPhaseAll/GpsLockG3;
         printf("IDetPhase=%f lAvgPhase=%f  lAccPhaseAll=%f  \r\n ",p_clock_info->IDetPhase,p_clock_info->data_1Hz.lAvgPhase,p_clock_info->lAccPhaseAll);
 
         if((p_clock_info->data_1Hz.lAvgPhase<-1250)||(p_clock_info->data_1Hz.lAvgPhase>1250))     //2000hg700
         {
-            if((p_clock_info->IDetPhase>-200)&&(p_clock_info->IDetPhase<200))
+            if((p_clock_info->IDetPhase>-450)&&(p_clock_info->IDetPhase<450))
             {
                  SetRbClockAlign_Once();
                  p_clock_info->bInitialClear=1;
@@ -730,9 +727,14 @@ void gps_status_machine(struct clock_info *p_clock_info,char ref_status)
            if(p_clock_info->hold_times>=86400) /*保持时间大于1天, 无参考源 进入自由运行*/
            {
                 p_clock_info->workStatus= FREE;
-           }else if((p_clock_info->hold_times<86400)&&(ref_status==1))
+           }else if((p_clock_info->hold_times<86400)&&(ref_status==1)&&(p_clock_info->lockCounter>=4))
            {
                 p_clock_info->workStatus=LOCK;
+           }
+           else if((p_clock_info->hold_times<86400)&&(ref_status==1)&&(p_clock_info->lockCounter<4))
+           {
+               p_clock_info->workStatus=FAST;
+
            }
            /*保持时间小于1于，参考源有效，进入锁定*/
         }	
@@ -817,7 +819,7 @@ void gps_status_machine(struct clock_info *p_clock_info,char ref_status)
         {
             if(ref_status==0) /*参考源告警*/
                p_clock_info->workStatus=FREE; 
-            else if((ref_status==1)&&(p_clock_info->lockCounter>=3))
+            else if((ref_status==1)&&(p_clock_info->fast_times>=1800))
 			{
                p_clock_info->workStatus=LOCK;
 			   p_clock_info->unlockCounter=0;
@@ -829,11 +831,7 @@ void gps_status_machine(struct clock_info *p_clock_info,char ref_status)
 	     {
             if(ref_status==0) /*参考源告警*/
                p_clock_info->workStatus= HOLD;
-            else if ((ref_status==1)&&(p_clock_info->unlockCounter>=3))
-			{
-               p_clock_info->workStatus= FAST;
-			   p_clock_info->lockCounter=0;
-			}
+
             p_clock_info->lock_times++;/*锁定用时*/
          }
       		break;
@@ -1056,5 +1054,76 @@ void ClockHandleProcess(struct clock_info *pClockInfo)
         
         m10_status_handle(pClockInfo);
     }
+}
+
+void ClockStateProcess_OCXO(struct clock_info *pClockInfo)
+{
+     struct clock_alarm_data *pAlarmData = &pClockInfo->alarmData;
+        Uint8 ref_status;
+        static short tmp_ref = 0;
+    
+        if(pClockInfo->run_times == 20)
+        {
+            send_clock_data(pClockInfo,10000);
+            SetRbClockAlign_Once();
+            pClockInfo->bInitialClear = 1;
+            printf("---------ref 1hz 1Hz_set center\r\n");
+        }
+    
+        printf("runtime=%d ref_type=%d workStatus= %d\r\n",pClockInfo->run_times,pClockInfo->ref_type,pClockInfo->workStatus);
+        /**参考源1pps，1pps和10m无收入告警，等待4分钟，等待小铷钟稳定  */
+        /*选择参考源 1PPS输入不告警*/
+    
+        if((pClockInfo->ref_type == REF_SATLITE)&&(pAlarmData->alarmBd1pps==FALSE)&&(pClockInfo->run_times==RUN_TIME))
+        {
+            SetRbClockAlign_Once();    
+        }
+
+        if(pClockInfo->ref_type == REF_SATLITE)
+        {
+            if((pAlarmData->alarmBd1pps == TRUE) || (pAlarmData->alarmSatellite == TRUE))
+                ref_status = 0;   
+            else 
+                ref_status = 1;
+            
+            m10_status_machine(pClockInfo,ref_status);
+
+        }
+        
+        pClockInfo->run_times++;
+
+        
+}
+
+void ClockHandleProcess_OCXO(struct clock_info *p_clock_info)
+{
+    struct clock_alarm_data *pAlarmData = &p_clock_info->alarmData;
+    
+
+    if((p_clock_info->data_1Hz.getdata_flag==1)
+        &&(pAlarmData->alarmBd1pps == FALSE)
+        &&(p_clock_info->ref_type==REF_SATLITE)&&(p_clock_info->run_times>RUN_TIME)) 
+    {
+        printf("lAvgPhase= %f  lPhasePrevious= %f   IDetPhase= %f,OffsetAll =%f,bInitiatlClear = %d \r\n"
+            ,p_clock_info->data_1Hz.lAvgPhase,p_clock_info->lPhasePrevious
+            ,p_clock_info->IDetPhase,p_clock_info->lAccPhaseAll,p_clock_info->bInitialClear);
+
+        
+         p_clock_info->data_1Hz.getdata_flag=0;
+    
+       
+        if(p_clock_info->lPhasePrevious >4000.0 || p_clock_info->lPhasePrevious < -4000.0)
+        {
+            SetRbClockAlign_Once();
+            //p_clock_info->syn_enable = 1;
+            p_clock_info->bInitialClear = 1;
+        }
+    }
+
+
+
+        
+
+
 }
 

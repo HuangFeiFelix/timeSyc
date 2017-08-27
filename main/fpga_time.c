@@ -73,7 +73,7 @@
 #define LED_ALARM               0x88
 #define LED_RUN                 0x89
 #define LED_SAT_STATUS          0x8A
-#define LED_LOCK_STATUS         0x8C
+#define LED_LOCK_STATUS         0x8B
 
 
 
@@ -191,7 +191,7 @@ void Control_LedSatStatus(char val)
     *(Uint8*)(BASE_ADDR + LED_SAT_STATUS) = val;
 }
 
-void Control_LedLockStatus(Boolean val)
+void Control_LedLockStatus(char val)
 {
     *(Uint8*)(BASE_ADDR + LED_LOCK_STATUS) = val;
 }
@@ -279,11 +279,23 @@ void CollectAlarm(struct root_data *pRootData)
         pAlarmData->alarmSatellite = FALSE;
     else
         pAlarmData->alarmSatellite = TRUE;
-       
-    if(pAlarmData->alarmBd1pps == 1 || pAlarmData->alarmRb10M == 1)
-        pAlarmData->alarmDisk = TRUE;
+    if(RbOrXo == 1)
+    {
+        if(pAlarmData->alarmBd1pps == 1 || pAlarmData->alarmXo10M == 1)
+            pAlarmData->alarmDisk = TRUE;
+        else
+            pAlarmData->alarmDisk = FALSE;
+
+    }
     else
-        pAlarmData->alarmDisk = FALSE;
+    {
+        if(pAlarmData->alarmBd1pps == 1 || pAlarmData->alarmRb10M == 1)
+            pAlarmData->alarmDisk = TRUE;
+        else
+            pAlarmData->alarmDisk = FALSE;
+
+    }
+
 }
 
 void SetRbClockAlign_Once()

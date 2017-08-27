@@ -43,7 +43,7 @@
 #define GpsFastG1 2  //¶þ20   30X 1015 
 #define GpsLockG1 1   //¶þ6   6 1014
 #define GpsLockG2 4   //¶þ4
-#define GpsLockG3 1024//10//
+#define GpsLockG3 10    //10//
 #define XoAdjust_exp_8 800000.0		//800000.0
 #define XoAdjust_exp_9 50000.0	   // 50000.0
 #define GpsFastConstraint 10000.0

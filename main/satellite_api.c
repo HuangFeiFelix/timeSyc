@@ -274,7 +274,7 @@ char Gsv(struct Satellite_Data *p_satellite_data,char *str)
 	{
         memcpy(tmp_str, str + matchptr[4].rm_so,
 		matchptr[4].rm_eo - matchptr[4].rm_so);
-		p_satellite_data->satellite_see = atoi(tmp_str);
+		//p_satellite_data->satellite_see = atoi(tmp_str);
         
         regfree(&reg);
 		return 1;

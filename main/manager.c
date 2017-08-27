@@ -1294,7 +1294,6 @@ int Load_comm_ip_address(char *network_cfg,char *ip_address)
         memcpy(ip_address,pIndex,strlen(pIndex));
     }
 
-
     fclose(net_work_fd);
 }
 

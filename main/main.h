@@ -201,6 +201,7 @@ extern char *ntpEthConfig;
 extern char *ptpConfig;
 extern char *ntpConfig;
 extern char *md5Config;
+extern int  RbOrXo; /**0: Ô®÷”£¨1:OCXO  */
 
 
 extern void start_ptp_daemon();
