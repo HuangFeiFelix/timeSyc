@@ -205,6 +205,19 @@ void InitSlotLocal(struct SlotList *pSlotLocal)
     Load_NtpdParam_FromFile(pSlotLocal->pNtpSetCfg,ntpConfig,md5Config);
     
 }
+void InitLoadRtcTime(struct root_data *pRootData)
+{
+    struct timeval tv;
+
+
+    //tv.tv_sec += 19;
+    //tv.tv_sec += 18;
+    
+    struct Satellite_Data *pSateData = &pRootData->satellite_data;
+    gettimeofday(&tv,NULL);
+    pSateData->time = tv.tv_sec;
+
+}
 
 void InitSlotList(struct root_data *pRootData)
 {
@@ -791,11 +804,18 @@ void updatePtpStatusAndNtpStatus(struct root_data *pRootData,Uint16 nTimeCnt)
         {
             case 0:
                 memcpy(mNtpStatus.refid,"LOC",strlen("LOC"));
-                mNtpStatus.stratum = 15;
+                mNtpStatus.stratum = 1;
                 mNtpStatus.leap = LEAP_NOWARNING;
                 mNtpStatus.precision = STRATUM_3_PRESION;
 
-                mPtpStatus.blockOutput = 1;
+                mPtpStatus.blockOutput = 0;
+                mPtpStatus.blockOutput = 0;
+                mPtpStatus.priority1 = 127;
+                mPtpStatus.priority2 = 127;
+                mPtpStatus.timeSource = 0xa0;
+                mPtpStatus.utcOffset = pSateData->gps_utc_leaps + 19;
+                mPtpStatus.clockClass = 248;
+                mPtpStatus.clockAccuracy = 0x23;
                 break;
             case 1:
                 if(pClockInfo->ref_type == 0)
@@ -901,6 +921,7 @@ void *ThreadUsuallyProcess(void *arg)
     struct root_data *pRootData = g_RootData;
     struct clock_info *pClockInfo = &pRootData->clock_info;
     struct clock_alarm_data *pClockAlarm = &pClockInfo->alarmData;
+    struct Satellite_Data *pSateData = &pRootData->satellite_data;   
 
     while(1)
     {
@@ -914,6 +935,9 @@ void *ThreadUsuallyProcess(void *arg)
             printf("fgpa system time:sec=%d,nao=%d \n",timeTmp.seconds,timeTmp.nanoseconds);
             current_time = timeTmp.seconds;
             current_time += 28800;
+            current_time -= 19;
+            current_time -= pSateData->gps_utc_leaps;
+            
             tm = gmtime(&current_time);
 
             memset(pRootData->current_time,0,sizeof(pRootData->current_time));
@@ -1198,7 +1222,7 @@ int main(int argc,char *argv[])
     InitDev(g_RootData);
     InitSlotList(g_RootData);    
     signal(SIGINT, IntExit);
-    
+    InitLoadRtcTime(g_RootData);
     Wait_For_EnvConfig();
 
     start_ntp_daemon();
@@ -1250,7 +1274,7 @@ int main(int argc,char *argv[])
 		return FALSE;
 	}
 
-	Init_ublox(g_RootData);
+	//Init_ublox(g_RootData);
 
     pthread_join(g_RootData->p_usual,NULL);
     pthread_join(g_RootData->p_recv,NULL);

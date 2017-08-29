@@ -106,6 +106,7 @@
 #include <linux/i2c-dev.h>
 #include <linux/mii.h>
 #include <math.h>
+#include <sys/time.h>
 
 //#pragma pack(2)
 
