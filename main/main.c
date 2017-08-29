@@ -551,7 +551,9 @@ void MaintainCoreTime(struct root_data *pRoot,TimeInternal *ptptTime)
 {        
     struct clock_info *pClockInfo = &pRoot->clock_info;
     struct clock_alarm_data *pAlarmData = &pClockInfo->alarmData;
-    
+    time_t current_time;
+    struct tm *tm;
+        
     static Uint32 previousBusSec = 0;
 
     Uint32 ntp_second_from_1970 =0;
@@ -648,7 +650,18 @@ void MaintainCoreTime(struct root_data *pRoot,TimeInternal *ptptTime)
         if(modify_internal%4)
             ioctl(fd,COMM_MODIFY_SEC,1);
         ntpsecErrorCnt = 0;
+
     }
+
+    current_time = ntp_second_from_1970;
+    current_time += 28800;
+
+    tm = gmtime(&current_time);
+
+    memset(pRoot->current_time,0,sizeof(pRoot->current_time));
+    sprintf(pRoot->current_time,"%d-%d-%d %02d:%02d:%02d",tm->tm_year+1900,tm->tm_mon+1,tm->tm_mday,tm->tm_hour,tm->tm_min,tm->tm_sec);
+    printf("%s\n",pRoot->current_time);
+
             
 }
 
@@ -716,9 +729,9 @@ void display_clockstate_to_lcd(struct root_data *pRootData)
             SetTextValue(CLOCK_STATUS_SCREEN_ID,13,"ERROR");
             break;
     }
-    memset(szbuf,0,sizeof(szbuf));
-    sprintf(szbuf,"%d",pClockInfo->data_1Hz.phase_offset);
-    SetTextValue(CLOCK_STATUS_SCREEN_ID,14,szbuf);
+    //memset(szbuf,0,sizeof(szbuf));
+    //sprintf(szbuf,"%d",pClockInfo->data_1Hz.phase_offset);
+    //SetTextValue(CLOCK_STATUS_SCREEN_ID,14,szbuf);
 
     memset(szbuf,0,sizeof(szbuf));
     sprintf(szbuf,"%d",p_satellite_data->satellite_see);
@@ -912,11 +925,11 @@ void updatePtpStatusAndNtpStatus(struct root_data *pRootData,Uint16 nTimeCnt)
 
 void *ThreadUsuallyProcess(void *arg)
 {
-    time_t current_time;
+    
 
     Uint32 UtcTime;
     TimeInternal timeTmp;
-    struct tm *tm;
+
     static Uint16 nTimeCnt = 0;
     struct root_data *pRootData = g_RootData;
     struct clock_info *pClockInfo = &pRootData->clock_info;
@@ -933,16 +946,8 @@ void *ThreadUsuallyProcess(void *arg)
 
             GetFpgaPpsTime(&timeTmp); 
             printf("fgpa system time:sec=%d,nao=%d \n",timeTmp.seconds,timeTmp.nanoseconds);
-            current_time = timeTmp.seconds;
-            current_time += 28800;
-            current_time -= 19;
-            current_time -= pSateData->gps_utc_leaps;
-            
-            tm = gmtime(&current_time);
+            //current_time = timeTmp.seconds;
 
-            memset(pRootData->current_time,0,sizeof(pRootData->current_time));
-            sprintf(pRootData->current_time,"%d-%d-%d %02d:%02d:%02d",tm->tm_year+1900,tm->tm_mon+1,tm->tm_mday,tm->tm_hour,tm->tm_min,tm->tm_sec);
-            printf("%s\n",pRootData->current_time);
           
             /**核心时间维护  */
             MaintainCoreTime(pRootData,&timeTmp);

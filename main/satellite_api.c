@@ -61,7 +61,7 @@ char Gga(struct Satellite_Data *p_satellite_data,char *str)
         int cflags = REG_EXTENDED;
         const size_t nmatch = 15;
         regmatch_t matchptr[15];
-      //  printf("gga str :%s\n",str);
+        //printf("gga str :%s\n",str);
         const char *pattern =
          "^\\$(\\w+),(\\w+.\\w+),(\\w+.\\w+),(\\w+),(\\w+.\\w+),(\\w+),(\\w+),(\\w+),(\\w+.\\w+),(\\w+.\\w+)";
           // $NVGGA, 013423.00,  3039.4582,   N,  10405.0352,   E,    1     ,9   ,1.55      ,+474.12 ,M,0.1*25
