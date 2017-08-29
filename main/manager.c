@@ -3372,8 +3372,11 @@ void inssue_pps_data(struct root_data *pRootData)
     buf[iOffset++] = pClockInfo->workStatus;
     buf[iOffset++] = pClockAlarm->alarmSatellite;
     buf[iOffset++] = pClockAlarm->alarmPtp;
-     *(int *)(buf + iOffset) = flip32(4);
-    iOffset += 4;
+
+    buf[iOffset++] = 0;
+    buf[iOffset++] = 0;
+    buf[iOffset++] = 0;
+    buf[iOffset++] = pClockAlarm->alarmDisk;
 
     memcpy(buf+iOffset,pRootData->current_time,20);
     iOffset += 20;
