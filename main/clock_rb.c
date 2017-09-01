@@ -1118,6 +1118,7 @@ void ClockHandleProcess_OCXO(struct clock_info *p_clock_info)
             //p_clock_info->syn_enable = 1;
             p_clock_info->bInitialClear = 1;
         }
+        system("hwclock -w");
     }
 
 

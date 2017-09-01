@@ -74,7 +74,7 @@ struct clock_alarm_data
     Uint8 alarmVcxo100M;     /**vcxo 100M告警 */
     Uint8 alarmRb10M;      /**铷钟10 M 告警 */
     Uint8 alarmXo10M;       /**XO 10M告警*/
-    Uint8 vcxoLock;
+    Uint8 alarmVcxoLock;
     Uint8 alarmDisk;
     Uint8 alarmSatellite;  /**卫星信号丢失  1告警，0 不告警*/
     

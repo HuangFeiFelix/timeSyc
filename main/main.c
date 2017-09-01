@@ -209,10 +209,7 @@ void InitLoadRtcTime(struct root_data *pRootData)
 {
     struct timeval tv;
 
-
-    //tv.tv_sec += 19;
-    //tv.tv_sec += 18;
-    
+   
     struct Satellite_Data *pSateData = &pRootData->satellite_data;
     gettimeofday(&tv,NULL);
     pSateData->time = tv.tv_sec;
@@ -669,7 +666,7 @@ void display_alarm_to_lcd(struct root_data *pRootData)
 {
     struct clock_info *pClockInfo = &pRootData->clock_info;
     struct clock_alarm_data *pClockAlarm = &pClockInfo->alarmData;
-    if(pClockAlarm->alarmSatellite = TRUE)
+    if(pClockAlarm->alarmSatellite == TRUE)
         SetTextValue(WARN_SCREEN_ID,4,"YES");
     else
         SetTextValue(WARN_SCREEN_ID,4,"NO");
@@ -681,7 +678,7 @@ void display_alarm_to_lcd(struct root_data *pRootData)
 
     if(RbOrXo == 1)
     {
-        if(pClockAlarm->alarmVcxo100M == TRUE || pClockAlarm->alarmXo10M == TRUE || pClockAlarm->vcxoLock == 0)
+        if(pClockAlarm->alarmVcxo100M == TRUE || pClockAlarm->alarmXo10M == TRUE || pClockAlarm->alarmVcxoLock == TRUE)
             SetTextValue(WARN_SCREEN_ID,6,"YES");
         else
             SetTextValue(WARN_SCREEN_ID,6,"NO");
@@ -689,7 +686,7 @@ void display_alarm_to_lcd(struct root_data *pRootData)
     }
     else
     {
-        if(pClockAlarm->alarmVcxo100M == TRUE || pClockAlarm->alarmRb10M == TRUE || pClockAlarm->vcxoLock == 0)
+        if(pClockAlarm->alarmVcxo100M == TRUE || pClockAlarm->alarmRb10M == TRUE || pClockAlarm->alarmVcxoLock == TRUE)
             SetTextValue(WARN_SCREEN_ID,6,"YES");
         else
             SetTextValue(WARN_SCREEN_ID,6,"NO");
@@ -794,8 +791,8 @@ void display_alarm_information(struct clock_alarm_data *pClockAlarm)
    
     printf("alarmBd1pps=%d alarmPtp=%d alarmVcxo100M=%d\n"
         ,pClockAlarm->alarmBd1pps,pClockAlarm->alarmPtp,pClockAlarm->alarmVcxo100M);
-    printf("alarmRb10M=%d alarmXo10M=%d vcxoLock=%d\n"
-        ,pClockAlarm->alarmRb10M,pClockAlarm->alarmXo10M,pClockAlarm->vcxoLock);
+    printf("alarmRb10M=%d alarmXo10M=%d alarmVcxoLock=%d\n"
+        ,pClockAlarm->alarmRb10M,pClockAlarm->alarmXo10M,pClockAlarm->alarmVcxoLock);
     printf("alarmDisk=%d alarmSatellite=%d\n"
         ,pClockAlarm->alarmDisk,pClockAlarm->alarmSatellite);
 }
@@ -1227,12 +1224,12 @@ int main(int argc,char *argv[])
     InitDev(g_RootData);
     InitSlotList(g_RootData);    
     signal(SIGINT, IntExit);
-    InitLoadRtcTime(g_RootData);
     Wait_For_EnvConfig();
 
     start_ntp_daemon();
     start_ptp_daemon();
-
+    InitLoadRtcTime(g_RootData);
+ 
     /** 创建日常处理线程 */
 	err = pthread_create(&g_RootData->p_usual,&g_RootData->pattr,(void *)ThreadUsuallyProcess,(void *)g_RootData);	
 	if(err == 0)

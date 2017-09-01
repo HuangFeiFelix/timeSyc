@@ -271,9 +271,9 @@ void CollectAlarm(struct root_data *pRootData)
     val = *(Uint8*)(BASE_ADDR+0x0a);
 
     if(val&0x01)
-        pAlarmData->vcxoLock= TRUE;
+        pAlarmData->alarmVcxoLock = TRUE;
     else
-        pAlarmData->vcxoLock= FALSE;
+        pAlarmData->alarmVcxoLock = FALSE;
 
     if(pSatellite_data->time_enable == TRUE)
         pAlarmData->alarmSatellite = FALSE;
