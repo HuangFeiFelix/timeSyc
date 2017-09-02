@@ -106,6 +106,9 @@ void Init_RbClockCenter(struct clock_info *pClock_info)
     }
 
     close(fd);
+
+    /** Clock src OCXO */
+   
 }
 
 void Write_RbCLockCenter(struct clock_info *pClock_info)
@@ -991,7 +994,7 @@ void ClockStateProcess(struct clock_info *pClockInfo)
         pClockInfo->data_1Hz.start_flag = 1;
 
     }
-    if((pClockInfo->ref_type == REF_PTP)&&(pAlarmData->alarmPtp==FALSE)&&(pClockInfo->run_times==RUN_TIME))
+    if((pClockInfo->ref_type == REF_PTP)&&(pAlarmData->alarmPtp == FALSE)&&(pClockInfo->run_times==RUN_TIME))
     {
          pClockInfo->lockCounter=0;
          
@@ -1011,16 +1014,16 @@ void ClockStateProcess(struct clock_info *pClockInfo)
 
     if(pClockInfo->ref_type == REF_PTP)
     {
-        if(pAlarmData->alarmPtp == FALSE)
-            ref_status = 1;   
+        if(pAlarmData->alarmPtp == TRUE || (pAlarmData->alarmDisk == TRUE))
+            ref_status = 0;   
         else 
-            ref_status = 0;
+            ref_status = 1;
         
         m10_status_machine(pClockInfo,ref_status);
     }
     else if(pClockInfo->ref_type == REF_SATLITE)
     {
-        if((pAlarmData->alarmBd1pps == TRUE) || (pAlarmData->alarmSatellite == TRUE))
+        if((pAlarmData->alarmBd1pps == TRUE) || (pAlarmData->alarmDisk == TRUE))
             ref_status = 0;   
         else 
             ref_status = 1;
@@ -1038,6 +1041,7 @@ void ClockHandleProcess(struct clock_info *pClockInfo)
     
     if((pClockInfo->data_1Hz.getdata_flag==1)
         &&(pAlarmData->alarmBd1pps == FALSE)
+        &&(pAlarmData->alarmDisk == FALSE)
         &&(pClockInfo->ref_type==REF_SATLITE)&&(pClockInfo->run_times>RUN_TIME)) 
     {
          pClockInfo->data_1Hz.getdata_flag=0;
@@ -1048,6 +1052,7 @@ void ClockHandleProcess(struct clock_info *pClockInfo)
     }
     else if((pClockInfo->data_1Hz.getdata_flag==1)
         &&(pAlarmData->alarmPtp==FALSE)
+        &&(pAlarmData->alarmDisk == FALSE)
         &&(pClockInfo->ref_type== REF_PTP)&&(pClockInfo->run_times>RUN_TIME))
     {
         pClockInfo->data_1Hz.getdata_flag=0;
@@ -1081,7 +1086,7 @@ void ClockStateProcess_OCXO(struct clock_info *pClockInfo)
 
         if(pClockInfo->ref_type == REF_SATLITE)
         {
-            if((pAlarmData->alarmBd1pps == TRUE) || (pAlarmData->alarmSatellite == TRUE))
+            if((pAlarmData->alarmBd1pps == TRUE) || (pAlarmData->alarmDisk == TRUE))
                 ref_status = 0;   
             else 
                 ref_status = 1;
@@ -1102,6 +1107,7 @@ void ClockHandleProcess_OCXO(struct clock_info *p_clock_info)
 
     if((p_clock_info->data_1Hz.getdata_flag==1)
         &&(pAlarmData->alarmBd1pps == FALSE)
+        &&(pAlarmData->alarmDisk == FALSE)
         &&(p_clock_info->ref_type==REF_SATLITE)&&(p_clock_info->run_times>RUN_TIME)) 
     {
         printf("lAvgPhase= %f  lPhasePrevious= %f   IDetPhase= %f,OffsetAll =%f,bInitiatlClear = %d \r\n"

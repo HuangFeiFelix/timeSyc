@@ -1248,7 +1248,7 @@ void SaveNetParamToFile(char *network_cfg,struct NetInfor *infopt)
     fputs(line_str,network_fd);
     
     memset(line_str,0,sizeof(line_str));
-    sprintf(line_str,"%s:%x.%x.%x.%x.%x.%x\n","MAC",infopt->mac[0]
+    sprintf(line_str,"%s:%02x.%02x.%02x.%02x.%02x.%02x\n","MAC",infopt->mac[0]
         ,infopt->mac[1]
         ,infopt->mac[2]
         ,infopt->mac[3]
@@ -3370,7 +3370,7 @@ void inssue_pps_data(struct root_data *pRootData)
     
     buf[iOffset++] = pClockInfo->ref_type;
     buf[iOffset++] = pClockInfo->workStatus;
-    buf[iOffset++] = pClockAlarm->alarmSatellite;
+    buf[iOffset++] = pClockAlarm->alarmBd1pps;
     buf[iOffset++] = pClockAlarm->alarmPtp;
 
     buf[iOffset++] = 0;

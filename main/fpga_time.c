@@ -72,8 +72,8 @@
 
 #define LED_ALARM               0x88
 #define LED_RUN                 0x89
-#define LED_SAT_STATUS          0x8A
-#define LED_LOCK_STATUS         0x8B
+#define LED_SAT_STATUS          0x8B
+#define LED_LOCK_STATUS         0x8A
 
 
 
@@ -235,6 +235,7 @@ void SetSysTime(TimeInternal * pTime)
 
 void CollectAlarm(struct root_data *pRootData)
 {
+    struct clock_info *pClockInfo = &pRootData->clock_info;
     struct clock_alarm_data *pAlarmData = &pRootData->clock_info.alarmData;
     struct Satellite_Data *pSatellite_data = &pRootData->satellite_data;
     
@@ -275,13 +276,10 @@ void CollectAlarm(struct root_data *pRootData)
     else
         pAlarmData->alarmVcxoLock = FALSE;
 
-    if(pSatellite_data->time_enable == TRUE)
-        pAlarmData->alarmSatellite = FALSE;
-    else
-        pAlarmData->alarmSatellite = TRUE;
-    if(RbOrXo == 1)
+    
+    if(pClockInfo->clock_mode == 1)
     {
-        if(pAlarmData->alarmBd1pps == 1 || pAlarmData->alarmXo10M == 1)
+        if(pAlarmData->alarmVcxoLock == 1 || pAlarmData->alarmXo10M == 1 || pAlarmData->alarmVcxo100M == 1)
             pAlarmData->alarmDisk = TRUE;
         else
             pAlarmData->alarmDisk = FALSE;
@@ -289,7 +287,7 @@ void CollectAlarm(struct root_data *pRootData)
     }
     else
     {
-        if(pAlarmData->alarmBd1pps == 1 || pAlarmData->alarmRb10M == 1)
+        if(pAlarmData->alarmVcxoLock == 1 || pAlarmData->alarmRb10M == 1 || pAlarmData->alarmVcxo100M == 1)
             pAlarmData->alarmDisk = TRUE;
         else
             pAlarmData->alarmDisk = FALSE;

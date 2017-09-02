@@ -15,7 +15,6 @@ struct root_data *g_RootData;
 
 int comm_sin_port;
 char comm_ip_address[20];
-int RbOrXo = 1; /**0: 铷钟，1:OCXO  */
 
 
 char *ctlEthConfig = "/mnt/network_ctl.cfg";
@@ -219,6 +218,7 @@ void InitLoadRtcTime(struct root_data *pRootData)
 void InitSlotList(struct root_data *pRootData)
 {
     int i;
+    struct clock_info *pClockInfo = &pRootData->clock_info;
 
     struct SlotList *pSlotList = &pRootData->slot_list[ENUM_SLOT_COR_ADDR];
     pSlotList->slot_type = SLOT_TYPE_CORE;
@@ -240,9 +240,10 @@ void InitSlotList(struct root_data *pRootData)
         pRootData->slot_list[i].pPtpSetcfg = NULL;
         pRootData->slot_list[i].pPtpStatusCfg = NULL;
     }
-
+    
     /** =1 使用OCXO */
-    if(RbOrXo == 1)
+    pClockInfo->clock_mode = 1;
+    if(pClockInfo->clock_mode == 1)
     {
         SetFpgaAddressVal(0x84,0x01);
     }
@@ -506,7 +507,6 @@ static void Pps_Signal_Handle(int signum)
     
     if(pClock_info->ref_type == REF_SATLITE 
         && pClockAlarm->alarmBd1pps == 0 
-        && pClockAlarm->alarmSatellite == 0
         && pClock_info->run_times > RUN_TIME)
     {
 
@@ -587,7 +587,14 @@ void MaintainCoreTime(struct root_data *pRoot,TimeInternal *ptptTime)
 
 
     ntp_second_from_1970 = ioctl(fd,COMM_GET_SEC,0);
-        
+
+    /** 显示当前时间，北京时间 */   
+   current_time = ntp_second_from_1970;
+   current_time += 28800;
+   tm = gmtime(&current_time);
+   memset(pRoot->current_time,0,sizeof(pRoot->current_time));
+   sprintf(pRoot->current_time,"%d-%d-%d %02d:%02d:%02d",tm->tm_year+1900,tm->tm_mon+1,tm->tm_mday,tm->tm_hour,tm->tm_min,tm->tm_sec);
+   printf("%s\n",pRoot->current_time);
 
     /**连续性判断  */
     if(abs(Time - previousBusSec) != 1)
@@ -650,15 +657,6 @@ void MaintainCoreTime(struct root_data *pRoot,TimeInternal *ptptTime)
 
     }
 
-    current_time = ntp_second_from_1970;
-    current_time += 28800;
-
-    tm = gmtime(&current_time);
-
-    memset(pRoot->current_time,0,sizeof(pRoot->current_time));
-    sprintf(pRoot->current_time,"%d-%d-%d %02d:%02d:%02d",tm->tm_year+1900,tm->tm_mon+1,tm->tm_mday,tm->tm_hour,tm->tm_min,tm->tm_sec);
-    printf("%s\n",pRoot->current_time);
-
             
 }
 
@@ -666,7 +664,7 @@ void display_alarm_to_lcd(struct root_data *pRootData)
 {
     struct clock_info *pClockInfo = &pRootData->clock_info;
     struct clock_alarm_data *pClockAlarm = &pClockInfo->alarmData;
-    if(pClockAlarm->alarmSatellite == TRUE)
+    if(pClockAlarm->alarmBd1pps == TRUE)
         SetTextValue(WARN_SCREEN_ID,4,"YES");
     else
         SetTextValue(WARN_SCREEN_ID,4,"NO");
@@ -676,9 +674,9 @@ void display_alarm_to_lcd(struct root_data *pRootData)
     else
         SetTextValue(WARN_SCREEN_ID,5,"NO");
 
-    if(RbOrXo == 1)
+    if(pClockInfo->clock_mode == 1)
     {
-        if(pClockAlarm->alarmVcxo100M == TRUE || pClockAlarm->alarmXo10M == TRUE || pClockAlarm->alarmVcxoLock == TRUE)
+        if(pClockAlarm->alarmDisk == TRUE)
             SetTextValue(WARN_SCREEN_ID,6,"YES");
         else
             SetTextValue(WARN_SCREEN_ID,6,"NO");
@@ -686,7 +684,7 @@ void display_alarm_to_lcd(struct root_data *pRootData)
     }
     else
     {
-        if(pClockAlarm->alarmVcxo100M == TRUE || pClockAlarm->alarmRb10M == TRUE || pClockAlarm->alarmVcxoLock == TRUE)
+        if(pClockAlarm->alarmDisk == TRUE)
             SetTextValue(WARN_SCREEN_ID,6,"YES");
         else
             SetTextValue(WARN_SCREEN_ID,6,"NO");
@@ -793,8 +791,8 @@ void display_alarm_information(struct clock_alarm_data *pClockAlarm)
         ,pClockAlarm->alarmBd1pps,pClockAlarm->alarmPtp,pClockAlarm->alarmVcxo100M);
     printf("alarmRb10M=%d alarmXo10M=%d alarmVcxoLock=%d\n"
         ,pClockAlarm->alarmRb10M,pClockAlarm->alarmXo10M,pClockAlarm->alarmVcxoLock);
-    printf("alarmDisk=%d alarmSatellite=%d\n"
-        ,pClockAlarm->alarmDisk,pClockAlarm->alarmSatellite);
+    printf("alarmDisk=%d\n"
+        ,pClockAlarm->alarmDisk);
 }
 
 
@@ -953,16 +951,11 @@ void *ThreadUsuallyProcess(void *arg)
             Display_SatelliteData(&pRootData->satellite_data);
             display_alarm_information(pClockAlarm);
 
-            if(RbOrXo == 1)
-            {
+            if(pClockInfo->clock_mode == 1)
                 ClockStateProcess_OCXO(pClockInfo);
-
-            }
             else
-            {
                 ClockStateProcess(pClockInfo);
 
-            }
             
             display_lcd_running_status(pRootData);     
             inssue_pps_data(pRootData);
@@ -970,24 +963,33 @@ void *ThreadUsuallyProcess(void *arg)
             /**LED  处理*/
             Control_LedRun(nTimeCnt%2);
 
-            if(pClockAlarm->alarmPtp == 1 || pClockAlarm->alarmDisk == 1)
-                Control_LedAlarm(0x01);
-            else
-                Control_LedAlarm(0x00);
+            if(pClockInfo->ref_type == REF_SATLITE)
+            {
+                if(pClockAlarm->alarmBd1pps == 1 || pClockAlarm->alarmDisk == 1)
+                    Control_LedAlarm(0x01);
+                else
+                    Control_LedAlarm(0x00);
+            }
+            else if(pClockInfo->ref_type == REF_PTP)
+            {
+                if(pClockAlarm->alarmPtp == 1 || pClockAlarm->alarmDisk == 1)
+                    Control_LedAlarm(0x01);
+                else
+                    Control_LedAlarm(0x00);
 
-            if(pClockAlarm->alarmSatellite == 1)
-                Control_LedLockStatus(0x00);
-            else
-                Control_LedLockStatus(0x01);
+            }
 
-            if(pClockInfo->workStatus == FREE)
+            if(pClockAlarm->alarmBd1pps == 1)
                 Control_LedSatStatus(0x00);
-            else if(pClockInfo->workStatus == HOLD)
-                Control_LedSatStatus(0x10);
             else
                 Control_LedSatStatus(0x01);
 
-
+            if(pClockInfo->workStatus == FREE)
+                Control_LedLockStatus(0x00);
+            else if(pClockInfo->workStatus == HOLD)
+                Control_LedLockStatus(0x10);
+            else
+                Control_LedLockStatus(0x01);
 
             updatePtpStatusAndNtpStatus(pRootData,nTimeCnt);             
             
@@ -997,7 +999,7 @@ void *ThreadUsuallyProcess(void *arg)
         }
 
         /**测试上报  */
-        if(RbOrXo == 1)
+        if(pClockInfo->clock_mode == 1)
             ClockHandleProcess_OCXO(pClockInfo);
         else
             ClockHandleProcess(pClockInfo);
