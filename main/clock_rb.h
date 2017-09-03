@@ -35,9 +35,7 @@
 #define HOLD 0x3
 
 #define REF_SATLITE 0
-#define REF_10MHZ   1
-#define REF_2KHz    2
-#define REF_PTP     3
+#define REF_PTP     1
 
 #define RB_CENTER_VALUE  10000
 #define GpsFastG1 2  //¶þ20   30X 1015 

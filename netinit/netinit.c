@@ -995,7 +995,7 @@ void SaveNetParamToFile(char *network_cfg,struct NetInfor *infopt)
     fputs(line_str,network_fd);
     
     memset(line_str,0,sizeof(line_str));
-    sprintf(line_str,"%s:%x.%x.%x.%x.%x.%x\n","MAC",infopt->mac[0]
+    sprintf(line_str,"%s:%02x.%02x.%02x.%02x.%02x.%02x\n","MAC",infopt->mac[0]
         ,infopt->mac[1]
         ,infopt->mac[2]
         ,infopt->mac[3]
@@ -1092,7 +1092,7 @@ void main()
     strcpy(ptp_port.ifaceName,"eth0");
     strcpy(ntp_port.ifaceName,"eth1");
     strcpy(ctl_port.ifaceName,"eth2");
-    Load_NetWorkParam_FromFile(ctlEthConfig,&ptp_port);
+    Load_NetWorkParam_FromFile(ctlEthConfig,&ctl_port);
     Load_NetWorkParam_FromFile(ntpEthConfig,&ntp_port);
     Load_NetWorkParam_FromFile(ptpEthConfig,&ptp_port);
 

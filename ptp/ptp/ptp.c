@@ -158,7 +158,6 @@ void ThreadSend(union sigval v)
         if(pPtpClock->outBlockFlag)
             continue;
 
-        
         switch (pPtpClock->clockType)
         {
             case PTP_MASTER:

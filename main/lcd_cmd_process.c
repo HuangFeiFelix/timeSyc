@@ -311,13 +311,13 @@ void HandleWarnningState(struct root_data *pRootData,Uint16 screen_id, Uint16 co
 
 void SetParamSettingScreen(int ref_type)
 {
-    if(ref_type == 0)
+    if(ref_type == REF_SATLITE)
     {
         SetButtonValue(PARAM_SETING_SCREEN_ID,0x0a,0x01);
         SetButtonValue(PARAM_SETING_SCREEN_ID,0x0b,0x00);
     
     }
-    else
+    else if(ref_type == REF_PTP)
     {
         SetButtonValue(PARAM_SETING_SCREEN_ID,0x0b,0x01);
         SetButtonValue(PARAM_SETING_SCREEN_ID,0x0a,0x00);

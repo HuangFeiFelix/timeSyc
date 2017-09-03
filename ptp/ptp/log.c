@@ -4,7 +4,7 @@
 #define LOGFILEPATH "./wk.log"
 
 FILE *logp;
-LOG_DEBUG debug_level = LEVEL_NULL;
+LOG_DEBUG debug_level = LEVEL_WARN;
 
 void logerinit(FILE **fp)
 {        

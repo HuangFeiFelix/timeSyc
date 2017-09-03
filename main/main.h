@@ -161,6 +161,10 @@ struct root_data{
         struct NetInfor comm_port;
         struct NetInfor ptp_port;
         struct NetInfor ntp_port;
+
+        int ctl_sin_port;
+        char ctl_ip_address[20];
+
         
         char current_time[30];
         

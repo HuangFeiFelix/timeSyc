@@ -579,7 +579,7 @@ int recv_udp_data(struct device *p_dev, struct dev_head *dev_head)
     {
         if((len = recvfrom(fd,pBuf,BUFFER_SIZE,0,(struct sockaddr*)&p_dev->dest_addr,&p_dev->sock_len)) > 0)
         {
-            printf("recv udp data\n");
+            //printf("recv udp data\n");
             add_recv(pBuf,fd,len,p_dev);
         }
     }
@@ -776,6 +776,9 @@ int recv_data(struct device *p_dev, struct dev_head *dev_head)
                         break;
                     case ENUM_PPS_TOD:
                         p_dev->recv_data = recv_ppstod_com_data;
+                        break;
+                    case ENUM_XO:
+                        p_dev->recv_data = recv_gps_com_data;
                         break;
                     default:
                         break;

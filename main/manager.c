@@ -1261,40 +1261,63 @@ void SaveNetParamToFile(char *network_cfg,struct NetInfor *infopt)
     fclose(network_fd);
 
 }
-int Load_comm_ip_address(char *network_cfg,char *ip_address)
+int Load_sys_configration(char *cfg,struct root_data *pRootData)
 {
+    struct clock_info *pClockInfo = &pRootData->clock_info;
+    
     Uint8 line_str[50];
     
     Uint8 tile[10];
     Uint8 *pIndex;
     Uint8 *pStr = line_str;
     struct in_addr temsock;
+    char *ip_address = pRootData->ctl_ip_address;
 
     int i;
     
     memset(line_str,0,sizeof(line_str));
     memset(tile,0,sizeof(tile));
     
-    FILE *net_work_fd = fopen(network_cfg,"r");
-    if(net_work_fd == NULL)
+    FILE *sys_cfg_fd = fopen(cfg,"r");
+    if(sys_cfg_fd == NULL)
     {
-        printf("can not find ip_address.conf file\n");
+        printf("can not find comm_sys.conf file\n");
         memcpy(ip_address,"127.0.0.1",strlen("127.0.0.1"));
+        pClockInfo->ref_type = REF_SATLITE;
+        pClockInfo->clock_mode = 1;
         return -1;
     }
-    
-    fgets(line_str,sizeof(line_str),net_work_fd);
-    pIndex = strchr(line_str,':');
-    memcpy(tile,line_str,pIndex-pStr);
 
-    pIndex++;
-
-    if(strcmp("IP",tile) == 0)
+    while(fgets(line_str,sizeof(line_str),sys_cfg_fd))
     {
-        memcpy(ip_address,pIndex,strlen(pIndex));
+        
+        pIndex = strchr(line_str,':');
+        memcpy(tile,line_str,pIndex-pStr);
+
+        pIndex++;
+        
+        if(strcmp("IP",tile) == 0)
+        {
+            memcpy(ip_address,pIndex,strlen(pIndex));
+
+        }
+        /**获取参考源信息  */
+        if(strcmp("REF",tile) == 0)
+        {
+            pClockInfo->ref_type = *pIndex - '0';
+
+        }
+        /** 读取本地时钟邋RB 或OCXO */
+        if(strcmp("CLOCK",tile) == 0)
+        {
+            pClockInfo->clock_mode = *pIndex - '0';
+        }
+
+        memset(tile,0,sizeof(tile));
+        memset(line_str,0,sizeof(line_str));
     }
 
-    fclose(net_work_fd);
+    fclose(sys_cfg_fd);
 }
 
 int Load_NetWorkParam_FromFile(char *network_cfg,struct NetInfor *infopt)

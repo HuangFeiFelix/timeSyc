@@ -315,11 +315,10 @@ void m10_fast_handle(struct clock_info *p_clock_info)
     float everySecOffset;
         
     p_clock_info->IDetPhase= p_clock_info->data_1Hz.lAvgPhase-p_clock_info->lPhasePrevious;
-    p_clock_info->OffsetAll += p_clock_info->IDetPhase;
     
-	printf("lAvgPhase= %d  lPhasePrevious= %d   IDetPhase= %d,OffsetAll =%d,bInitiatlClear = %d \r\n"
+    printf("lAvgPhase= %f  lPhasePrevious= %f   IDetPhase= %f,OffsetAll =%f,bInitiatlClear = %d \r\n"
         ,p_clock_info->data_1Hz.lAvgPhase,p_clock_info->lPhasePrevious
-        ,p_clock_info->IDetPhase,p_clock_info->OffsetAll,p_clock_info->bInitialClear);
+        ,p_clock_info->IDetPhase,p_clock_info->lAccPhaseAll,p_clock_info->bInitialClear);
 
 
     /**相位调整  */
@@ -331,70 +330,42 @@ void m10_fast_handle(struct clock_info *p_clock_info)
         p_clock_info->OffsetAll = 0;
         p_clock_info->lAccPhaseAll = 0;
         p_clock_info->IDetPhase=0;
+
+    
+        if(p_clock_info->lPhasePrevious >2000.0 || p_clock_info->lPhasePrevious < -2000.0)
+        {
+            SetRbClockAlign_Once();
+            p_clock_info->bInitialClear = 1;
+        }
+           
     }
     else
     {
-        
-        if(p_clock_info->IDetPhase > -10.0 && p_clock_info->IDetPhase < 10.0)
+        if((p_clock_info->data_1Hz.lAvgPhase>2000)||(p_clock_info->data_1Hz.lAvgPhase<-2000))
         {
-            if(p_clock_info->lockCounter<12)
-                p_clock_info->lockCounter += 2;   
-            
-            p_clock_info->lDetDdsAdj = 0;
+             //adj
+             SetRbClockAlign_Once();
+             p_clock_info->bInitialClear=1;
+             printf("0 adj lAvgPhase=%d \r\n",p_clock_info->data_1Hz.lAvgPhase);
+
         }
-        else if((p_clock_info->IDetPhase > -100.0 && p_clock_info->IDetPhase < -10.0)
-            || (p_clock_info->IDetPhase > 10.0 && p_clock_info->IDetPhase < 10.0))
+    
+        if((p_clock_info->IDetPhase>-500)&&(p_clock_info->IDetPhase<500))  //p_clock_info->lDetDdsAdj
         {
 
-            /** 0.125 */
-            p_clock_info->IDetPhase = p_clock_info->IDetPhase / 8;
-            
-            /**计算10s累计偏差  */
-            everySecOffset = p_clock_info->IDetPhase / 100;
-            
-            /**i值为0.01 比例  */
-            p_clock_info->IDetPhase += (p_clock_info->OffsetAll /100);
-
-            
-            printf("everySecOffset1 = %f\r\n",everySecOffset);
-
-            /**得到频偏，乘以比例  */
-            p_clock_info->lDetDdsAdj = everySecOffset * 1000;
-
             if(p_clock_info->lockCounter<12)
-                p_clock_info->lockCounter++;       
+                p_clock_info->lockCounter++;        
+
         }
         else
         {
-
-            /** 0.25 */
-            p_clock_info->IDetPhase = p_clock_info->IDetPhase / 4;
-
-            /**i值为0.5 比例  */
-            p_clock_info->IDetPhase += (p_clock_info->OffsetAll /2);
-
-            
-            everySecOffset = p_clock_info->IDetPhase / 100;
-            
-            printf("everySecOffset2 = %f\r\n",everySecOffset);
-
-            p_clock_info->lDetDdsAdj = everySecOffset * 1000;
-            
-            if(p_clock_info->lockCounter>1)
+           if(p_clock_info->lockCounter>1)
                 p_clock_info->lockCounter--; 
-
-        }
-
-        
-        p_clock_info->lDetDdsAdj = -p_clock_info->lDetDdsAdj;
-        /** 该cpt 小铷钟的调整方式是，整治往右，负值往左 */
-        send_clock_data(p_clock_info,(int)p_clock_info->lDetDdsAdj);
-
-        
-        p_clock_info->lPhasePrevious = p_clock_info->data_1Hz.lAvgPhase;
-
+        }  
     }
-  
+    p_clock_info->lPhasePrevious=p_clock_info->data_1Hz.lAvgPhase;
+
+ 
 }
 
 
@@ -404,7 +375,6 @@ void m10_lock_handle(struct clock_info *p_clock_info)
     float everySecOffset;
 
     p_clock_info->IDetPhase = (p_clock_info->data_1Hz.lAvgPhase-p_clock_info->lPhasePrevious);
-    p_clock_info->OffsetAll += p_clock_info->IDetPhase;
     
 	printf("lAvgPhase= %f  lPhasePrevious= %f   IDetPhase= %f,OffsetAll =%f,bInitiatlClear = %d \r\n"
         ,p_clock_info->data_1Hz.lAvgPhase,p_clock_info->lPhasePrevious
@@ -417,98 +387,43 @@ void m10_lock_handle(struct clock_info *p_clock_info)
         p_clock_info->lPhasePrevious = p_clock_info->data_1Hz.lAvgPhase;
         p_clock_info->lDetDdsAdj=0;
         p_clock_info->bInitialClear = 0;
-        p_clock_info->lAccPhaseAll=0;
-	    p_clock_info->IDetPhase=0;
         p_clock_info->OffsetAll = 0;
-        
+        p_clock_info->lAccPhaseAll = 0;
+        p_clock_info->IDetPhase=0;
+
     }
     else
     {
-        
-         if((p_clock_info->IDetPhase<-100)&&(p_clock_info->IDetPhase>100))
-         {
-            if(p_clock_info->unlockCounter<50)
-                p_clock_info->unlockCounter++;
-         }
-         else
-         {
-            if(p_clock_info->unlockCounter>1)
-                p_clock_info->unlockCounter--;
-         }
-
-         
-        if((p_clock_info->IDetPhase>-10)&&(p_clock_info->IDetPhase<10))
+        if((p_clock_info->data_1Hz.lAvgPhase>1000)||(p_clock_info->data_1Hz.lAvgPhase<-1000))
         {
-            p_clock_info->lDetDdsAdj = 0;
-            
-            if(p_clock_info->unlockCounter>1)
-                p_clock_info->unlockCounter--;
+             //adj
+             SetRbClockAlign_Once();
+             p_clock_info->bInitialClear=1;
+             
+
         }
-        else if((p_clock_info->IDetPhase<-100)&&(p_clock_info->IDetPhase>100))
+    
+        if((p_clock_info->IDetPhase>-500)&&(p_clock_info->IDetPhase<500))  //p_clock_info->lDetDdsAdj
         {
-            /**减小误差  0.1*/
-            p_clock_info->IDetPhase = p_clock_info->IDetPhase / 10;
-
-            /**i值为0.01 比例  */
-            p_clock_info->IDetPhase += (p_clock_info->OffsetAll / 500);
-
-            /**得到频偏ppm  */
-            everySecOffset = p_clock_info->IDetPhase / 500;
-            
-            printf("everySecOffset4 = %f\r\n",everySecOffset);
-
-            /**乘以系数  */
-            p_clock_info->lDetDdsAdj = everySecOffset * 1000;
-
-            /**减半调节值  */
-            //p_clock_info->lDetDdsAdj = p_clock_info->lDetDdsAdj / 4;
-            
-            p_clock_info->lDetDdsAdj = -p_clock_info->lDetDdsAdj;
-            send_clock_data(p_clock_info,(int)p_clock_info->lDetDdsAdj);
-            
-            p_clock_info->lPhasePrevious = p_clock_info->data_1Hz.lAvgPhase;
-
-
-
+            system("hwclock -w");
+            printf("Update RTC ----\r\n");
+            if(p_clock_info->unlockCounter>1) 
+                p_clock_info->unlockCounter--;
         }
         else
         {
-            /**减小误差  0.2*/
-            p_clock_info->IDetPhase = p_clock_info->IDetPhase / 5;
-
-            /**i值为0.01 比例  */
-            p_clock_info->IDetPhase += (p_clock_info->OffsetAll /500);
-
-            /**得到频偏ppm  */
-            everySecOffset = p_clock_info->IDetPhase / 500;
-            
-            printf("everySecOffset4 = %f\r\n",everySecOffset);
-
-            /**乘以系数  */
-            p_clock_info->lDetDdsAdj = everySecOffset * 10000;
-
-            /**减半调节值  */
-            //p_clock_info->lDetDdsAdj = p_clock_info->lDetDdsAdj / 2;
-                        
-            p_clock_info->lDetDdsAdj = -p_clock_info->lDetDdsAdj;
-            send_clock_data(p_clock_info,(int)p_clock_info->lDetDdsAdj);
-            
-            p_clock_info->lPhasePrevious = p_clock_info->data_1Hz.lAvgPhase;
-
-            /**如果在锁定状态下，相位偏差每次操作100ns，则调整一次相位  */
-            if(abs(p_clock_info->data_1Hz.lAvgPhase)>20000)
-            {
-                p_clock_info->syn_enable = TRUE;
-            }
-
+            if(p_clock_info->unlockCounter<50)
+                p_clock_info->unlockCounter++;    
         }
+
     }
+    p_clock_info->lPhasePrevious=p_clock_info->data_1Hz.lAvgPhase;
 
 }
 
 
 
-void rb_fast_handle(struct clock_info *p_clock_info)
+void ptp_fast_handle(struct clock_info *p_clock_info)
 {   
     float everySecOffset;
         
@@ -588,6 +503,155 @@ void rb_fast_handle(struct clock_info *p_clock_info)
     
     }     
 }
+  
+void ptp_lock_handle(struct clock_info *p_clock_info)
+{   
+
+    p_clock_info->IDetPhase = (p_clock_info->data_1Hz.lAvgPhase-p_clock_info->lPhasePrevious);
+    p_clock_info->lAccPhaseAll += p_clock_info->IDetPhase;
+    
+    printf("lAvgPhase= %f  lPhasePrevious= %f   IDetPhase= %f,OffsetAll =%f,bInitiatlClear = %d \r\n"
+        ,p_clock_info->data_1Hz.lAvgPhase,p_clock_info->lPhasePrevious
+        ,p_clock_info->IDetPhase,p_clock_info->lAccPhaseAll,p_clock_info->bInitialClear);
+
+    if(p_clock_info->lAccPhaseAll>GpsAccConstraint)
+       p_clock_info->lAccPhaseAll=GpsAccConstraint;
+    else if((p_clock_info->lAccPhaseAll<-GpsAccConstraint))  
+       p_clock_info->lAccPhaseAll=-GpsAccConstraint;
+
+
+    /**相位调整  */
+    if(p_clock_info->bInitialClear ==  1)
+    {
+        p_clock_info->lPhasePrevious = p_clock_info->data_1Hz.lAvgPhase;
+        p_clock_info->lDetDdsAdj=0;
+        p_clock_info->bInitialClear = 0;
+        p_clock_info->lAccPhaseAll=0;
+        p_clock_info->IDetPhase=0;
+        p_clock_info->lAccPhaseAll = 0;
+        
+    }
+    else
+    {
+        p_clock_info->lDetDdsAdj=GpsLockG1* p_clock_info->IDetPhase;
+        //p_clock_info->lDetDdsAdj+=p_clock_info->data_1Hz.lAvgPhase/GpsLockG2;
+        p_clock_info->lDetDdsAdj+=p_clock_info->lAccPhaseAll/GpsLockG3;
+        printf("IDetPhase=%f lAvgPhase=%f  lAccPhaseAll=%f  \r\n ",p_clock_info->IDetPhase,p_clock_info->data_1Hz.lAvgPhase,p_clock_info->lAccPhaseAll);
+
+        if((p_clock_info->data_1Hz.lAvgPhase<-1250)||(p_clock_info->data_1Hz.lAvgPhase>1250))     //2000hg700
+        {
+            if((p_clock_info->IDetPhase>-450)&&(p_clock_info->IDetPhase<450))
+            {
+                 SetRbClockAlign_Once();
+                 p_clock_info->bInitialClear=1;
+                 printf("lock adj lAvgPhase=%f \r\n",p_clock_info->data_1Hz.lAvgPhase);
+                 
+             }
+             else if(p_clock_info->unlockCounter<50)
+                p_clock_info->unlockCounter++;
+        }
+        else if(p_clock_info->unlockCounter>1) 
+           p_clock_info->unlockCounter--;
+
+        if(p_clock_info->lDetDdsAdj<-GpsLockConstraint) 
+           p_clock_info->lDetDdsAdj=-GpsLockConstraint;
+        else if(p_clock_info->lDetDdsAdj>GpsLockConstraint)
+           p_clock_info->lDetDdsAdj=GpsLockConstraint;
+    }
+    p_clock_info->lPhasePrevious=p_clock_info->data_1Hz.lAvgPhase;
+    if(p_clock_info->lDetDdsAdj!=0)
+    {
+      p_clock_info->adjflag=0x01;
+      p_clock_info->center = p_clock_info->center + p_clock_info->lDetDdsAdj;    //计算中心值
+      printf("lDetDdsAdj: %f  unlockCounter=%d\r\n",p_clock_info->lDetDdsAdj,p_clock_info->unlockCounter);
+      send_clock_data(p_clock_info,p_clock_info->center);  /*添加写钟控值*/
+    }
+    
+}
+
+
+  
+void rb_fast_handle(struct clock_info *p_clock_info)
+{   
+    float everySecOffset;
+        
+    p_clock_info->IDetPhase= p_clock_info->data_1Hz.lAvgPhase-p_clock_info->lPhasePrevious;
+    //p_clock_info->lAccPhaseAll += p_clock_info->IDetPhase;
+    
+    printf("lAvgPhase= %f  lPhasePrevious= %f   IDetPhase= %f,OffsetAll =%f,bInitiatlClear = %d \r\n"
+        ,p_clock_info->data_1Hz.lAvgPhase,p_clock_info->lPhasePrevious
+        ,p_clock_info->IDetPhase,p_clock_info->lAccPhaseAll,p_clock_info->bInitialClear);
+
+    /**相位调整  */
+    if(p_clock_info->bInitialClear ==  1)
+    {
+        
+        p_clock_info->lPhasePrevious = p_clock_info->data_1Hz.lAvgPhase;
+        p_clock_info->lDetDdsAdj=0;
+        p_clock_info->bInitialClear = 0;
+        p_clock_info->lAccPhaseAll = 0;
+        p_clock_info->lAccPhaseAll = 0;
+        p_clock_info->IDetPhase=0;
+
+        if(p_clock_info->lPhasePrevious >4000.0 || p_clock_info->lPhasePrevious < -4000.0)
+        {
+            SetRbClockAlign_Once();
+            //p_clock_info->syn_enable = 1;
+            p_clock_info->bInitialClear = 1;
+        }
+        
+    }
+    else
+    {
+        p_clock_info->lDetDdsAdj= GpsFastG1*p_clock_info->IDetPhase;
+        printf("lDetDdsAdj=%f  \r\n", p_clock_info->lDetDdsAdj);
+
+        if((int)p_clock_info->lDetDdsAdj > GpsFastConstraint)
+            p_clock_info->lDetDdsAdj=GpsFastConstraint;
+        else if ((int)p_clock_info->lDetDdsAdj<-GpsFastConstraint)
+            p_clock_info->lDetDdsAdj=-GpsFastConstraint;
+    
+        if((p_clock_info->data_1Hz.lAvgPhase>4000)||(p_clock_info->data_1Hz.lAvgPhase<-4000))
+        {
+             //adj
+             SetRbClockAlign_Once();
+             p_clock_info->bInitialClear=1;
+             printf("0 adj lAvgPhase=%d \r\n",p_clock_info->data_1Hz.lAvgPhase);
+
+        }
+    
+        if((p_clock_info->IDetPhase>-450)&&(p_clock_info->IDetPhase<450))  //p_clock_info->lDetDdsAdj
+        {
+  #if 0
+            if((p_clock_info->data_1Hz.lAvgPhase<-1000)||(p_clock_info->data_1Hz.lAvgPhase>1000))  //
+            {
+                 SetRbClockAlign_Once();
+                 p_clock_info->bInitialClear=1;
+                 printf("0 adj lAvgPhase=%f \r\n",p_clock_info->data_1Hz.lAvgPhase);
+            }           
+  #endif
+
+            if(p_clock_info->lockCounter<12)
+                p_clock_info->lockCounter++;        
+
+        }
+        else
+        {
+           if(p_clock_info->lockCounter>1)
+                p_clock_info->lockCounter--; 
+        }  
+    }
+    p_clock_info->lPhasePrevious=p_clock_info->data_1Hz.lAvgPhase;
+    if(p_clock_info->lDetDdsAdj!=0)
+    {
+      p_clock_info->adjflag=0x01;
+      p_clock_info->center = p_clock_info->center + p_clock_info->lDetDdsAdj;    //计算中心值
+      printf("lDetDdsAdj= %f   lockCounter= %d\r\n",p_clock_info->lDetDdsAdj,p_clock_info->lockCounter);
+      send_clock_data(p_clock_info,p_clock_info->center);  /*添加写钟控值*/
+    
+    }     
+}
+
 
   /**
   * @brief  1Hz lock 处理
@@ -666,6 +730,130 @@ void rb_lock_handle(struct clock_info *p_clock_info)
   * @param  None
   * @retval None
   */
+
+void ptp_status_machine(struct clock_info *p_clock_info,char ref_status)
+{   
+    static char status=0;
+
+    
+    if(p_clock_info->ref_change_flag == TRUE)  /*同类参考源变化丢弃当前数据*/
+    {
+      p_clock_info->bInitialClear=1; /*标记*/
+      //p_clock_info->syn_enable = 1;
+      p_clock_info->data_1Hz.add_ph=0;
+      p_clock_info->data_1Hz.ph_number_counter=0;
+      p_clock_info->data_1Hz.queue_number_counter=0;
+      p_clock_info->ref_change_flag = FALSE;
+    }
+
+
+    //printf("workStatus= %d \r\n",p_clock_info->workStatus);
+    switch(p_clock_info->workStatus)
+    {
+        case FREE:
+        {
+             if(ref_status==1)   /*参考源正常*/
+             { /*add */ 
+               p_clock_info->workStatus=FAST;  /**/
+             }
+        }
+            break;
+        case FAST:
+        {
+            if(ref_status==0) /*参考源告警*/
+               p_clock_info->workStatus=HOLD; 
+            else if((ref_status==1)&&(p_clock_info->lockCounter>=4))
+            {
+               p_clock_info->workStatus=LOCK;
+               p_clock_info->unlockCounter=0;
+             }
+            p_clock_info->fast_times++;/*快捕用时*/
+        }       
+            break;
+        case LOCK:  
+         {
+            if(ref_status==0) /*参考源告警*/
+               p_clock_info->workStatus= HOLD;
+            else if ((ref_status==1)&&(p_clock_info->unlockCounter>=3))
+            {
+               p_clock_info->workStatus= FAST;
+               p_clock_info->lockCounter=0;
+            }
+            p_clock_info->lock_times++;/*锁定用时*/
+            if((ref_status == 1) && ((p_clock_info->lock_times%86400) == 0))
+            {
+                Write_RbCLockCenter(p_clock_info);
+
+            }
+         }
+            break;
+        case HOLD:  
+        {
+            p_clock_info->hold_times++;/*锁定用时*/
+           if(p_clock_info->hold_times>=86400) /*保持时间大于1天, 无参考源 进入自由运行*/
+           {
+                p_clock_info->workStatus= FREE;
+           }else if((p_clock_info->hold_times<86400)&&(ref_status==1)&&(p_clock_info->lockCounter>=4))
+           {
+                p_clock_info->workStatus=LOCK;
+           }
+           else if((p_clock_info->hold_times<86400)&&(ref_status==1)&&(p_clock_info->lockCounter<4))
+           {
+               p_clock_info->workStatus=FAST;
+
+           }
+           /*保持时间小于1于，参考源有效，进入锁定*/
+        }   
+            break;
+            
+        default:    
+            
+            break;
+     }
+
+    if(status!=p_clock_info->workStatus)    /*工作状态变化*/
+    {
+        printf("workStatus change  workStatus= %d\r\n",p_clock_info->workStatus);
+        switch(p_clock_info->workStatus)
+        {
+        case FREE:   
+            break;
+
+        case FAST:   
+          gps_init(p_clock_info);
+           /**快捕状态下，每10个收集一组，收集20组  */
+          p_clock_info->data_1Hz.ph_number=12;
+          p_clock_info->data_1Hz.queue_number=40;
+          p_clock_info->lockCounter=0;
+          p_clock_info->fast_times=0;
+
+         break;
+        case LOCK: 
+          gps_init(p_clock_info);
+
+          /**锁定状态下，没10个收集一组，收集50组  */
+          p_clock_info->data_1Hz.ph_number=15;
+          p_clock_info->data_1Hz.queue_number=50;    //50  20h
+          p_clock_info->lock_times=0;
+
+         SetRbClockAlign_Once();
+         p_clock_info->bInitialClear=1; 
+
+         break;
+        case HOLD:   
+            p_clock_info->hold_times=0;
+            p_clock_info->unlockCounter=0;
+            p_clock_info->lockCounter=0;
+            break;
+        default :
+            break;
+        
+        }
+        status=p_clock_info->workStatus;  /*记录当前工作状态*/
+    }
+
+}
+
 
 void gps_status_machine(struct clock_info *p_clock_info,char ref_status)
 {   
@@ -791,7 +979,7 @@ void gps_status_machine(struct clock_info *p_clock_info,char ref_status)
 
 }
 
-  void m10_status_machine(struct clock_info *p_clock_info,char ref_status)
+void m10_status_machine(struct clock_info *p_clock_info,char ref_status)
 {   
     static char status=0;
 
@@ -814,15 +1002,15 @@ void gps_status_machine(struct clock_info *p_clock_info,char ref_status)
              if(ref_status==1)   /*参考源正常*/
              { /*add */ 
                p_clock_info->workStatus=FAST;  /**/
-             }	
+             }
 
         }
       	    break;
      	case FAST:
         {
             if(ref_status==0) /*参考源告警*/
-               p_clock_info->workStatus=FREE; 
-            else if((ref_status==1)&&(p_clock_info->fast_times>=1800))
+               p_clock_info->workStatus=HOLD; 
+            else if((ref_status==1)&&(p_clock_info->lockCounter>=4))
 			{
                p_clock_info->workStatus=LOCK;
 			   p_clock_info->unlockCounter=0;
@@ -834,8 +1022,17 @@ void gps_status_machine(struct clock_info *p_clock_info,char ref_status)
 	     {
             if(ref_status==0) /*参考源告警*/
                p_clock_info->workStatus= HOLD;
-
+            else if ((ref_status==1)&&(p_clock_info->unlockCounter>=3))
+			{
+               p_clock_info->workStatus= FAST;
+			   p_clock_info->lockCounter=0;
+			}
             p_clock_info->lock_times++;/*锁定用时*/
+            if((ref_status == 1) && ((p_clock_info->lock_times%86400) == 0))
+            {
+                
+
+            }
          }
       		break;
      	case HOLD:	
@@ -844,15 +1041,21 @@ void gps_status_machine(struct clock_info *p_clock_info,char ref_status)
            if(p_clock_info->hold_times>=86400) /*保持时间大于1天, 无参考源 进入自由运行*/
            {
                 p_clock_info->workStatus= FREE;
-           }else if((p_clock_info->hold_times<86400)&&(ref_status==1))
+           }else if((p_clock_info->hold_times<86400)&&(ref_status==1)&&(p_clock_info->lockCounter>=4))
            {
                 p_clock_info->workStatus=LOCK;
+           }
+           else if((p_clock_info->hold_times<86400)&&(ref_status==1)&&(p_clock_info->lockCounter<4))
+           {
+               p_clock_info->workStatus=FAST;
+
            }
            /*保持时间小于1于，参考源有效，进入锁定*/
         }	
       		break;
             
     	default:    
+			
      		break;
      }
 
@@ -865,26 +1068,30 @@ void gps_status_machine(struct clock_info *p_clock_info,char ref_status)
             break;
 
         case FAST:   
-          m10ref_init(p_clock_info);
+          gps_init(p_clock_info);
            /**快捕状态下，每10个收集一组，收集20组  */
           p_clock_info->data_1Hz.ph_number=12;
-          p_clock_info->data_1Hz.queue_number=10;
-          
+          p_clock_info->data_1Hz.queue_number=20;
+          p_clock_info->lockCounter=0;
           p_clock_info->fast_times=0;
 
          break;
         case LOCK: 
-          m10ref_init(p_clock_info);
+          gps_init(p_clock_info);
 
           /**锁定状态下，没10个收集一组，收集50组  */
           p_clock_info->data_1Hz.ph_number=12;
           p_clock_info->data_1Hz.queue_number=50;	 //50  20h
           p_clock_info->lock_times=0;
 
+         SetRbClockAlign_Once();
+         p_clock_info->bInitialClear=1; 
 
          break;
         case HOLD:   
             p_clock_info->hold_times=0;
+            p_clock_info->unlockCounter=0;
+            p_clock_info->lockCounter=0;
             break;
         default :
             break;
@@ -951,6 +1158,32 @@ void m10_status_handle(struct clock_info *p_clock_info)
 
 }
 
+void ptp_status_handle(struct clock_info *p_clock_info)
+{   
+  	switch(p_clock_info->workStatus)
+    { 
+		case FREE:
+        	printf("free_handle\r\n");	
+      	    break;
+     	case FAST:
+            printf("fast_handle\r\n");
+            ptp_fast_handle(p_clock_info);		
+       		break;
+     	case LOCK:	
+            printf("lock_handle\r\n");
+            ptp_lock_handle(p_clock_info);	
+      		break;
+     	case HOLD:
+            printf("hold_handle\r\n");		
+      		break;           
+    	default:    
+			
+     		break;
+     }
+
+}
+
+
 void ClockStateProcess(struct clock_info *pClockInfo)
 {
     struct clock_alarm_data *pAlarmData = &pClockInfo->alarmData;
@@ -965,19 +1198,6 @@ void ClockStateProcess(struct clock_info *pClockInfo)
         printf("---------ref 1hz 1Hz_set center\r\n");
     }
         
-#if 0
-
-        SetVcomWorkMode("GGA");
-        SetVcomWorkMode("TXT");
-        SetVcomWorkMode("ZDA");
-        SetVcomWorkMode("GPT");
-        SetVcomWorkMode("GSV");
-        SetVcomWorkMode("GSA");
-        //SetVcomWorkMode("LPS");
-        SetVcomWorkMode("LLM");
-#endif
-
-
     printf("runtime=%d ref_type=%d workStatus= %d\r\n",pClockInfo->run_times,pClockInfo->ref_type,pClockInfo->workStatus);
     /**参考源1pps，1pps和10m无收入告警，等待4分钟，等待小铷钟稳定  */
     /*选择参考源 1PPS输入不告警*/
@@ -1019,7 +1239,7 @@ void ClockStateProcess(struct clock_info *pClockInfo)
         else 
             ref_status = 1;
         
-        m10_status_machine(pClockInfo,ref_status);
+        ptp_status_machine(pClockInfo,ref_status);
     }
     else if(pClockInfo->ref_type == REF_SATLITE)
     {
@@ -1057,7 +1277,7 @@ void ClockHandleProcess(struct clock_info *pClockInfo)
     {
         pClockInfo->data_1Hz.getdata_flag=0;
         
-        m10_status_handle(pClockInfo);
+        ptp_status_handle(pClockInfo);
     }
 }
 
@@ -1069,7 +1289,6 @@ void ClockStateProcess_OCXO(struct clock_info *pClockInfo)
     
         if(pClockInfo->run_times == 20)
         {
-            send_clock_data(pClockInfo,10000);
             SetRbClockAlign_Once();
             pClockInfo->bInitialClear = 1;
             printf("---------ref 1hz 1Hz_set center\r\n");
@@ -1081,7 +1300,15 @@ void ClockStateProcess_OCXO(struct clock_info *pClockInfo)
     
         if((pClockInfo->ref_type == REF_SATLITE)&&(pAlarmData->alarmBd1pps==FALSE)&&(pClockInfo->run_times==RUN_TIME))
         {
-            SetRbClockAlign_Once();    
+            SetRbClockAlign_Once();
+            pClockInfo->bInitialClear = 1;
+            pClockInfo->lockCounter=0;
+            
+            pClockInfo->data_1Hz.add_ph=0;
+            pClockInfo->data_1Hz.ph_number_counter=0;
+            pClockInfo->data_1Hz.queue_number_counter=0;
+            pClockInfo->data_1Hz.start_flag = 1;
+            
         }
 
         if(pClockInfo->ref_type == REF_SATLITE)
@@ -1110,21 +1337,13 @@ void ClockHandleProcess_OCXO(struct clock_info *p_clock_info)
         &&(pAlarmData->alarmDisk == FALSE)
         &&(p_clock_info->ref_type==REF_SATLITE)&&(p_clock_info->run_times>RUN_TIME)) 
     {
-        printf("lAvgPhase= %f  lPhasePrevious= %f   IDetPhase= %f,OffsetAll =%f,bInitiatlClear = %d \r\n"
-            ,p_clock_info->data_1Hz.lAvgPhase,p_clock_info->lPhasePrevious
-            ,p_clock_info->IDetPhase,p_clock_info->lAccPhaseAll,p_clock_info->bInitialClear);
 
         
          p_clock_info->data_1Hz.getdata_flag=0;
-    
-       
-        if(p_clock_info->lPhasePrevious >4000.0 || p_clock_info->lPhasePrevious < -4000.0)
-        {
-            SetRbClockAlign_Once();
-            //p_clock_info->syn_enable = 1;
-            p_clock_info->bInitialClear = 1;
-        }
-        system("hwclock -w");
+          
+               /**收集够一组数据 */
+         m10_status_handle(p_clock_info);
+         
     }
 
 
