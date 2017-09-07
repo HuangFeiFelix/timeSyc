@@ -288,7 +288,6 @@ void InitDev(struct root_data *pRootData)
 #endif
 
 
-
     /**接收机串口设备 通信id=2  */
     pRootData->dev[ENUM_GPS].com_attr.com_port = ENUM_GPS;  //串口1
     pRootData->dev[ENUM_GPS].com_attr.baud_rate = 9600;
