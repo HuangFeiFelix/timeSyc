@@ -1277,14 +1277,17 @@ int Load_sys_configration(char *cfg,struct root_data *pRootData)
     
     memset(line_str,0,sizeof(line_str));
     memset(tile,0,sizeof(tile));
+
+    pClockInfo->ref_type = REF_SATLITE;
+    pClockInfo->clock_mode = 1;
+
     
     FILE *sys_cfg_fd = fopen(cfg,"r");
     if(sys_cfg_fd == NULL)
     {
         printf("can not find comm_sys.conf file\n");
         memcpy(ip_address,"127.0.0.1",strlen("127.0.0.1"));
-        pClockInfo->ref_type = REF_SATLITE;
-        pClockInfo->clock_mode = 1;
+
         return -1;
     }
 
@@ -2492,7 +2495,7 @@ void handle_req_system_setting(struct root_data *pRootData,struct Head_Frame *pH
 
     buf[iOffset++] = pClockInfo->ref_type;
     buf[iOffset++] = debug_level;
-    buf[iOffset++] = 0;
+    buf[iOffset++] = pClockInfo->clock_mode;
     buf[iOffset++] = 0;
     
     msgPackRespFrameToSend(pRootData,pHeadFrame,CTL_WORD_DATA,buf,iOffset,CMD_SYS_SET);

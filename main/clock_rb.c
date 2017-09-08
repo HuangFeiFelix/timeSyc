@@ -412,6 +412,7 @@ void m10_lock_handle(struct clock_info *p_clock_info)
         }
         else
         {
+            system("hwclock -w");
             if(p_clock_info->unlockCounter<50)
                 p_clock_info->unlockCounter++;    
         }
