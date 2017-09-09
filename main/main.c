@@ -411,7 +411,7 @@ void *DataHandle_Thread(void *arg)
 	}
 	return NULL;
 }
-
+ 
 void *DataRecv_Thread(void *arg){
 	struct device *p_dev = NULL, *tmp_dev = NULL;
 	struct dev_head *p_dev_head = (struct dev_head *)arg;
