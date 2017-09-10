@@ -703,8 +703,13 @@ void rb_lock_handle(struct clock_info *p_clock_info)
                  printf("lock adj lAvgPhase=%f \r\n",p_clock_info->data_1Hz.lAvgPhase);
                  
              }
-             else if(p_clock_info->unlockCounter<50)
-                p_clock_info->unlockCounter++;
+            else
+            {
+                if(p_clock_info->unlockCounter<50)
+                   p_clock_info->unlockCounter++;
+
+            }
+
         }
         else if(p_clock_info->unlockCounter>1) 
            p_clock_info->unlockCounter--;
@@ -836,9 +841,6 @@ void ptp_status_machine(struct clock_info *p_clock_info,char ref_status)
           p_clock_info->data_1Hz.ph_number=15;
           p_clock_info->data_1Hz.queue_number=50;    //50  20h
           p_clock_info->lock_times=0;
-
-         SetRbClockAlign_Once();
-         p_clock_info->bInitialClear=1; 
 
          break;
         case HOLD:   

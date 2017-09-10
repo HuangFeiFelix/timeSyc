@@ -593,7 +593,7 @@ void CalCulate_Delay_TimeOffsetDelayPath(PtpClock *pPtpClock
             subTime(pTimeOffset,pTimeOffset,&followCorrection);
             
         }
-#if 1
+#if 0
                          
         printf("==>meanpathdelay seconds:%d nanoseconds:%d\n",pMeanPathDelay->seconds,pMeanPathDelay->nanoseconds);
               
@@ -625,11 +625,8 @@ void CalCulate_PDelay_TimeOffsetDelayPath(PtpClock *pPtpClock
     TimeInternal T6_T3;
     TimeInternal T5_T4;
         
-    if(pPtpClock->transmitDelayType == DELAY_MECANISM_E2E)
-    {
-        printf("CalCulate_PDelay_TimeOffsetDelayPath error\n");
-    }
-    else if(pPtpClock->transmitDelayType == DELAY_MECANISM_P2P)
+
+    if(pPtpClock->transmitDelayType == DELAY_MECANISM_P2P)
     {
         if(pPtpClock->stepType == ONE_STEP)
         {
@@ -663,13 +660,17 @@ void CalCulate_PDelay_TimeOffsetDelayPath(PtpClock *pPtpClock
             
         }
 
-#if 1
+#if 0
                  
         printf("==>meanpathdelay seconds:%d nanoseconds:%d\n",pMeanPathDelay->seconds,pMeanPathDelay->nanoseconds);
               
         printf("==>TimeOffset seconds:%d nanoseconds:%d\n",pTimeOffset->seconds,pTimeOffset->nanoseconds);
 #endif
 
+    }
+    else if(pPtpClock->transmitDelayType == DELAY_MECANISM_E2E)
+    {
+        printf("CalCulate_PDelay_TimeOffsetDelayPath error\n");
     }
 }
 
@@ -763,10 +764,11 @@ void HandleSynMessage(PtpClock *pPtpClock,MsgHeader *pMsgHeader,MsgSync *pMsgSyn
                                                     ,pPtpClock->PdelayrespCorrection,pPtpClock->PdelayrespFollowUpCorrection
                                                     ,&pPtpClock->MeanPathDelay,&pPtpClock->TimeOffset);
 
+
+            updatePtpOffset_ToMainRountine(pPtpClock);
             
-            //AdustDp83640SynchronizeMaster(pPtpClock,&pPtpClock->phyControl);
-            
-            pPtpClock->finishPtp = TRUE;
+            //AdustDp83640SynchronizeMaster(pPtpClock,&pPtpClock->phyControl);    
+            //pPtpClock->finishPtp = TRUE;
             //pPtpClock->finishT3T4 = FALSE;
         }
     }
@@ -795,6 +797,8 @@ void HandleFollowUpMessage(PtpClock *pPtpClock,MsgHeader *pMsgHeader,MsgFollowUp
                                                     ,pPtpClock->SynCorrection,pPtpClock->FollowUpCorrection
                                                     ,pPtpClock->PdelayrespCorrection,pPtpClock->PdelayrespFollowUpCorrection
                                                     ,&pPtpClock->MeanPathDelay,&pPtpClock->TimeOffset);
+
+            updatePtpOffset_ToMainRountine(pPtpClock);
 
             //AdustDp83640SynchronizeMaster(pPtpClock,&pPtpClock->phyControl);
 

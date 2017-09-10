@@ -36,5 +36,7 @@ extern void MasterMode_Recv(PtpClock *pPtpClock);
 
 extern void SlaveMode_Recv(PtpClock *pPtpClock);
 
+extern void updatePtpOffset_ToMainRountine(PtpClock *pPtpClock);
+
 #endif
 

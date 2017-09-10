@@ -223,9 +223,9 @@ enum
     ENUM_PC_CTL,
     ENUM_PC_DISCOVER,
     ENUM_PPS_TOD,
-    ENUM_LOCAL_DEV,
     ENUM_IPC_NTP,
-    ENUM_IPC_PTP
+    ENUM_IPC_PTP,
+    ENUM_LOCAL_DEV
 };
 
 #define TCP_DEVICE  0

@@ -497,45 +497,6 @@ void HandleNtpEthState(struct root_data *pRootData,Uint16 screen_id, Uint16 cont
             break;
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 }
 
 
@@ -559,6 +520,7 @@ void lcdDisplayEnternet(struct NetInfor *net,Uint16 screen_id)
 void HandleSettingState(struct root_data *pRootData,Uint16 screen_id, Uint16 control_id,unsigned char *data)
 {
     printf("HandleSettingState\n");
+    struct clock_info *pClockInfo = &pRootData->clock_info;
 
 
     switch(control_id)
@@ -584,6 +546,14 @@ void HandleSettingState(struct root_data *pRootData,Uint16 screen_id, Uint16 con
             lcdDisplayEnternet(&pRootData->ntp_port,ETH_NTP_SCREEN_ID);
             HandleLcdEvent = HandleNtpEthState;
             
+            break;
+        case 0x0a:
+            pClockInfo->ref_type = 0;
+            HandleLcdEvent = HandleSettingState;
+            break;
+        case 0x0b:
+            pClockInfo->ref_type = 1;
+            HandleLcdEvent = HandleSettingState;
             break;
             
         default:

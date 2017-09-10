@@ -500,7 +500,6 @@ void AnalysePtpConfigFile(Uint8* pBuf,PtpClock *pPtpClock)
         memcpy(Data[i],pLine,strlen(pLine));
         i++;
     }
-    
     //for(i=0;i<LINE_COUNT;i++)
        //printf("%s\n",Data[i]);
     
@@ -516,13 +515,13 @@ void AnalysePtpConfigFile(Uint8* pBuf,PtpClock *pPtpClock)
         memcpy(tile,Data[i],pIndex-pStr);
         
         pIndex++;
-        
 
         if(memcmp("ptpengine:clockType",tile,strlen("ptpengine:clockType")) == 0)
         {
             value = atoi(pIndex);
             if(value == 0 || value == 1)
                 pPtpClock->clockType = value;
+                      
         }
          if(memcmp("ptpengine:domainFilterSwitch",tile,strlen("ptpengine:domainFilterSwitch")) == 0)
         {
@@ -859,6 +858,7 @@ int Load_PtpParam_FromFile(PtpClock *pPtpClock)
     if(i<2)
     {
         printf("Config file Empty!!\n");
+        Save_PtpParam_ToFile(pPtpClock,pPtpClock->ptpFileName);
         return -1;
     }
         
@@ -885,6 +885,9 @@ int Save_PtpParam_ToFile(PtpClock *pPtpClock,char *fileName)
         return -1;
     }
 
+    memset(line_str,0,sizeof(line_str));
+    sprintf(line_str,"%s:%s=%s\n","ptpengine","interface","eth0");
+    fputs(line_str,ptp_fd);
     
     memset(line_str,0,sizeof(line_str));
     str = pPtpClock->clockType;
@@ -3381,9 +3384,6 @@ Uint8 Init_ptpClock(PtpClock *pPtpClock,int index)
     pPtpClock->unicastMultiServer.serverList[0].serverMac[3] = 0x14;
     pPtpClock->unicastMultiServer.serverList[0].serverMac[4] = 0x04;
     pPtpClock->unicastMultiServer.serverList[0].serverMac[5] = 0x12;
-
-
-    //Init_Pid();
     
     return 1;
 

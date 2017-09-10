@@ -214,12 +214,15 @@ void InitSlotLocal(struct SlotList *pSlotLocal)
 void InitLoadRtcTime(struct root_data *pRootData)
 {
     struct timeval tv;
-
-   
     struct Satellite_Data *pSateData = &pRootData->satellite_data;
-    gettimeofday(&tv,NULL);
-    pSateData->time = tv.tv_sec;
+    struct clock_info *pClockInfo = &pRootData->clock_info;
 
+    gettimeofday(&tv,NULL);
+
+    if(pClockInfo->ref_type == REF_SATLITE)
+        pSateData->time = tv.tv_sec;
+    else if(pClockInfo->ref_type == REF_PTP)
+        SetFpgaTime(tv.tv_sec);
 }
 
 void InitSlotList(struct root_data *pRootData)
@@ -394,13 +397,14 @@ void *DataHandle_Thread(void *arg)
                         handle_discovery_message(pRootData,p_data_list->recv_lev.data,p_data_list->recv_lev.len);
                         break;
     				case ENUM_LOCAL_DEV:
-    					printf("dev_id=  %d,ptp recv\n",p_dev->dev_id);
+    					
     					break;
                     case ENUM_IPC_NTP:
                         
-                        break;
+                        break; 
                     case ENUM_IPC_PTP:
-                        
+                        printf("dev_id=  %d,ptp recv\n",p_dev->dev_id);
+                        handle_ptp_data_message(pRootData,p_data_list->recv_lev.data,p_data_list->recv_lev.len);
                         break;
     				default:
     					break;
@@ -517,7 +521,6 @@ static void Pps_Signal_Handle(int signum)
     struct clock_alarm_data *pClockAlarm = &pClock_info->alarmData;
     int phaseOffset = 0;
     int ph;
-    //static int index = 0;
     
     if(pClock_info->ref_type == REF_SATLITE 
         && pClockAlarm->alarmBd1pps == FALSE
@@ -730,9 +733,9 @@ void display_clockstate_to_lcd(struct root_data *pRootData)
             SetTextValue(CLOCK_STATUS_SCREEN_ID,17,"NO");
             break;
     }
-    //memset(szbuf,0,sizeof(szbuf));
-    //sprintf(szbuf,"%d",pClockInfo->data_1Hz.phase_offset);
-    //SetTextValue(CLOCK_STATUS_SCREEN_ID,14,szbuf);
+    memset(szbuf,0,sizeof(szbuf));
+    sprintf(szbuf,"%d",pClockInfo->run_times);
+    SetTextValue(CLOCK_STATUS_SCREEN_ID,14,szbuf);
 
     memset(szbuf,0,sizeof(szbuf));
     sprintf(szbuf,"%d",p_satellite_data->satellite_see);
@@ -1166,6 +1169,7 @@ int main(int argc,char *argv[])
 
     start_ntp_daemon();
     start_ptp_daemon();
+
     InitLoadRtcTime(g_RootData);
  
     /** 创建日常处理线程 */

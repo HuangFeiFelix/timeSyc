@@ -196,7 +196,10 @@ struct PtpStatus
     char reserve;
 };
 
-
+struct PtpReference
+{
+    
+};
 
 extern struct root_data *g_RootData;
 extern char *ctlEthConfig;

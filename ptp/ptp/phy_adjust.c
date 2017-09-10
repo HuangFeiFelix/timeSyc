@@ -584,63 +584,16 @@ void AdustDp83640SynchronizeMaster(PtpClock *pPtpClock,PhyControl *pPhyControl)
     /**线路时延不可能为负值，如果是负值，则异常  */
     if(isTimeInternalNegative(&pPtpClock->MeanPathDelay))
     {
-        log_debug("TimeOffset Result error!!\n");
+        PLOG("TimeOffset Result error!!\n");
         return;
     }
 
-    if(abs(pPtpClock->T1.seconds-pPtpClock->CurentTime.seconds)>2)
-    {
-        pPhyControl->over2sec_counter++;
+    /**发送值核心调整进程  */
 
-        if(pPhyControl->over2sec_counter >= 10)
-        {
-            /**处理时间 */
-            Dp83640ClockTimeSet(pPtpClock->T1);
-            
-            GetDp83640RuningTime(&pPtpClock->CurentTime);
-            TriggerSetAndStart(pPtpClock->CurentTime.seconds+1);
-            
-            printf("==>Set dp83640 Big time===>\n");
-            
-            pPhyControl->over2sec_counter= 0;
-        }
 
-        /**大于2s 则不做细调整。直接返回  */
-        return;
-    }
 
-    pPhyControl->over2sec_counter= 0;
-
-    internalTime_to_longlong64(pPtpClock->MeanPathDelay,&pPhyControl->mean_path);
-        
-        /**获得线路类型  */
-    if(pPhyControl->mean_path > 300)
-    {
-        pPhyControl->low1us_counter = 0;
-        pPhyControl->over1us_counter++;
-        
-        if(pPhyControl->over1us_counter > 10)
-        {
-            pPhyControl->over1us_counter = 0;
-            pPhyControl->line_type = SWITCH_CONNECT;
-        }
-
-    }
-    else if(pPhyControl->mean_path < 300)
-    {
-        pPhyControl->over1us_counter = 0;
-        pPhyControl->low1us_counter++;
-
-        if(pPhyControl->low1us_counter > 10)
-        {
-            pPhyControl->low1us_counter = 0;
-            pPhyControl->line_type = DIRECT_CONNECT;
-            printf("In DIRECT_CONNECT \n");
-        }
-    }
-    
     /**调频调相  */
-    AdjustPhase(pPtpClock);
+    //AdjustPhase(pPtpClock);
 
    
 }

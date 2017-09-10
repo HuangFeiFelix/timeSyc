@@ -505,7 +505,7 @@ int open_int(struct device *p_dev, struct dev_head *dev_head)
 
     p_dev->dest_addr.sin_family = AF_INET;
     p_dev->dest_addr.sin_addr.s_addr = p_dev->net_attr.ip;
-    p_dev->dest_addr.sin_port = htons(p_dev->net_attr.sin_port);;
+    p_dev->dest_addr.sin_port = htons(p_dev->net_attr.sin_port);
 
     p_dev->fd = fd;
 

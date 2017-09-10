@@ -79,8 +79,8 @@
 
 #define FACTORY_DEV_CODE "QH000001"
 #define DEV_TYPE_CODE    "QH000001"
-#define SOFT_VERSION     "0.01"
-#define FPGA_VERSION     "0.03"
+#define SOFT_VERSION     "1.00"
+#define FPGA_VERSION     "0.05"
 
 struct Md5key factory_key[10]={ 
                           {0,0,""},
@@ -94,6 +94,17 @@ struct Md5key factory_key[10]={
 						  {1,10,"*&^%$45678"},
 						 };
 
+struct PtpReferenceData
+{
+    Uint8 type;/** 1 表示数据信息 */
+    Uint8 reserv1;
+    Uint8 reserv2;
+    Uint8 reserv3;
+    TimeInternal currentTime;
+    TimeInternal MeanPathDelay;
+    TimeInternal TimeOffset;
+    
+};
 
 
 void msgUpPackHead(char *buf,struct Head_Frame *pHead)
@@ -115,9 +126,9 @@ void msgUpPack_ptp_all(char *data,struct PtpSetCfg *pPtpSetcfg)
     int i;
     int iOffset = 0;
     
-    //pPtpSetcfg->clockType = data[iOffset++];
-    iOffset++;
-    pPtpSetcfg->clockType = 1;
+    pPtpSetcfg->clockType = data[iOffset++];
+    //iOffset++;
+    //pPtpSetcfg->clockType = 1;
     
     pPtpSetcfg->domainNumber = data[iOffset++];
     pPtpSetcfg->domainFilterSwitch = data[iOffset++];
@@ -1293,8 +1304,8 @@ int Load_sys_configration(char *cfg,struct root_data *pRootData)
 
     while(fgets(line_str,sizeof(line_str),sys_cfg_fd))
     {
+        pIndex = strchr(line_str,'=');
         
-        pIndex = strchr(line_str,':');
         memcpy(tile,line_str,pIndex-pStr);
 
         pIndex++;
@@ -1308,12 +1319,13 @@ int Load_sys_configration(char *cfg,struct root_data *pRootData)
         if(strcmp("REF",tile) == 0)
         {
             pClockInfo->ref_type = *pIndex - '0';
-
+            printf("load ref_type=%d\n",pClockInfo->ref_type);
         }
         /** 读取本地时钟邋RB 或OCXO */
         if(strcmp("CLOCK",tile) == 0)
         {
             pClockInfo->clock_mode = *pIndex - '0';
+            printf("load clock_mode=%d\n",pClockInfo->clock_mode);
         }
 
         memset(tile,0,sizeof(tile));
@@ -2152,7 +2164,11 @@ int Save_PtpParam_ToFile(struct PtpSetCfg *pPtpSetcfg,char *fileName)
         printf("can not find ptp.conf file\n");
         return -1;
     }
-    
+
+    memset(line_str,0,sizeof(line_str));
+    sprintf(line_str,"%s:%s=%s\n","ptpengine","interface","eth0");
+    fputs(line_str,ptp_fd);
+   
     memset(line_str,0,sizeof(line_str));
     str = pPtpSetcfg->clockType;
     sprintf(line_str,"%s:%s=%d\n","ptpengine","clockType",str);
@@ -3604,4 +3620,71 @@ void handle_pc_ctl_message(struct root_data *pRootData,char *buf,int len)
     }
     
 }
+
+
+void internalTime_to_longlong64(TimeInternal internal, Slonglong64 *bigint)
+{
+	*bigint = internal.seconds;
+	*bigint *= 1000000000;
+	*bigint += internal.nanoseconds;
+    
+}
+
+void handle_ptp_data_message(struct root_data *pRootData,char *buf,int len)
+{
+    unsigned char type = buf[0];
+    struct clock_info *pClockInfo = &pRootData->clock_info;
+    struct clock_alarm_data *pClockAlarm = &pClockInfo->alarmData;
+    struct collect_data *p_collect_data = &pClockInfo->data_1Hz;
+    struct PtpReferenceData *pPtpRefData;
+    static short  secErrorCnt = 0;
+    Slonglong64 time_offset;        /**时间偏差  */ 
+    int ph;
+    
+    if(pClockInfo->ref_type ==  REF_SATLITE)
+        return;
+
+    if(type == 0)
+    {
+        printf("handle ptpData synAlarm=%d announceAlarm=%d delayRespAlarm=%d\n",buf[1],buf[2],buf[3]);
+        pClockAlarm->alarmPtp = buf[4];
+        
+    }
+    else if(type == 1)
+    {
+        pPtpRefData = (struct PtpReferenceData *)buf;
+        printf("handle ptpData timeOffset sec=%d nsec=%d Delay sec=%d nsec=%d\n"
+            ,pPtpRefData->TimeOffset.seconds,pPtpRefData->TimeOffset.nanoseconds
+            ,pPtpRefData->MeanPathDelay.seconds,pPtpRefData->MeanPathDelay.nanoseconds);
+
+        if(abs(pPtpRefData->TimeOffset.seconds) > 1)
+        {
+            secErrorCnt++;
+            if(secErrorCnt>5)
+            {
+                printf("=========setFpgaTime=====\n");
+                /**写下一秒的值fgpa 内部处理  */
+                SetFpgaTime(pPtpRefData->currentTime.seconds);
+                secErrorCnt = 0;
+            }
+        }
+        else if(pPtpRefData->TimeOffset.seconds == 0)
+        {
+            secErrorCnt = 0;
+            
+            if(pClockInfo->ref_type == REF_PTP
+               && pClockAlarm->alarmPtp == FALSE
+               && pClockInfo->run_times > RUN_TIME)
+            {
+                internalTime_to_longlong64(pPtpRefData->TimeOffset,&time_offset);
+                ph = Kalman_Filter(time_offset,1);
+                printf("readPhase=%lld collect_phase=%d, count=%d\n",time_offset,ph,p_collect_data->ph_number_counter);
+                collect_phase(&pClockInfo->data_1Hz,0,ph);  
+            }
+
+        }
+    }
+    
+}
+
 

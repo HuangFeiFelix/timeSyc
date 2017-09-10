@@ -62,6 +62,35 @@ struct PtpStatus
     char reserve;
 };
 
+struct PtpReference
+{
+    int sockfd;
+    struct sockaddr_in dest_addr;
+
+};
+
+struct PtpReference g_PtpRef;
+
+struct PtpReferenceAlarm
+{
+    Uint8 type; /**0:告警信息  */
+    Uint8 synAlarm;
+    Uint8 announceAlarm;
+    Uint8 delayRespAlarm;
+    Uint8 notAvailableAlarm;
+};
+
+struct PtpReferenceData
+{
+    Uint8 type;/** 1 表示数据信息 */
+    Uint8 reserv1;
+    Uint8 reserv2;
+    Uint8 reserv3;
+    TimeInternal currentTime;
+    TimeInternal MeanPathDelay;
+    TimeInternal TimeOffset;
+    
+};
 
 static void Pps_Signal_Handle(int signum)
 {
@@ -230,7 +259,58 @@ void *ThreadRecev0(void *p)
     }
 }
 
-void *ThreadRecevPtpStatus(void *p)
+void updatePtpOffset_ToMainRountine(PtpClock *pPtpClock)
+{
+    struct PtpReferenceData ptpRefData;
+    struct PtpReference *pPtpref = &g_PtpRef;
+    int len;
+    
+    ptpRefData.type = 1;
+    ptpRefData.currentTime = pPtpClock->T1;
+    ptpRefData.TimeOffset = pPtpClock->TimeOffset;
+    ptpRefData.MeanPathDelay = pPtpClock->MeanPathDelay;
+
+    len = sendto(pPtpref->sockfd,&ptpRefData,sizeof(ptpRefData),0,(struct sockaddr *)&pPtpref->dest_addr,sizeof(struct sockaddr_in));
+}
+
+
+void *ThreadSendPtpReference(void *p)
+{
+    char opt = 1;
+    int len;
+    PtpClock *pPtpClock = (PtpClock *)&g_ptpClock[0];
+    struct PtpReferenceAlarm ptpAlarm;
+    struct PtpReference *pPtpref = &g_PtpRef;
+    
+    memset(pPtpref,0,sizeof(struct PtpReference));
+    memset(&ptpAlarm,0,sizeof(ptpAlarm));
+    
+    if ((pPtpref->sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
+    {
+            perror("socket error\n");
+    }
+
+    pPtpref->dest_addr.sin_family = AF_INET;
+    pPtpref->dest_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    pPtpref->dest_addr.sin_port = htons(9900);
+
+
+    while(1)
+    {
+        ptpAlarm.type = 0;
+        ptpAlarm.synAlarm = pPtpClock->synAlarm;
+        ptpAlarm.announceAlarm  = pPtpClock->announceAlarm;
+        ptpAlarm.delayRespAlarm = pPtpClock->delayRespAlarm;
+        ptpAlarm.notAvailableAlarm = pPtpClock->notAvailableAlarm;
+
+        len = sendto(pPtpref->sockfd,&ptpAlarm,sizeof(ptpAlarm),0,(struct sockaddr *)&pPtpref->dest_addr,sizeof(struct sockaddr_in));
+        sleep(1);
+    }
+    
+}
+
+
+void *ThreadRecePtpStatus(void *p)
 {
 
     int fd = -1;
@@ -604,17 +684,34 @@ int main(int argc,char *argv[])
 		printf("ThreadRecev error!\n");
 	}
 
+    /**maseter 接收  */
+    if(g_ptpClock[0].clockType == 1)
+    {
+        ret = pthread_create(&Id_ThreadRecv1,&threadAttr,ThreadRecePtpStatus,NULL);
+        if(ret == 0)
+        {
+            printf("ThreadRecePtpStatus success!\n");
+        }
+        else
+        {
+            printf("ThreadRecePtpStatus error!\n");
+        }
 
-    ret = pthread_create(&Id_ThreadRecv1,&threadAttr,ThreadRecevPtpStatus,NULL);
-    if(ret == 0)
-	{
-		printf("ThreadRecevPtpStatus success!\n");
-	}
-	else
-	{
-		printf("ThreadRecevPtpStatus error!\n");
-	}
+    }
+    /**slave 发送  */
+    else if(g_ptpClock[0].clockType == 0)
+    {
+        ret = pthread_create(&Id_ThreadRecv1,&threadAttr,ThreadSendPtpReference,NULL);
+        if(ret == 0)
+        {
+            printf("ThreadSendPtpReference success!\n");
+        }
+        else
+        {
+            printf("ThreadSendPtpReference error!\n");
+        }
 
+    }
     
     pthread_join(Id_ThreadRecv0,NULL);
     pthread_join(Id_ThreadRecv1,NULL);
