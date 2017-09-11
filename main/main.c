@@ -733,9 +733,9 @@ void display_clockstate_to_lcd(struct root_data *pRootData)
             SetTextValue(CLOCK_STATUS_SCREEN_ID,17,"NO");
             break;
     }
-    memset(szbuf,0,sizeof(szbuf));
-    sprintf(szbuf,"%d",pClockInfo->run_times);
-    SetTextValue(CLOCK_STATUS_SCREEN_ID,14,szbuf);
+    //memset(szbuf,0,sizeof(szbuf));
+    //sprintf(szbuf,"%d",pClockInfo->run_times);
+    //SetTextValue(CLOCK_STATUS_SCREEN_ID,14,szbuf);
 
     memset(szbuf,0,sizeof(szbuf));
     sprintf(szbuf,"%d",p_satellite_data->satellite_see);

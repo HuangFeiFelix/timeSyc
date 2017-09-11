@@ -314,6 +314,26 @@ unsigned char DelGateWay(char *pInterface,unsigned int DelGateWay)
     return TRUE;
 }
 
+unsigned char SetGateWay(char *pInterface,unsigned int ip,unsigned int gateway)
+{
+    unsigned char cmd[50];  
+    memset(cmd,0,sizeof(cmd));
+    if(gateway == 0)
+    {
+        printf("gateway ==0 invalid\n");
+        return 0;
+    }
+    sprintf(cmd,"route add %d.%d.%d.0 gw %d.%d.%d.%d"
+    ,ip&0xff,(ip>>8)&0xff,(ip>>16)&0xff
+    ,gateway&0xff,(gateway>>8)&0xff,(gateway>>16)&0xff,(gateway>>24)&0xff);
+
+    system(cmd);
+
+    return 1;
+
+}
+
+
 /**********************************************************************
  * Function:      AddGateWay
  * Description:   增加指定的网关
@@ -382,6 +402,7 @@ unsigned char AddGateWay(char *pInterface,unsigned int NewGateWay)
 
 }
 
+#if 0
 /**********************************************************************
  * Function:      SetGateWay
  * Description:   设置网关，先删除已经有的，再添加新的
@@ -464,6 +485,7 @@ unsigned char SetGateWay(char *pInterface,unsigned int DelGateWay,unsigned int N
 
     return TRUE;
 }
+#endif
 
 /**********************************************************************
  * Function:      GetMacAddress

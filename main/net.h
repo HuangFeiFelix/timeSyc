@@ -33,7 +33,7 @@ extern unsigned char DelGateWay(char *pInterface,unsigned int DelGateWay);
 
 extern unsigned char AddGateWay(char *pInterface,unsigned int NewGateWay);
 
-extern unsigned char SetGateWay(char *pInterface,unsigned int DelGateWay,unsigned int NewGateWay);
+extern unsigned char SetGateWay(char *pInterface,unsigned int ip,unsigned int NewGateWay);
 
 extern unsigned char GetMacAddress (char* ifaceName, unsigned char* hwAddr);
 

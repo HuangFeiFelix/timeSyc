@@ -1198,24 +1198,20 @@ void SetRouteToEnv(char *network_cfg,struct NetInfor *infopt)
 
 void SetNetworkToEnv(struct NetInfor *infopt)
 {
-    //SetMacAddress(infopt->ifaceName,infopt->mac);
-    //usleep(1000);
 
     SetIpAddress(infopt->ifaceName,infopt->ip);
     SetMaskAddress(infopt->ifaceName,infopt->mask);
 
-    if(strcmp(infopt->ifaceName,"eth2") == 0)
-        AddGateWay(infopt->ifaceName,infopt->gwip);
-
+    SetGateWay(infopt->ifaceName,infopt->ip,infopt->gwip);
 }
 
 void SetCmdNetworkToEnv(struct NetInfor *infopt)
 {
     SetIpAddress(infopt->ifaceName,infopt->ip);
     SetMaskAddress(infopt->ifaceName,infopt->mask);
+    
+    SetGateWay(infopt->ifaceName,infopt->ip,infopt->gwip);
 
-    if(strcmp(infopt->ifaceName,"eth2") == 0)
-        AddGateWay(infopt->ifaceName,infopt->gwip);
 }
 
 void Get_Net_FormSysEvn(struct NetInfor *pNetInfor)
@@ -2949,8 +2945,8 @@ void handle_set_network_ctl(struct root_data *pRootData,struct Head_Frame *pHead
     index += 4;
     m_network_ctl.gwip = ntohl(*(int*)(data+index));
     index += 4;
-    memcpy(m_network_ctl.mac,data+index,6);
-    index += 6;
+    //memcpy(m_network_ctl.mac,data+index,6);
+    //index += 6;
 
     if(memcmp(&m_network_ctl,&pRootData->comm_port,sizeof(struct NetInfor)) != 0)
     {
@@ -2997,8 +2993,8 @@ void handle_set_network_ptp(struct root_data *pRootData,struct Head_Frame *pHead
     index += 4;
     m_network_ctl.gwip = ntohl(*(int*)(data+index));
     index += 4;
-    memcpy(m_network_ctl.mac,data+index,6);
-    index += 6;
+    //memcpy(m_network_ctl.mac,data+index,6);
+    //index += 6;
 
     msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_ACK,NULL,iOffset);
 
@@ -3006,6 +3002,7 @@ void handle_set_network_ptp(struct root_data *pRootData,struct Head_Frame *pHead
     if(memcmp(&m_network_ctl,&pRootData->ptp_port,sizeof(struct NetInfor)) != 0)
     {
         memcpy(&pRootData->ptp_port,&m_network_ctl,sizeof(struct NetInfor));
+        
         SaveNetParamToFile(ptpEthConfig,&pRootData->ptp_port);
         usleep(2000);
         SetCmdNetworkToEnv(&pRootData->ptp_port);
@@ -3046,8 +3043,8 @@ void handle_set_network_ntp(struct root_data *pRootData,struct Head_Frame *pHead
     index += 4;
     m_network_ctl.gwip = ntohl(*(int*)(data+index));
     index += 4;
-    memcpy(m_network_ctl.mac,data+index,6);
-    index += 6;
+    //memcpy(m_network_ctl.mac,data+index,6);
+    //index += 6;
 
 
     msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_ACK,NULL,iOffset);
