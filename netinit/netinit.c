@@ -949,8 +949,8 @@ void SetNetworkToEnv(struct NetInfor *infopt)
     SetMacAddress(infopt->ifaceName,infopt->mac);
     usleep(500000);
 
-    if(strcmp(infopt->ifaceName,"eth2") == 0)
-        AddGateWay(infopt->ifaceName,infopt->gwip);
+    //if(strcmp(infopt->ifaceName,"eth2") == 0)
+    //AddGateWay(infopt->ifaceName,infopt->gwip);
 
 }
 
@@ -1089,12 +1089,17 @@ struct NetInfor ctl_port;
 
 void main()
 {
+	memset(&ptp_port,0,sizeof(ptp_port));
+	memset(&ntp_port,0,sizeof(ntp_port));
+	memset(&ctl_port,0,sizeof(ctl_port));
+	
     strcpy(ptp_port.ifaceName,"eth0");
     strcpy(ntp_port.ifaceName,"eth1");
     strcpy(ctl_port.ifaceName,"eth2");
+    Load_NetWorkParam_FromFile(ptpEthConfig,&ptp_port);
     Load_NetWorkParam_FromFile(ctlEthConfig,&ctl_port);
     Load_NetWorkParam_FromFile(ntpEthConfig,&ntp_port);
-    Load_NetWorkParam_FromFile(ptpEthConfig,&ptp_port);
+
 
 
 }
