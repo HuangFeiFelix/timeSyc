@@ -318,9 +318,9 @@ void InitDev(struct root_data *pRootData)
     pRootData->dev[ENUM_IPC_PTP].net_attr.sin_port = 9900;
     pRootData->dev[ENUM_IPC_PTP].net_attr.ip = inet_addr("127.0.0.1");
     
-    //if(pRootData->clock_info.ref_type == REF_SATLITE)
-        //init_add_dev(&pRootData->dev[ENUM_IPC_PTP],&pRootData->dev_head,INIT_DEVICE,ENUM_IPC_PTP);
-    //else if(pRootData->clock_info.ref_type == REF_PTP)
+    if(pRootData->clock_info.ref_type == REF_SATLITE)
+        init_add_dev(&pRootData->dev[ENUM_IPC_PTP],&pRootData->dev_head,INIT_DEVICE,ENUM_IPC_PTP);
+    else if(pRootData->clock_info.ref_type == REF_PTP)
         init_add_dev(&pRootData->dev[ENUM_IPC_PTP],&pRootData->dev_head,UDP_DEVICE,ENUM_IPC_PTP);
     
     pRootData->dev[ENUM_IPC_NTP].net_attr.sin_port = 9988;
@@ -403,7 +403,7 @@ void *DataHandle_Thread(void *arg)
                         
                         break; 
                     case ENUM_IPC_PTP:
-                        //printf("dev_id=  %d,ptp recv\n",p_dev->dev_id);
+                        printf("dev_id=  %d,ptp recv\n",p_dev->dev_id);
                         handle_ptp_data_message(pRootData,p_data_list->recv_lev.data,p_data_list->recv_lev.len);
                         break;
     				default:
@@ -733,11 +733,11 @@ void display_clockstate_to_lcd(struct root_data *pRootData)
             SetTextValue(CLOCK_STATUS_SCREEN_ID,17,"NO");
             break;
     }
-
+#if 0
     memset(szbuf,0,sizeof(szbuf));
     sprintf(szbuf,"%d",pClockInfo->run_times);
     SetTextValue(CLOCK_STATUS_SCREEN_ID,14,szbuf);
-
+#endif
 
     memset(szbuf,0,sizeof(szbuf));
     sprintf(szbuf,"%d",p_satellite_data->satellite_see);
