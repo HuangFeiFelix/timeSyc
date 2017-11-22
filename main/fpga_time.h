@@ -10,6 +10,7 @@ extern void GetFpgaRuningTime(TimeInternal *pTime);
 extern void Control_LedRun(Boolean val);
 
 extern void SetFpgaTime(Integer32 sec);
+extern void SetFpgaAdjustPhase(Integer32 nsec);
 
 
 extern void SetFpgaAddressVal(short offset,Uint8 val);

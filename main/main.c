@@ -529,9 +529,9 @@ static void Pps_Signal_Handle(int signum)
 
             phaseOffset = Get_Pps_Rb_PhaseOffset();
             phaseOffset = phaseOffset * 4;
-            ph = Kalman_Filter(phaseOffset,1);
+            ph = Smooth_Filter(phaseOffset);
             printf("readPhase=%d collect_phase=%d, count=%d\n",phaseOffset,ph,p_collect_data->ph_number_counter);
-            collect_phase(&pClock_info->data_1Hz,0,phaseOffset);      
+            collect_phase(&pClock_info->data_1Hz,0,ph);      
     }
 
      /**非实时性要求处理  */

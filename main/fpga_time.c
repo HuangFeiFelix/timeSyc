@@ -137,6 +137,26 @@ void SetFpgaTime(Integer32 sec)
     msync(BASE_ADDR,PAGE_SIZE,MS_ASYNC);
 }
 
+
+void SetFpgaAdjustPhase(Integer32 nsec)
+{
+	unsigned int phase;
+
+	phase = abs(nsec);
+
+	if(nsec < 0)
+		phase |= 0x80000000;
+	
+    Fpga_PthreadLock();
+    *(Uint32 *)(BASE_ADDR + 0xe0) = phase;
+		
+    *(Uint8 *)(BASE_ADDR + 0xe4) = 0x01;
+    
+    Fpga_PthreadUnlock();
+    msync(BASE_ADDR,PAGE_SIZE,MS_ASYNC);
+}
+
+
 void GetFpgaRuningTime(TimeInternal *pTime)
 {
     Fpga_PthreadLock();
@@ -296,21 +316,40 @@ void CollectAlarm(struct root_data *pRootData)
 
 }
 
+
 void SetRbClockAlign_Once()
 {
-    printf("--------SetRbClockAlign_Once\r\n");
-    *(Uint8*)(BASE_ADDR + 0xe9) = 0x01;
+	Uint32 offset;
+	int flag;
+	
+	printf("--------SetRbClockAlign_Once\r\n");
+	offset = *(Uint32*)(BASE_ADDR + 0x10);
+	if(offset&0x80000000)
+		flag = -1;
+	else 
+		flag = 1;
+	
+	if(flag<0)
+		offset &= 0x7fffffff;
+
+	offset *= 4;
+
+	if(flag<0)
+		SetFpgaAdjustPhase(-offset);
+	else
+		SetFpgaAdjustPhase(offset);
+
+	*(Uint8*)(BASE_ADDR + 0xe4) = 0x01;
 }
 
 int Get_Pps_Rb_PhaseOffset()
 {   
-    int offset;
-    
-    
+    Uint32 offset;
+ 
     offset = *(Uint32*)(BASE_ADDR + 0x10);
+	
     if(offset&0x80000000)
-        offset = (-1)* offset;
-    return offset;
+  		return (-1)* offset;
     
 }
 

@@ -3635,6 +3635,7 @@ void handle_ptp_data_message(struct root_data *pRootData,char *buf,int len)
     struct collect_data *p_collect_data = &pClockInfo->data_1Hz;
     struct PtpReferenceData *pPtpRefData;
     static short  secErrorCnt = 0;
+	static short  secNanoCnt = 0;
     Slonglong64 time_offset;        /**Ê±¼äÆ«²î  */ 
     int ph;
     
@@ -3667,8 +3668,20 @@ void handle_ptp_data_message(struct root_data *pRootData,char *buf,int len)
         }
         else if(pPtpRefData->TimeOffset.seconds == 0)
         {
-            secErrorCnt = 0;
-            
+			secErrorCnt = 0;
+
+			if(abs(pPtpRefData->TimeOffset.nanoseconds) > 1000)
+			{
+				secNanoCnt++;
+				if(secNanoCnt > 5)
+				{
+					secNanoCnt = 0;
+					SetFpgaAdjustPhase(pPtpRefData->TimeOffset.nanoseconds);
+					return;
+				}
+			}
+			else
+				secNanoCnt = 0;
             if(pClockInfo->ref_type == REF_PTP
                && pClockAlarm->alarmPtp == FALSE
                && pClockInfo->run_times > RUN_TIME)

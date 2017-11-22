@@ -328,7 +328,7 @@ unsigned char SetGateWay(char *pInterface,unsigned int ip,unsigned int gateway)
     ,gateway&0xff,(gateway>>8)&0xff,(gateway>>16)&0xff,(gateway>>24)&0xff);
 
     system(cmd);
-
+    printf("\n");
     return 1;
 
 }

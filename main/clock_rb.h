@@ -37,15 +37,15 @@
 #define REF_SATLITE 0
 #define REF_PTP     1
 
-#define RB_CENTER_VALUE  10000
+#define RB_CENTER_VALUE  1000
 #define GpsFastG1 2  //二20   30X 1015 
 #define GpsLockG1 1   //二6   6 1014
 #define GpsLockG2 4   //二4
-#define GpsLockG3 10    //10//
+#define GpsLockG3 20    //10//
 #define XoAdjust_exp_8 800000.0		//800000.0
 #define XoAdjust_exp_9 50000.0	   // 50000.0
 #define GpsFastConstraint 10000.0
-#define GpsLockConstraint 550.0 //二350.0		//1016g
+#define GpsLockConstraint 200.0 //二350.0		//1016g
 #define GpsAccConstraint 60000.0
 
 
