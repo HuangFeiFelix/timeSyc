@@ -1,4 +1,4 @@
----- ref_type Matches (48 in 6 files) ----
+---- pClockInfo->ref_type Matches (36 in 4 files) ----
 Clock_rb.c:    printf("runtime=%d ref_type=%d workStatus= %d\r\n",pClockInfo->run_times,pClockInfo->ref_type,pClockInfo->workStatus);
 Clock_rb.c:    if((pClockInfo->ref_type == REF_SATLITE)&&(pAlarmData->alarmBd1pps==FALSE)&&(pClockInfo->run_times==RUN_TIME))
 Clock_rb.c:    if((pClockInfo->ref_type == REF_PTP)&&(pAlarmData->alarmPtp == FALSE)&&(pClockInfo->run_times==RUN_TIME))
@@ -11,11 +11,6 @@ Clock_rb.c:        &&(pClockInfo->ref_type== REF_PTP)&&(pClockInfo->run_times>RU
 Clock_rb.c:        printf("runtime=%d ref_type=%d workStatus= %d\r\n",pClockInfo->run_times,pClockInfo->ref_type,pClockInfo->workStatus);
 Clock_rb.c:        if((pClockInfo->ref_type == REF_SATLITE)&&(pAlarmData->alarmBd1pps==FALSE)&&(pClockInfo->run_times==RUN_TIME))
 Clock_rb.c:        if(pClockInfo->ref_type == REF_SATLITE)
-Clock_rb.c:        &&(p_clock_info->ref_type==REF_SATLITE)&&(p_clock_info->run_times>RUN_TIME)) 
-Clock_rb.h:   char      ref_type;          /*²Î¿¼ÊäÈë£º0:ÎÀÐÇ1pps £¬1: ptp£©*/
-Lcd_cmd_process.c:void SetParamSettingScreen(int ref_type)
-Lcd_cmd_process.c:    if(ref_type == REF_SATLITE)
-Lcd_cmd_process.c:    else if(ref_type == REF_PTP)
 Lcd_cmd_process.c:            SetParamSettingScreen(pClockInfo->ref_type);
 Lcd_cmd_process.c:            SetParamSettingScreen(pClockInfo->ref_type);
 Lcd_cmd_process.c:            SetParamSettingScreen(pClockInfo->ref_type);
@@ -24,9 +19,6 @@ Lcd_cmd_process.c:            pClockInfo->ref_type = 1;
 Lcd_cmd_process.c:                SetParamSettingScreen(pClockInfo->ref_type);
 Main.c:    if(pClockInfo->ref_type == REF_SATLITE)
 Main.c:    else if(pClockInfo->ref_type == REF_PTP)
-Main.c:    if(pRootData->clock_info.ref_type == REF_SATLITE)
-Main.c:    else if(pRootData->clock_info.ref_type == REF_PTP)
-Main.c:    if(pClock_info->ref_type == REF_SATLITE 
 Main.c:    if((pClockInfo->ref_type ==  REF_SATLITE))
 Main.c:    else if(pClockInfo->ref_type == REF_PTP)
 Main.c:    if(pClockInfo->ref_type == REF_SATLITE)
@@ -34,7 +26,7 @@ Main.c:                if(pClockInfo->ref_type == REF_SATLITE)
 Main.c:                if(pClockInfo->ref_type == REF_SATLITE)
 Main.c:            if(pClockInfo->ref_type == REF_SATLITE)
 Main.c:            else if(pClockInfo->ref_type == REF_PTP)
-Main.c:            if(pClockInfo->ref_type == REF_SATLITE)
+Main.c:            //if(pClockInfo->ref_type == REF_SATLITE)
 Manager.c:    pClockInfo->ref_type = REF_SATLITE;
 Manager.c:            pClockInfo->ref_type = *pIndex - '0';
 Manager.c:            printf("load ref_type=%d\n",pClockInfo->ref_type);
@@ -43,4 +35,3 @@ Manager.c:    pClockInfo->ref_type = data[0];
 Manager.c:    buf[iOffset++] = pClockInfo->ref_type;
 Manager.c:    if(pClockInfo->ref_type ==  REF_SATLITE)
 Manager.c:            if(pClockInfo->ref_type == REF_PTP
-Manager.h:    char ref_type;

@@ -34,7 +34,7 @@
 
 #include "clock_rb.h"
 #include "main.h"
-
+#include "log.h"
 
 char *rbCenterCfg = "/mnt/rb_center.cfg";
 
@@ -490,14 +490,6 @@ void ptp_fast_handle(struct clock_info *p_clock_info)
     
         if((p_clock_info->IDetPhase>-450)&&(p_clock_info->IDetPhase<450))  //p_clock_info->lDetDdsAdj
         {
-#if 0
-			if((p_clock_info->data_1Hz.lAvgPhase<-1000)||(p_clock_info->data_1Hz.lAvgPhase>1000))  //
-			{
-				 SetRbClockAlign_Once();
-	      		 p_clock_info->bInitialClear=1;
-				 printf("0 adj lAvgPhase=%f \r\n",p_clock_info->data_1Hz.lAvgPhase);
-			}			
-#endif
 
             if(p_clock_info->lockCounter<12)
                 p_clock_info->lockCounter++;        
@@ -515,7 +507,7 @@ void ptp_fast_handle(struct clock_info *p_clock_info)
       p_clock_info->adjflag=0x01;
       p_clock_info->center = p_clock_info->center + p_clock_info->lDetDdsAdj;    //计算中心值
 	  printf("lDetDdsAdj= %f   lockCounter= %d\r\n",p_clock_info->lDetDdsAdj,p_clock_info->lockCounter);
-      send_clock_data(p_clock_info,p_clock_info->center);  /*添加写钟控值*/
+      //send_clock_data(p_clock_info,p_clock_info->center);  /*添加写钟控值*/
     
     }     
 }
@@ -970,6 +962,7 @@ void gps_status_machine(struct clock_info *p_clock_info,char ref_status)
     if(status!=p_clock_info->workStatus)    /*工作状态变化*/
     {
 		printf("workStatus change  workStatus= %d\r\n",p_clock_info->workStatus);
+        logFileMessage("workStatus change  workStatus= %d\r\n",p_clock_info->workStatus);
         switch(p_clock_info->workStatus)
         {
         case FREE:   

@@ -10,6 +10,7 @@ extern LOG_DEBUG debug_level;
 
 extern void logMessage(LOG_DEBUG priority, const char * format, ...);
 extern void logWarnMessage(LOG_DEBUG priority, const char * format, ...);
+extern void logFileMessage(const char * format, ...);
 
 extern void logerinit(FILE **fp);
 

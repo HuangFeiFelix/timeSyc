@@ -323,8 +323,7 @@ unsigned char SetGateWay(char *pInterface,unsigned int ip,unsigned int gateway)
         printf("gateway ==0 invalid\n");
         return 0;
     }
-    sprintf(cmd,"route add %d.%d.%d.0 gw %d.%d.%d.%d"
-    ,ip&0xff,(ip>>8)&0xff,(ip>>16)&0xff
+    sprintf(cmd,"route add default gw %d.%d.%d.%d"
     ,gateway&0xff,(gateway>>8)&0xff,(gateway>>16)&0xff,(gateway>>24)&0xff);
 
     system(cmd);

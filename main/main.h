@@ -133,13 +133,14 @@ struct SlotList
     struct NtpSetCfg *pNtpSetCfg;
     struct PtpSetCfg *pPtpSetcfg;
     struct PtpStatusCfg *pPtpStatusCfg; 
+    struct PtpSetCfg *pPtpSetcfg_m;
 };
 
 
 struct root_data{
 
 		struct dev_head dev_head;	//设备信息头
-        struct device dev[12];		//使用设备信息
+        struct device dev[15];		//~{J9SCIh18PEO"~}
         int dev_fd;
         
         struct SlotList slot_list[6];
@@ -205,9 +206,11 @@ extern struct root_data *g_RootData;
 extern char *ctlEthConfig;
 extern char *ptpEthConfig;
 extern char *ntpEthConfig;
-extern char *ptpConfig;
+extern char *ptpConfig_m;
+extern char *ptpConfig_s;
 extern char *ntpConfig;
 extern char *md5Config;
+
 
 
 extern void start_ptp_daemon();

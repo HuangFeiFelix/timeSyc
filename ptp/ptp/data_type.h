@@ -23,7 +23,7 @@
 
 #include "common.h"
 
-#define PTP_PORT_COUNT 1
+#define PTP_PORT_COUNT 2
 
 enum
 {

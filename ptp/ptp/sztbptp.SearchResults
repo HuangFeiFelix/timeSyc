@@ -1,3 +1,10 @@
----- PtpReferenceAlarm Matches (2 in 1 files) ----
-Ptp.c:struct PtpReferenceAlarm
-Ptp.c:    struct PtpReferenceAlarm ptpAlarm;
+---- outBlockFlag Matches (9 in 3 files) ----
+Data_type.h:    Uint8 outBlockFlag;                 /**1:·âËøÊä³ö£¬0£¬²»·âËø  */
+Fpga_time.c:        pPtpClock[i].outBlockFlag = TRUE;
+Fpga_time.c:        pPtpClock[i].outBlockFlag = FALSE;
+Ptp.c:        if(pPtpClock->outBlockFlag)
+Ptp.c:        if(pPtpClock->outBlockFlag)
+Ptp.c:            printf("ptp recv status %d\n",pPtpClock->outBlockFlag);
+Ptp.c:                pPtpClock->outBlockFlag = 1;
+Ptp.c:                pPtpClock->outBlockFlag = 0;
+Ptp.c:        if(pPtpClock->outBlockFlag)

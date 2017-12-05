@@ -62,6 +62,7 @@ struct data_list {
 		struct send_lev send_lev;	//发送链表
 		struct recv_lev recv_lev;	//接收链表
 		struct net_lev net_lev;		//网络链表
+
 	};
 	struct list_head list_head;		//行向量链表用于链接数据
 };

@@ -313,7 +313,7 @@ void CollectAlarm(struct root_data *pRootData)
             pAlarmData->alarmDisk = FALSE;
 
     }
-
+    
 }
 
 
@@ -321,8 +321,9 @@ void SetRbClockAlign_Once()
 {
 	Uint32 offset;
 	int flag;
-	
-	printf("--------SetRbClockAlign_Once\r\n");
+
+    logFileMessage("--------SetRbClockAlign_Once\r\n");
+    
 	offset = *(Uint32*)(BASE_ADDR + 0x10);
 	if(offset&0x80000000)
 		flag = -1;

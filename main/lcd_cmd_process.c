@@ -331,8 +331,16 @@ void HandleCtlEthState(struct root_data *pRootData,Uint16 screen_id, Uint16 cont
     struct clock_info *pClockInfo = &pRootData->clock_info;
     static int ip = 0;
     static int mask = 0;
+	static int gwip = 0;
     static char set_flag = 0;
-    
+
+	if (ip == 0)
+		ip = pRootData->comm_port.ip;
+	else if (mask == 0)
+		mask = pRootData->comm_port.mask;
+	else if (gwip == 0)
+		gwip = pRootData->comm_port.gwip;
+
     switch(control_id)
     {
         case 19:
@@ -344,10 +352,11 @@ void HandleCtlEthState(struct root_data *pRootData,Uint16 screen_id, Uint16 cont
 
             if(set_flag == TRUE)
             {
-                if((pRootData->comm_port.ip != ip) || (pRootData->comm_port.mask != mask))
+				if ((pRootData->comm_port.ip != ip) || (pRootData->comm_port.mask != mask) || (pRootData->comm_port.gwip != gwip))
                 {
                     pRootData->comm_port.ip = ip;
                     pRootData->comm_port.mask = mask;
+					pRootData->comm_port.gwip = gwip;
 
                     SaveNetParamToFile(ctlEthConfig,&pRootData->comm_port);
                     usleep(2000);
@@ -355,29 +364,33 @@ void HandleCtlEthState(struct root_data *pRootData,Uint16 screen_id, Uint16 cont
                 }
                 set_flag = FALSE;
             }
-
-            
             break;
         case 21:
             
             pRootData->lcd_sreen_id = PARAM_SETING_SCREEN_ID;
             HandleLcdEvent = HandleSettingState;
             SetParamSettingScreen(pClockInfo->ref_type);
+			break;
 
         case 0x04:
-            set_flag = TRUE;
             ip = inet_addr(data);
-            mask = pRootData->comm_port.mask;
+			set_flag = TRUE;
             break;
+
         case 0x07:
             mask = inet_addr(data);
             set_flag = TRUE;
-            
+			break;
+
+		case 16:
+			gwip = inet_addr(data);
+			set_flag = TRUE;
             break;
         default:
             HandleLcdEvent = HandleCtlEthState;
             break;
     }
+
 
 }
 
@@ -386,7 +399,15 @@ void HandlePtpEthState(struct root_data *pRootData,Uint16 screen_id, Uint16 cont
     struct clock_info *pClockInfo = &pRootData->clock_info;
     static int ip = 0;
     static int mask = 0;
+	static int gwip = 0;
     static char set_flag = 0;
+
+	if (ip == 0)
+		ip = pRootData->ptp_port.ip;
+	else if (mask == 0)
+		mask = pRootData->ptp_port.mask;
+	else if (gwip == 0)
+		gwip = pRootData->ptp_port.gwip;
 
     switch(control_id)
     {
@@ -399,10 +420,11 @@ void HandlePtpEthState(struct root_data *pRootData,Uint16 screen_id, Uint16 cont
 
             if(set_flag == TRUE)
             {
-                if((pRootData->ptp_port.ip != ip) || (pRootData->ptp_port.mask != mask))
+				if ((pRootData->ptp_port.ip != ip) || (pRootData->ptp_port.mask != mask) || (pRootData->ptp_port.gwip != gwip))
                 {
                     pRootData->ptp_port.ip = ip;
                     pRootData->ptp_port.mask = mask;
+					pRootData->ptp_port.gwip = gwip;
 
                     SaveNetParamToFile(ptpEthConfig,&pRootData->ptp_port);
                     usleep(2000);
@@ -421,17 +443,23 @@ void HandlePtpEthState(struct root_data *pRootData,Uint16 screen_id, Uint16 cont
             pRootData->lcd_sreen_id = PARAM_SETING_SCREEN_ID;
             HandleLcdEvent = HandleSettingState;
             SetParamSettingScreen(pClockInfo->ref_type);
+			break;
 
         case 0x04:
-            set_flag = TRUE;
             ip = inet_addr(data);
-            mask = pRootData->ptp_port.mask;
+			set_flag = TRUE;
             break;
+
         case 0x07:
             mask = inet_addr(data);
             set_flag = TRUE;
-            
             break;
+
+		case 16:
+			gwip = inet_addr(data);
+			set_flag = TRUE;
+			break;
+
         default:
             HandleLcdEvent = HandleCtlEthState;
             break;
@@ -446,8 +474,15 @@ void HandleNtpEthState(struct root_data *pRootData,Uint16 screen_id, Uint16 cont
     struct clock_info *pClockInfo = &pRootData->clock_info;
     static int ip = 0;
     static int mask = 0;
+	static int gwip = 0;
     static char set_flag = 0;
 
+	if (ip == 0)
+		ip = pRootData->ntp_port.ip;
+	else if (mask == 0)
+		mask = pRootData->ntp_port.mask;
+	else if (gwip == 0)
+		gwip = pRootData->ntp_port.gwip;
     switch(control_id)
     {
         case 19:
@@ -459,10 +494,11 @@ void HandleNtpEthState(struct root_data *pRootData,Uint16 screen_id, Uint16 cont
 
             if(set_flag == TRUE)
             {
-                if((pRootData->ntp_port.ip != ip) || (pRootData->ntp_port.mask != mask))
+				if ((pRootData->ntp_port.ip != ip) || (pRootData->ntp_port.mask != mask) || (pRootData->ntp_port.gwip != gwip))
                 {
                     pRootData->ntp_port.ip = ip;
                     pRootData->ntp_port.mask = mask;
+					pRootData->ntp_port.gwip = gwip;
 
                     SaveNetParamToFile(ntpEthConfig,&pRootData->ntp_port);
                     usleep(2000);
@@ -481,16 +517,21 @@ void HandleNtpEthState(struct root_data *pRootData,Uint16 screen_id, Uint16 cont
             pRootData->lcd_sreen_id = PARAM_SETING_SCREEN_ID;
             HandleLcdEvent = HandleSettingState;
             SetParamSettingScreen(pClockInfo->ref_type);
+			break;
 
         case 0x04:
-            set_flag = TRUE;
             ip = inet_addr(data);
-            mask = pRootData->ntp_port.mask;
+            set_flag = TRUE;
             break;
+
         case 0x07:
             mask = inet_addr(data);
             set_flag = TRUE;
-            
+            break;
+
+		case 16:
+			gwip = inet_addr(data);
+			set_flag = TRUE;
             break;
         default:
             HandleLcdEvent = HandleCtlEthState;
@@ -509,6 +550,8 @@ void lcdDisplayEnternet(struct NetInfor *net,Uint16 screen_id)
     SetTextValue(screen_id,4,inet_ntoa(temsock.sin_addr));
     temsock.sin_addr.s_addr = net->mask;
     SetTextValue(screen_id,7,inet_ntoa(temsock.sin_addr));
+	temsock.sin_addr.s_addr = net->gwip;
+	SetTextValue(screen_id, 16, inet_ntoa(temsock.sin_addr));
 
     memset(data,0,sizeof(data));
     sprintf(data,"%02x:%02x:%02x:%02x:%02x:%02x",net->mac[0],net->mac[1],net->mac[2]

@@ -292,7 +292,7 @@ void *ThreadSendPtpReference(void *p)
 
     pPtpref->dest_addr.sin_family = AF_INET;
     pPtpref->dest_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-    pPtpref->dest_addr.sin_port = htons(9900);
+    pPtpref->dest_addr.sin_port = htons(9901);
 
 
     while(1)
@@ -315,7 +315,7 @@ void *ThreadRecePtpStatus(void *p)
 
     int fd = -1;
     char opt = 1;
-    PtpClock *pPtpClock = (PtpClock *)&g_ptpClock[0];
+    PtpClock *pPtpClock = (PtpClock *)&g_ptpClock[1];
     char rBuf[1500];
     int len;
     struct PtpStatus *pPtpStatus;
@@ -349,7 +349,7 @@ void *ThreadRecePtpStatus(void *p)
         len = recvfrom(fd,rBuf,1500,0,NULL,NULL);
         if(len > 0)
         {
-            printf("ptp recv status %d\n",pPtpClock->outBlockFlag);
+            printf("==>ptp recv status %d\n",pPtpClock->outBlockFlag);
             if(pPtpStatus->blockOutput == 1)
             {
                 pPtpClock->outBlockFlag = 1;
@@ -367,6 +367,7 @@ void *ThreadRecePtpStatus(void *p)
             pPtpClock->grandmasterClockQuality.clockAccuracy = pPtpStatus->clockAccuracy;
             
         }
+        usleep(100);
 
     }
 }
@@ -677,15 +678,25 @@ int main(int argc,char *argv[])
     ret = pthread_create(&Id_ThreadRecv0,&threadAttr,ThreadRecev0,NULL);
     if(ret == 0)
 	{
-		printf("ThreadRecev success!\n");
+		printf("ThreadRecev0 success!\n");
 	}
 	else
 	{
-		printf("ThreadRecev error!\n");
+		printf("ThreadRecev0 error!\n");
+	}
+
+    ret = pthread_create(&Id_ThreadRecv1,&threadAttr,ThreadRecev1,NULL);
+    if(ret == 0)
+	{
+		printf("ThreadRecev1 success!\n");
+	}
+	else
+	{
+		printf("ThreadRecev1 error!\n");
 	}
 
     /**maseter Ω” ’  */
-    if(g_ptpClock[0].clockType == 1)
+    if(g_ptpClock[0].clockType == 0)
     {
         ret = pthread_create(&Id_ThreadRecv1,&threadAttr,ThreadRecePtpStatus,NULL);
         if(ret == 0)
@@ -699,7 +710,7 @@ int main(int argc,char *argv[])
 
     }
     /**slave ∑¢ÀÕ  */
-    else if(g_ptpClock[0].clockType == 0)
+    if(g_ptpClock[1].clockType == 1)
     {
         ret = pthread_create(&Id_ThreadRecv1,&threadAttr,ThreadSendPtpReference,NULL);
         if(ret == 0)

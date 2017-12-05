@@ -210,7 +210,7 @@ Integer8 bmcDataSetComparison(MsgHeader *headerA,MsgAnnounce *announceA,
 	if (headerA->sourcePortIdentity.portNumber > headerB->sourcePortIdentity.portNumber)
 		return 1;
 
-	PLOG("Sender=Receiver!!\n");
+	//PLOG("Sender=Receiver!!\n");
 	return 0;
 
 }

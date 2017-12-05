@@ -15,7 +15,9 @@ struct root_data *g_RootData;
 char *ctlEthConfig = "/mnt/network_ctl.cfg";
 char *ptpEthConfig = "/mnt/network_ptp.cfg";
 char *ntpEthConfig = "/mnt/network_ntp.cfg";
-char *ptpConfig = "/mnt/ptp.conf";
+char *ptpConfig_s = "/mnt/ptp_s.conf";
+char *ptpConfig_m = "/mnt/ptp_m.conf";
+
 char *ntpConfig = "/mnt/ntp/ntp.conf";
 char *md5Config = "/mnt/ntp/keys";
 char *commSysConfig = "/mnt/comm_sys.cfg";
@@ -207,7 +209,8 @@ void InitSlotLocal(struct SlotList *pSlotLocal)
 {
     int ret;
 
-    Load_PtpParam_FromFile(pSlotLocal->pPtpSetcfg,ptpConfig);
+    Load_PtpParam_FromFile(pSlotLocal->pPtpSetcfg,ptpConfig_s);
+    Load_PtpParam_FromFile(pSlotLocal->pPtpSetcfg_m,ptpConfig_m);
     Load_NtpdParam_FromFile(pSlotLocal->pNtpSetCfg,ntpConfig,md5Config);
     
 }
@@ -237,6 +240,10 @@ void InitSlotList(struct root_data *pRootData)
     
     pSlotList->pPtpSetcfg = (struct PtpSetCfg*)malloc(sizeof(struct PtpSetCfg));
     memset(pSlotList->pPtpSetcfg,0,sizeof(struct PtpSetCfg));
+
+    pSlotList->pPtpSetcfg_m = (struct PtpSetCfg*)malloc(sizeof(struct PtpSetCfg));
+    memset(pSlotList->pPtpSetcfg_m,0,sizeof(struct PtpSetCfg));
+
     
     pSlotList->pPtpStatusCfg = (struct PtpStatusCfg*)malloc(sizeof(struct PtpStatusCfg));
     memset(pSlotList->pPtpStatusCfg,0,sizeof(struct PtpStatusCfg));
@@ -315,13 +322,16 @@ void InitDev(struct root_data *pRootData)
    init_add_dev(&pRootData->dev[ENUM_PC_CTL],&pRootData->dev_head,UDP_DEVICE,ENUM_PC_CTL);
 
     /**本地PTP   */
-    pRootData->dev[ENUM_IPC_PTP].net_attr.sin_port = 9900;
-    pRootData->dev[ENUM_IPC_PTP].net_attr.ip = inet_addr("127.0.0.1");
+    pRootData->dev[ENUM_IPC_PTP_MASTER].net_attr.sin_port = 9900;
+    pRootData->dev[ENUM_IPC_PTP_MASTER].net_attr.ip = inet_addr("127.0.0.1");
+
+    pRootData->dev[ENUM_IPC_PTP_SLAVE].net_attr.sin_port = 9901;
+    pRootData->dev[ENUM_IPC_PTP_SLAVE].net_attr.ip = inet_addr("127.0.0.1");
     
     //if(pRootData->clock_info.ref_type == REF_SATLITE)
-        //init_add_dev(&pRootData->dev[ENUM_IPC_PTP],&pRootData->dev_head,INIT_DEVICE,ENUM_IPC_PTP);
+    init_add_dev(&pRootData->dev[ENUM_IPC_PTP_MASTER],&pRootData->dev_head,INIT_DEVICE,ENUM_IPC_PTP_MASTER);
     //else if(pRootData->clock_info.ref_type == REF_PTP)
-        init_add_dev(&pRootData->dev[ENUM_IPC_PTP],&pRootData->dev_head,UDP_DEVICE,ENUM_IPC_PTP);
+    init_add_dev(&pRootData->dev[ENUM_IPC_PTP_SLAVE],&pRootData->dev_head,UDP_DEVICE,ENUM_IPC_PTP_SLAVE);
     
     pRootData->dev[ENUM_IPC_NTP].net_attr.sin_port = 9988;
     pRootData->dev[ENUM_IPC_NTP].net_attr.ip = inet_addr("127.0.0.1");
@@ -402,8 +412,8 @@ void *DataHandle_Thread(void *arg)
                     case ENUM_IPC_NTP:
                         
                         break; 
-                    case ENUM_IPC_PTP:
-                        //printf("dev_id=  %d,ptp recv\n",p_dev->dev_id);
+                    case ENUM_IPC_PTP_SLAVE:
+                        //printf("handle_ptp_data_message dev_id=  %d,ptp recv\n",p_dev->dev_id);
                         handle_ptp_data_message(pRootData,p_data_list->recv_lev.data,p_data_list->recv_lev.len);
                         break;
     				default:
@@ -624,11 +634,11 @@ void MaintainCoreTime(struct root_data *pRoot,TimeInternal *ptptTime)
     /**时间连续10s 都不相同  */
     if(ptptTime->seconds != Time)
     {
-        printf("------4-------\n");
+        printf("------2-------\n");
         secErrorCnt++;
         if(secErrorCnt>5)
         {
-            printf("=========setFpgaTime==%d===\n",Time);
+            logFileMessage("=========setFpgaTime==%d===\n",Time);
             /**写下一秒的值fgpa 内部处理  */
             SetFpgaTime(Time);
             secErrorCnt = 0;
@@ -703,6 +713,10 @@ void display_clockstate_to_lcd(struct root_data *pRootData)
     struct clock_info *pClockInfo = &pRootData->clock_info;
     struct Satellite_Data *p_satellite_data = &pRootData->satellite_data;
     char szbuf[50];
+	int pRun_Day = 0;
+	int pRun_Hour = 0;
+	int pRun_Minute = 0;
+	int pRun_Seconds = 0;
 
     
     if(pClockInfo->ref_type == REF_SATLITE)
@@ -735,7 +749,18 @@ void display_clockstate_to_lcd(struct root_data *pRootData)
     }
 
     memset(szbuf,0,sizeof(szbuf));
-    sprintf(szbuf,"%d",pClockInfo->run_times);
+	//~{P^8DOTJ>FATKPPJ1<dOTJ>~} Wang Cong 2017-10-16
+	//~{T-#:~}sprintf(szbuf,"%d",pClockInfo->run_times);
+	//~{OV~}:
+	pRun_Day = pClockInfo->run_times / (60 * 60 * 24);
+	pRun_Hour = (pClockInfo->run_times % (60 * 60 * 24)) / (60 * 60);
+	pRun_Minute = (pClockInfo->run_times % (60 * 60)) / 60;
+	pRun_Seconds = pClockInfo->run_times % 60;
+	sprintf(szbuf, "%d:%s%d:%s%d:%s%d",
+					pRun_Day,
+					pRun_Hour < 10 ? "0" : "", pRun_Hour,
+					pRun_Minute < 10 ? "0" : "", pRun_Minute,
+					pRun_Seconds < 10 ? "0" : "", pRun_Seconds);
     SetTextValue(CLOCK_STATUS_SCREEN_ID,14,szbuf);
 
 
@@ -934,7 +959,7 @@ void updatePtpStatus(struct root_data *pRootData,Uint16 nTimeCnt)
                 break;
         }
 
-        AddData_ToSendList(pRootData,ENUM_IPC_PTP,(void *)&mPtpStatus,sizeof(mPtpStatus));
+        AddData_ToSendList(pRootData,ENUM_IPC_PTP_MASTER,(void *)&mPtpStatus,sizeof(mPtpStatus));
 
     }
      
@@ -995,7 +1020,6 @@ void *ThreadUsuallyProcess(void *arg)
                     Control_LedAlarm(0x01);
                 else
                     Control_LedAlarm(0x00);
-
             }
 
             if(pClockAlarm->alarmBd1pps == 1)
@@ -1012,8 +1036,8 @@ void *ThreadUsuallyProcess(void *arg)
 
             updateNtpStatus(pRootData,nTimeCnt);
             
-            if(pClockInfo->ref_type == REF_SATLITE)
-                updatePtpStatus(pRootData,nTimeCnt);
+            //if(pClockInfo->ref_type == REF_SATLITE)
+            updatePtpStatus(pRootData,nTimeCnt);
             
             nTimeCnt++;
             printf("========================1PPS End ============================\n\n\n");
@@ -1127,6 +1151,8 @@ int main(int argc,char *argv[])
     pthread_t Id_ThreadUsually;
     int c;
     int val;
+    printf("Hardware Version V1.00\n");
+    printf("SoftWare Version V0.10\n");
     
     g_RootData = (struct root_data *)malloc(sizeof(struct root_data));
 	if(!g_RootData)

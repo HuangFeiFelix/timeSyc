@@ -3312,22 +3312,44 @@ Uint8 Init_ptpClock(PtpClock *pPtpClock,int index)
     memset(filename,0,sizeof(filename));
     memset(netInterface,0,sizeof(netInterface));
 
-    
-    sprintf(filename,"%s","/mnt/ptp.conf");
-    memcpy(pPtpClock->ptpFileName,filename,strlen(filename));
-    sprintf(netInterface,"%s%d","eth",index);
-    
-    /**初始值ptp 主要参数  */
-    Init_PtpMainParam(pPtpClock
-                        ,PTP_VERRION_2
-                        ,netInterface
-                        ,PTP_MASTER
-                        ,0
-                        ,PROTO_UDP_IP
-                        ,IPMODE_MULTICAST
-                        ,ONE_STEP
-                        ,DELAY_MECANISM_E2E);
+    if(index == 0)
+    {
+        sprintf(filename,"%s","/mnt/ptp_s.conf");
+        memcpy(pPtpClock->ptpFileName,filename,strlen(filename));
+        sprintf(netInterface,"%s%d","eth",index);
 
+        /**初始值ptp 主要参数  */
+        Init_PtpMainParam(pPtpClock
+                            ,PTP_VERRION_2
+                            ,netInterface
+                            ,PTP_SLAVE
+                            ,0
+                            ,PROTO_UDP_IP
+                            ,IPMODE_UNICAST
+                            ,ONE_STEP
+                            ,DELAY_MECANISM_E2E);
+
+    }
+    else if(index == 1)
+    {
+        sprintf(filename,"%s","/mnt/ptp_m.conf");
+        memcpy(pPtpClock->ptpFileName,filename,strlen(filename));
+        sprintf(netInterface,"%s%d","eth",index);
+
+        /**初始值ptp 主要参数  */
+        Init_PtpMainParam(pPtpClock
+                            ,PTP_VERRION_2
+                            ,netInterface
+                            ,PTP_MASTER
+                            ,0
+                            ,PROTO_UDP_IP
+                            ,IPMODE_UNICAST
+                            ,ONE_STEP
+                            ,DELAY_MECANISM_E2E);
+
+    }
+
+    
     /**初始化发送周期  */
     Init_PtpSendInterval(pPtpClock,0,0,0);
 
@@ -3372,10 +3394,10 @@ Uint8 Init_ptpClock(PtpClock *pPtpClock,int index)
 #endif
 
     /**初始化单播多服务器及单播协商  */
-    pPtpClock->UniNegotiationEnable = TRUE;
+    pPtpClock->UniNegotiationEnable = FALSE;
     pPtpClock->UnicastDuration = 300;
     pPtpClock->unicastMultiServer.validServerNum = 1;
-    pPtpClock->unicastMultiServer.serverList[0].serverIp = inet_addr("192.168.15.233");
+    pPtpClock->unicastMultiServer.serverList[0].serverIp = inet_addr("192.168.1.233");
     pPtpClock->unicastMultiServer.serverList[0].valid = TRUE;
     
     pPtpClock->unicastMultiServer.serverList[0].serverMac[0] = 0x00;

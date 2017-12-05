@@ -28,6 +28,12 @@
 #define CMD_PTP_CFG_SLAVE       0x0012
 #define CMD_PTP_CFG_MASTER      0x0013
 
+#define CMD_N_PTP_CFG_ALL        0x0014
+#define CMD_N_PTP_CFG_NORMAL     0x0015
+#define CMD_N_PTP_CFG_MASTER     0x0016
+
+
+
 
 #define CMD_NTP_CFG_NORMAL      0x0020
 #define CMD_NTP_CFG_MD5_ENABLE  0x0021
@@ -2710,7 +2716,7 @@ void packmsg_ntp_whitlelist(struct NtpSetCfg *pNtpSetCfg,char *buf,int *len)
 }
 
 
-void handle_req_ptp_all(struct root_data *pRootData,struct Head_Frame *pHeadFrame)
+void handle_req_ptp_all(struct root_data *pRootData,struct Head_Frame *pHeadFrame,int num)
 {
     char buf[500];
     int iOffset = 0;
@@ -2721,7 +2727,11 @@ void handle_req_ptp_all(struct root_data *pRootData,struct Head_Frame *pHeadFram
     struct SlotList *pSlotList = &pRootData->slot_list[dIndex];
     if(pHeadFrame->pad_type == pSlotList->slot_type)
     {
-        packmsg_ptp_all(pSlotList->pPtpSetcfg,buf,&iOffset);
+        if(num == 0)
+            packmsg_ptp_all(pSlotList->pPtpSetcfg,buf,&iOffset);
+        else
+            packmsg_ptp_all(pSlotList->pPtpSetcfg_m,buf,&iOffset);
+        
         msgPackRespFrameToSend(pRootData,pHeadFrame,CTL_WORD_DATA,buf,iOffset,CMD_PTP_CFG_ALL);
     }
     else
@@ -2735,7 +2745,7 @@ void handle_req_ptp_all(struct root_data *pRootData,struct Head_Frame *pHeadFram
 
 }
 
-void handle_req_ptp_normal(struct root_data *pRootData,struct Head_Frame *pHeadFrame)
+void handle_req_ptp_normal(struct root_data *pRootData,struct Head_Frame *pHeadFrame,int num)
 {
     char buf[500];
     int iOffset = 0;
@@ -2746,7 +2756,11 @@ void handle_req_ptp_normal(struct root_data *pRootData,struct Head_Frame *pHeadF
     struct SlotList *pSlotList = &pRootData->slot_list[dIndex];
     if(pHeadFrame->pad_type == pSlotList->slot_type)
     {
-        packmsg_ptp_nomal(pSlotList->pPtpSetcfg,buf,&iOffset);
+        if(num == 0)
+            packmsg_ptp_nomal(pSlotList->pPtpSetcfg,buf,&iOffset);
+        else
+            packmsg_ptp_nomal(pSlotList->pPtpSetcfg_m,buf,&iOffset);
+        
         msgPackRespFrameToSend(pRootData,pHeadFrame,CTL_WORD_DATA,buf,iOffset,CMD_PTP_CFG_NORMAL);
     }
     else
@@ -2758,7 +2772,7 @@ void handle_req_ptp_normal(struct root_data *pRootData,struct Head_Frame *pHeadF
 
 }
 
-void handle_req_ptp_master(struct root_data *pRootData,struct Head_Frame *pHeadFrame)
+void handle_req_ptp_master(struct root_data *pRootData,struct Head_Frame *pHeadFrame,int num)
 {
     char buf[500];
     int iOffset = 0;
@@ -2769,7 +2783,11 @@ void handle_req_ptp_master(struct root_data *pRootData,struct Head_Frame *pHeadF
     struct SlotList *pSlotList = &pRootData->slot_list[dIndex];
     if(pHeadFrame->pad_type == pSlotList->slot_type)
     {
-        packmsg_ptp_master(pSlotList->pPtpSetcfg,buf,&iOffset);
+        if(num == 0)
+            packmsg_ptp_master(pSlotList->pPtpSetcfg,buf,&iOffset);
+        else
+            packmsg_ptp_master(pSlotList->pPtpSetcfg_m,buf,&iOffset);
+        
         msgPackRespFrameToSend(pRootData,pHeadFrame,CTL_WORD_DATA,buf,iOffset,CMD_PTP_CFG_MASTER);
     }
     else
@@ -3107,7 +3125,7 @@ void handle_set_system_setting(struct root_data *pRootData,struct Head_Frame *pH
     msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_ACK,NULL,iOffset);
 }
 
-void handle_set_ptp_all(struct root_data *pRootData,struct Head_Frame *pHeadFrame,char *data)
+void handle_set_ptp_all(struct root_data *pRootData,struct Head_Frame *pHeadFrame,char *data,int num)
 {
     char buf[500];
     int iOffset = 0;
@@ -3122,8 +3140,17 @@ void handle_set_ptp_all(struct root_data *pRootData,struct Head_Frame *pHeadFram
     if(pHeadFrame->pad_type == pSlotList->slot_type)
     {
         msgUpPack_ptp_all(data,&m_ptpset_cfg);
-        if(memcmp(pSlotList->pPtpSetcfg,&m_ptpset_cfg,sizeof(struct PtpSetCfg)) != 0)
-            set_success = TRUE;
+        if(0 == num)
+        {
+            if(memcmp(pSlotList->pPtpSetcfg,&m_ptpset_cfg,sizeof(struct PtpSetCfg)) != 0)
+                set_success = TRUE;
+        }
+        else
+        {
+            if(memcmp(pSlotList->pPtpSetcfg_m,&m_ptpset_cfg,sizeof(struct PtpSetCfg)) != 0)
+                set_success = TRUE;
+
+        }
         
         msgPackFrameToSend(pRootData,pHeadFrame,CTL_WORD_ACK,NULL,iOffset);
     }
@@ -3137,8 +3164,16 @@ void handle_set_ptp_all(struct root_data *pRootData,struct Head_Frame *pHeadFram
     /**下发指令生效  */
     if(set_success)
     {
-        memcpy(pSlotList->pPtpSetcfg,&m_ptpset_cfg,sizeof(struct PtpSetCfg));
-        Save_PtpParam_ToFile(pSlotList->pPtpSetcfg,ptpConfig);
+        if(num == 0)
+        {
+            memcpy(pSlotList->pPtpSetcfg,&m_ptpset_cfg,sizeof(struct PtpSetCfg));
+            Save_PtpParam_ToFile(pSlotList->pPtpSetcfg,ptpConfig_s);
+        }
+        else
+        {
+            memcpy(pSlotList->pPtpSetcfg_m,&m_ptpset_cfg,sizeof(struct PtpSetCfg));
+            Save_PtpParam_ToFile(pSlotList->pPtpSetcfg_m,ptpConfig_m);
+        }
         stop_ptp_daemon();
         usleep(20000);
         start_ptp_daemon();
@@ -3488,17 +3523,17 @@ void process_pc_ctl_req(struct root_data *pRootData,struct Head_Frame *pHeadFram
         handle_req_system_setting(pRootData,pHeadFrame);
         break;
      case CMD_PTP_CFG_ALL:
-        handle_req_ptp_all(pRootData,pHeadFrame);
+        handle_req_ptp_all(pRootData,pHeadFrame,0);
         break;
 
      case CMD_PTP_CFG_NORMAL:
-        handle_req_ptp_normal(pRootData,pHeadFrame);
+        handle_req_ptp_normal(pRootData,pHeadFrame,0);
         break;
      case CMD_PTP_CFG_SLAVE:
         handle_req_ptp_slave(pRootData,pHeadFrame);
         break;
      case CMD_PTP_CFG_MASTER:
-        handle_req_ptp_master(pRootData,pHeadFrame);
+        handle_req_ptp_master(pRootData,pHeadFrame,0);
         break;
              
      case CMD_NTP_CFG_NORMAL:
@@ -3513,6 +3548,17 @@ void process_pc_ctl_req(struct root_data *pRootData,struct Head_Frame *pHeadFram
      case CMD_NTP_CFG_WHITELSIT:
         handle_req_ntp_whitlelist(pRootData,pHeadFrame);
         break;
+        
+    case CMD_N_PTP_CFG_ALL:
+        handle_req_ptp_all(pRootData,pHeadFrame,1);
+        break;
+    case CMD_N_PTP_CFG_NORMAL:
+        handle_req_ptp_normal(pRootData,pHeadFrame,1);
+        break;
+    case CMD_N_PTP_CFG_MASTER:
+        handle_req_ptp_master(pRootData,pHeadFrame,1);
+        break;
+
      default:
         handle_no_cmd_error(pRootData,pHeadFrame);
         break;
@@ -3543,7 +3589,7 @@ void process_pc_ctl_set(struct root_data *pRootData,struct Head_Frame *pHeadFram
        handle_set_system_setting(pRootData,pHeadFrame,data);
        break;
     case CMD_PTP_CFG_ALL:
-       handle_set_ptp_all(pRootData,pHeadFrame,data);
+       handle_set_ptp_all(pRootData,pHeadFrame,data,0);
        break;
     case CMD_NTP_CFG_NORMAL:
        handle_set_ntp_normal(pRootData,pHeadFrame,data);
@@ -3557,6 +3603,11 @@ void process_pc_ctl_set(struct root_data *pRootData,struct Head_Frame *pHeadFram
     case CMD_NTP_CFG_WHITELSIT:
        handle_set_ntp_whitelist(pRootData,pHeadFrame,data);
        break;
+
+    case CMD_N_PTP_CFG_ALL:
+        handle_set_ptp_all(pRootData,pHeadFrame,data,1);
+        break;
+      
     default:
        handle_no_cmd_error(pRootData,pHeadFrame);
        break;
@@ -3670,13 +3721,14 @@ void handle_ptp_data_message(struct root_data *pRootData,char *buf,int len)
         {
 			secErrorCnt = 0;
 
-			if(abs(pPtpRefData->TimeOffset.nanoseconds) > 1000)
+			if(abs(pPtpRefData->TimeOffset.nanoseconds) > 5000)
 			{
 				secNanoCnt++;
 				if(secNanoCnt > 5)
 				{
 					secNanoCnt = 0;
-					SetFpgaAdjustPhase(pPtpRefData->TimeOffset.nanoseconds);
+                    printf("=========adjust=1====\n");
+					SetFpgaAdjustPhase(-pPtpRefData->TimeOffset.nanoseconds/2);
 					return;
 				}
 			}
@@ -3691,6 +3743,12 @@ void handle_ptp_data_message(struct root_data *pRootData,char *buf,int len)
                 printf("readPhase=%lld collect_phase=%d, count=%d\n",time_offset,ph,p_collect_data->ph_number_counter);
                 collect_phase(&pClockInfo->data_1Hz,0,ph);  
             }
+
+        }
+        else
+        {
+            printf("=========adjust=2====\n");
+            SetFpgaAdjustPhase(-pPtpRefData->TimeOffset.nanoseconds/2);
 
         }
     }

@@ -938,8 +938,6 @@ void *ThreadUsuallyProcess(void *p)
     short bestIndex = 0;
     int i;
     
-    Boolean ledRun = FALSE;
-
     printf("usually process...\n");
 
 
@@ -951,7 +949,7 @@ void *ThreadUsuallyProcess(void *p)
 
         if(pUartDevice->pps_routine_flag)
         {
-            //printf("========================1PPS Start ============================\n");
+            printf("========================ptp usually Start ============================\n");
              /**处理其他  */
             nTimeCnt++;
 
