@@ -345,7 +345,8 @@ void *ThreadRecePtpStatus(void *p)
     pPtpStatus = (struct PtpStatus *)(rBuf);
     while(1)
     {
-        
+
+        memset(rBuf,0,sizeof(rBuf));
         len = recvfrom(fd,rBuf,1500,0,NULL,NULL);
         if(len > 0)
         {
@@ -356,7 +357,9 @@ void *ThreadRecePtpStatus(void *p)
                 continue;
             }
             else
+            {
                 pPtpClock->outBlockFlag = 0;
+            }
 
             
             pPtpClock->grandmasterPriority1 = pPtpStatus->priority1;
@@ -629,7 +632,7 @@ int main(int argc,char *argv[])
         
         Load_PtpParam_FromFile(&pPtpClock[i]);
 
-        Init_NetEnviroment(&pPtpClock->netEnviroment);
+        Init_NetEnviroment(&pPtpClock[i].netEnviroment);
         /**从当前文件读取ip netmask gateway   */
         //Load_NetWork(&pPtpClock[i],&pPtpClock[i].netEnviroment);
     }
@@ -656,7 +659,7 @@ int main(int argc,char *argv[])
     Init_FpgaCore(g_ptpClock);
     
     /**初始化ptp  */
-    //Init_PtpDev();
+
     Init_SendThread(&timerid_ms);
     Init_PPSThread(&timerid_pps);
 
@@ -696,33 +699,29 @@ int main(int argc,char *argv[])
 	}
 
     /**maseter 接收  */
-    if(g_ptpClock[0].clockType == 0)
+    ret = pthread_create(&Id_ThreadRecv1,&threadAttr,ThreadRecePtpStatus,NULL);
+    if(ret == 0)
     {
-        ret = pthread_create(&Id_ThreadRecv1,&threadAttr,ThreadRecePtpStatus,NULL);
-        if(ret == 0)
-        {
-            printf("ThreadRecePtpStatus success!\n");
-        }
-        else
-        {
-            printf("ThreadRecePtpStatus error!\n");
-        }
-
+        printf("ThreadRecePtpStatus success!\n");
     }
+    else
+    {
+        printf("ThreadRecePtpStatus error!\n");
+    }
+
+
     /**slave 发送  */
-    if(g_ptpClock[1].clockType == 1)
+    ret = pthread_create(&Id_ThreadRecv1,&threadAttr,ThreadSendPtpReference,NULL);
+    if(ret == 0)
     {
-        ret = pthread_create(&Id_ThreadRecv1,&threadAttr,ThreadSendPtpReference,NULL);
-        if(ret == 0)
-        {
-            printf("ThreadSendPtpReference success!\n");
-        }
-        else
-        {
-            printf("ThreadSendPtpReference error!\n");
-        }
-
+        printf("ThreadSendPtpReference success!\n");
     }
+    else
+    {
+        printf("ThreadSendPtpReference error!\n");
+    }
+
+
     
     pthread_join(Id_ThreadRecv0,NULL);
     pthread_join(Id_ThreadRecv1,NULL);

@@ -327,22 +327,11 @@ void Init_NetComm(PtpClock *pPtpclock,NetComm *pNetComm)
 void Init_NetEnviroment(NetInfor *pNetInfor)
 {
     char mac[6];
-#if 0
-    mac[0]=0x00;
-    mac[1]=0x13;
-    mac[2]=0xf6;
-    mac[3]=0x6c;
-    mac[4]=0x87;
-    mac[5]=0x9f;
-    SetMacAddress(pNetInfor->ifaceName,mac);
-#endif
-    
-
 
     GetIpAddress(pNetInfor->ifaceName,&pNetInfor->ip);
     GetMaskAddress(pNetInfor->ifaceName,&pNetInfor->mask);
     GetMacAddress(pNetInfor->ifaceName,pNetInfor->mac);
         
-    GetGateWay(pNetInfor->ifaceName,&pNetInfor->gwip);
+    //GetGateWay(pNetInfor->ifaceName,&pNetInfor->gwip);
 }
 

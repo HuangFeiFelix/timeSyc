@@ -882,7 +882,6 @@ unsigned char AddIpAddr_ToMultiCast(int sockfd,unsigned int ip,unsigned int mult
         printf("failed to set  multicast send interface\n");
         return FALSE;
     }
-    
     if(setsockopt(sockfd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &imr, sizeof(imr))< 0)
     {
         printf("failed to add  multicast member\n");

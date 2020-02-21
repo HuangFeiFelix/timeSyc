@@ -863,13 +863,6 @@ void HandleAlarm(UartDevice *pUartDevice)
     
     if(!pUartDevice->diskAlarm)
     {
-#if 0
-        if(pPtpClock[0].notAvailableAlarm == FALSE)
-            Control_LedStatus(LED_PTP_1,1);
-        else
-            Control_LedStatus(LED_PTP_1,0);
-#endif
-
     }
 
     /**15s 软件确认  */
@@ -949,14 +942,13 @@ void *ThreadUsuallyProcess(void *p)
 
         if(pUartDevice->pps_routine_flag)
         {
-            printf("========================ptp usually Start ============================\n");
+            //printf("========================ptp usually Start ============================\n");
              /**处理其他  */
             nTimeCnt++;
 
 
             /**获取当前运行时间  */
-            GetFpgaRuningTime(&timeTmp);
-            //printf("fgpa Running time:sec=%d,nao=%d \n",timeTmp.seconds,timeTmp.nanoseconds);
+            getTime(&timeTmp);
 #if 0
 
             GetFpgaPpsTime(&timeTmp);
@@ -964,7 +956,7 @@ void *ThreadUsuallyProcess(void *p)
 
             //GetSystemPpsTime(&timeTmp); 
             printf("fgpa system time:sec=%d,nao=%d ",timeTmp.seconds,timeTmp.nanoseconds);
-  #endif      
+#endif      
             for(i=0;i<PTP_PORT_COUNT;i++)
                 g_ptpClock[i].CurentTime= timeTmp;
             
@@ -1005,7 +997,7 @@ void *ThreadUsuallyProcess(void *p)
         }
         
        
-        usleep(10);
+        usleep(1000);
     }
 }
 

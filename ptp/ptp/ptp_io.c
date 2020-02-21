@@ -886,7 +886,7 @@ int Save_PtpParam_ToFile(PtpClock *pPtpClock,char *fileName)
     }
 
     memset(line_str,0,sizeof(line_str));
-    sprintf(line_str,"%s:%s=%s\n","ptpengine","interface","eth0");
+    sprintf(line_str,"%s:%s=%s\n","ptpengine","interface",pPtpClock->netEnviroment.ifaceName);
     fputs(line_str,ptp_fd);
     
     memset(line_str,0,sizeof(line_str));
@@ -3326,7 +3326,7 @@ Uint8 Init_ptpClock(PtpClock *pPtpClock,int index)
                             ,0
                             ,PROTO_UDP_IP
                             ,IPMODE_UNICAST
-                            ,ONE_STEP
+                            ,TWO_STEP
                             ,DELAY_MECANISM_E2E);
 
     }
@@ -3343,8 +3343,8 @@ Uint8 Init_ptpClock(PtpClock *pPtpClock,int index)
                             ,PTP_MASTER
                             ,0
                             ,PROTO_UDP_IP
-                            ,IPMODE_UNICAST
-                            ,ONE_STEP
+                            ,IPMODE_MULTICAST
+                            ,TWO_STEP
                             ,DELAY_MECANISM_E2E);
 
     }
